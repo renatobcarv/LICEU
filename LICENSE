@@ -1,21 +1,49 @@
-MIT License
+LICENÇA PROPRIETÁRIA — LICEU
 
-Copyright (c) 2026 Renato B. Carvalho
+Copyright (c) 2026 Renato B. Carvalho. Todos os direitos reservados.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. TITULARIDADE
+Este software, incluindo código-fonte, arquitetura, modelo de dados, regras de
+cálculo, documentação, design de interface, identidade visual e demais materiais
+deste repositório (o "Software"), é de autoria e propriedade exclusiva de
+Renato B. Carvalho, protegido pela Lei nº 9.610/1998 (Direitos Autorais), pela
+Lei nº 9.609/1998 (Lei do Software) e pelos tratados internacionais aplicáveis.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+2. PERMISSÃO DE VISUALIZAÇÃO
+O acesso público a este repositório é concedido exclusivamente para leitura e
+avaliação do Software, por exemplo, para fins de portfólio e análise técnica.
+Nenhum outro direito é concedido.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+3. PROIBIÇÕES
+Sem autorização prévia, expressa e por escrito do titular, é proibido:
+  a) copiar, reproduzir ou baixar o Software, total ou parcialmente, para uso;
+  b) modificar, adaptar, traduzir ou criar obras derivadas;
+  c) distribuir, sublicenciar, vender, alugar ou disponibilizar a terceiros;
+  d) utilizar o Software, ou qualquer parte dele, para fins comerciais ou em
+     produção;
+  e) usar o Software como base para produtos ou serviços concorrentes;
+  f) remover ou alterar avisos de autoria, copyright ou desta licença.
+
+4. FORKS
+A criação de forks dentro da plataforma GitHub, permitida pelos Termos de
+Serviço da plataforma, não concede nenhum direito de uso, modificação ou
+distribuição além da visualização prevista no item 2.
+
+5. DADOS
+Este repositório não contém dados reais de clientes, leads ou alunos. Qualquer
+dado operacional de instituições usuárias pertence às respectivas instituições
+e não é regido por esta licença.
+
+6. AUSÊNCIA DE GARANTIAS
+O Software é disponibilizado "no estado em que se encontra", sem garantias de
+qualquer tipo. O titular não se responsabiliza por danos decorrentes do acesso
+ou do uso indevido do Software.
+
+7. AUTORIZAÇÕES
+Pedidos de licenciamento, parceria ou uso devem ser feitos ao titular:
+Renato B. Carvalho — https://renatobdev.pro
+
+8. FORO
+Esta licença é regida pelas leis da República Federativa do Brasil. Fica eleito
+o foro da Circunscrição Judiciária de Brasília, Distrito Federal, para dirimir
+quaisquer controvérsias dela decorrentes.
