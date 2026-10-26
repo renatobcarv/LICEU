@@ -5,7 +5,7 @@ import { store } from '../store.js';
 import { esc, $, $$, norm, today, addDays, fmtDate, pct, num } from '../util.js';
 import { HOOKS, BANK, FORMATOS, OBJETIVOS, CONSCIENCIA, OBJECOES, CENARIOS, buildBrief } from '../pauta-data.js';
 import { salesStats, contentStats, settings } from '../metrics.js';
-import { openDialog, toast, copyText, ICON, badge, confirmButton } from '../ui.js';
+import { openDialog, toast, copyText, ICON, badge, confirmButton, dayPicker } from '../ui.js';
 
 export const autoRefresh = false; // não redesenha no meio da digitação
 
@@ -106,9 +106,8 @@ function form() {
       <ul class="check" id="p-check"></ul>
       <pre class="brief" id="p-brief"></pre>
       <div class="mon-foot">
-        <button type="button" class="btn primary" data-pact="copy">${ICON.copy} Copiar briefing</button>
-        <div class="row2"><button type="button" class="btn" data-pact="save">Salvar pauta</button><button type="button" class="btn" data-pact="agendar">Agendar no calendário</button></div>
-        <button type="button" class="btn ghost" data-pact="clear">Começar nova pauta</button>
+        <button type="button" class="btn primary" data-pact="agendar">${ICON.calendario} Salvar e escolher o dia</button>
+        <div class="row2"><button type="button" class="btn" data-pact="copy">${ICON.copy} Copiar briefing</button><button type="button" class="btn ghost" data-pact="clear">Nova pauta</button></div>
       </div>
     </section>
   </div>`;
@@ -116,7 +115,7 @@ function form() {
 
 const STATUS = ['Ideia', 'Briefing pronto', 'Roteiro aprovado', 'Gravado', 'Publicado', 'Descartada'];
 function bank(list) {
-  if (!list.length) return '<div class="empty"><h3>Nenhuma pauta salva</h3><p>Monte um briefing e clique em Salvar pauta. Aqui vira o banco de ideias da equipe.</p></div>';
+  if (!list.length) return '<div class="empty"><h3>Nenhuma pauta salva</h3><p>Monte um briefing e clique em Salvar e escolher o dia. Toda pauta fica aqui e no calendário.</p></div>';
   return `<div class="table-wrap"><table class="tbl"><thead><tr><th>Pauta</th><th>Formato</th><th>Objetivo</th><th>Calendário</th><th>Status</th><th></th></tr></thead><tbody>${list.map((p) => {
     const cal = p.calendarId ? store.get('calendar', p.calendarId) : null;
     return `<tr><td><b>${esc(p.titulo)}</b><small class="cell-sub">${esc(p.form?.curso || '')}</small></td><td>${esc(p.form?.formato || '')}</td><td>${esc((p.form?.objetivo || '').split(' (')[0])}</td><td>${cal ? `<a href="#calendario?d=${esc(cal.data)}">${fmtDate(cal.data)}</a>` : '—'}</td>
@@ -150,6 +149,40 @@ function readForm(root) {
   $$('input[type=checkbox]', f).forEach((el) => (draft[el.name] = el.checked));
 }
 
+// Toda pauta salva vai para o calendário: escolhe o dia num mini calendário, com o formato já definido.
+const FORMATO_CAL = { 'Reels': 'Reels', 'Vídeo motion': 'Vídeo motion', 'Carrossel': 'Carrossel', 'Stories': 'Stories', 'Post estático': 'Post estático' };
+function scheduleDialog(ctx) {
+  const s = settings();
+  const old = draft._id ? store.get('pautas', draft._id) : null;
+  const oldItem = old?.calendarId ? store.get('calendar', old.calendarId) : null;
+  let dia = oldItem?.data || '';
+  const count = (d) => store.all('calendar').filter((i) => i.data === d && i.status !== 'Cancelado').length;
+  const { dlg, form } = openDialog({
+    title: 'Em que dia vai ao ar?', saveLabel: 'Agendar', wide: true,
+    fields: [
+      { name: 'formato', label: 'Formato', type: 'select', options: ['Reels', 'Vídeo motion', 'Carrossel', 'Stories', 'Post estático', 'Arte', 'Live', 'Outro'], value: FORMATO_CAL[draft.formato] || draft.formato },
+      { name: 'hora', label: 'Horário (opcional)', type: 'time', value: oldItem?.hora || '' },
+      { name: 'pilar', label: 'Pilar', type: 'select', options: ['', ...s.pilares], value: oldItem?.pilar || '' },
+      { name: 'responsavel', label: 'Responsável', value: oldItem?.responsavel || '', list: 'resp-list-p' },
+      { name: 'gravacao', label: 'Gravar em (opcional)', type: 'date', hint: 'Cria também um item de gravação no calendário.' },
+    ],
+    html: `<div class="dp" id="dp"></div><p class="note" id="dp-sel">${dia ? 'Dia escolhido: ' + fmtDate(dia) : 'Toque no dia da publicação. Os pontos mostram o que já está agendado.'}</p><datalist id="resp-list-p">${(s.responsaveis || []).map((r) => `<option value="${esc(r)}">`).join('')}</datalist>`,
+    onSave: (d) => {
+      if (!dia) { const e = $('.form-error', dlg); e.textContent = 'Escolha o dia no calendário.'; e.hidden = false; return false; }
+      const c = courseByName(draft.curso);
+      const pauta = savePauta();
+      const obj = draft.objetivo.split(' (')[0];
+      const item = store.put('calendar', { ...(oldItem || {}), data: dia, hora: d.hora, tipo: 'Publicação', titulo: titleOf(draft), cursoId: c?.id || '', formato: d.formato, pilar: d.pilar, objetivo: obj, cta: draft.cta, status: oldItem?.status || 'Em produção', responsavel: d.responsavel, pautaId: pauta.id });
+      if (d.gravacao) store.put('calendar', { data: d.gravacao, tipo: 'Gravação', titulo: 'Gravar: ' + titleOf(draft), cursoId: c?.id || '', formato: d.formato, status: 'Planejado', responsavel: d.responsavel, pautaId: pauta.id });
+      store.put('pautas', { ...store.get('pautas', pauta.id), calendarId: item.id, status: pauta.status === 'Ideia' ? 'Briefing pronto' : pauta.status });
+      toast((d.formato || 'Publicação') + ' agendado para ' + fmtDate(dia) + '.');
+      ctx.go('#calendario?d=' + dia);
+    },
+  });
+  dayPicker($('#dp', dlg), { value: dia, markers: count, onPick: (v) => { dia = v; $('#dp-sel', dlg).textContent = 'Dia escolhido: ' + fmtDate(v) + (count(v) ? ' · já tem ' + count(v) + (count(v) > 1 ? ' itens' : ' item') + ' nesse dia' : ''); $('.form-error', dlg).hidden = true; } });
+  void form;
+}
+
 function titleOf(d) { return (d.ideia || d.curso || 'Pauta sem título').split(/[.\n]/)[0].slice(0, 80); }
 
 function savePauta(extra = {}) {
@@ -180,26 +213,8 @@ export function mount(root, ctx) {
     if (ds.pact === 'save') { if (!draft.curso && !draft.ideia) { toast('Escreva pelo menos o curso ou a ideia.', 'warn'); return; } savePauta(); toast('Pauta salva no banco.'); return; }
     if (ds.pact === 'clear') { draft = { ...BLANK }; saveDraft(); ctx.refresh(); toast('Pauta nova. Pode começar.'); return; }
     if (ds.pact === 'agendar') {
-      if (!draft.curso && !draft.ideia) { toast('Escreva pelo menos o curso ou a ideia.', 'warn'); return; }
-      const s = settings();
-      openDialog({
-        title: 'Agendar no calendário', saveLabel: 'Agendar',
-        fields: [
-          { name: 'data', label: 'Publicar em', type: 'date', value: addDays(today(), 2), required: true },
-          { name: 'gravacao', label: 'Gravar em (opcional)', type: 'date', hint: 'Cria também um item de gravação.' },
-          { name: 'pilar', label: 'Pilar', type: 'select', options: ['', ...s.pilares] },
-          { name: 'responsavel', label: 'Responsável', value: '' },
-        ],
-        onSave: (d) => {
-          const c = courseByName(draft.curso);
-          const pauta = savePauta();
-          const obj = draft.objetivo.split(' (')[0];
-          const item = store.put('calendar', { ...(pauta.calendarId ? store.get('calendar', pauta.calendarId) || {} : {}), data: d.data, tipo: 'Publicação', titulo: titleOf(draft), cursoId: c?.id || '', formato: draft.formato, pilar: d.pilar, objetivo: obj, cta: draft.cta, status: 'Em produção', responsavel: d.responsavel, pautaId: pauta.id });
-          if (d.gravacao) store.put('calendar', { data: d.gravacao, tipo: 'Gravação', titulo: 'Gravar: ' + titleOf(draft), cursoId: c?.id || '', formato: draft.formato, status: 'Planejado', responsavel: d.responsavel, pautaId: pauta.id });
-          store.put('pautas', { ...store.get('pautas', pauta.id), calendarId: item.id, status: 'Roteiro aprovado' === pauta.status ? pauta.status : 'Briefing pronto' });
-          toast('Agendado para ' + fmtDate(d.data) + '.');
-        },
-      });
+      if (!draft.curso && !draft.ideia) { toast('Escreva pelo menos o curso ou a ideia.', 'warn'); $('#p-ideia', root).focus(); return; }
+      scheduleDialog(ctx);
     }
   });
   root.addEventListener('change', (e) => {

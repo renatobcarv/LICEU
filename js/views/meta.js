@@ -7,7 +7,7 @@
 
 import { store } from '../store.js';
 import { esc, $, $$, brl, brl2, num, pct, num1, parseCSV, parseNum, parseDate, norm, toCSV, fmtDate, fmtRange, uid, today, inRange, div } from '../util.js';
-import { campaignRows, mediaTotals, courseName, diagnostics, NIVEL, METRIC_KEYS } from '../metrics.js';
+import { campaignRows, mediaTotals, courseName, diagnostics, NIVEL, METRIC_KEYS, share } from '../metrics.js';
 import { openDialog, toast, badge, ICON, readFileText, downloadFile, empty, confirmButton } from '../ui.js';
 
 let canal = '';
@@ -75,14 +75,15 @@ export function render(ctx) {
   `;
 }
 
-// Linhas que cobrem só parte do período entram proporcionais aos dias. Avisa e oferece o período exato.
+// Explica quais relatórios longos entraram (ou não) no período, já que cada linha conta inteira.
 function partialNotice(from, to, f) {
   const camps = new Set(store.all('campaigns').filter((c) => (!f.cursoId || c.cursoId === f.cursoId) && (!canal || c.canal === canal)).map((c) => c.id));
   const parts = store.all('adStats').filter((s) => camps.has(s.campanhaId) && s.inicio && s.fim && s.inicio <= to && s.fim >= from && (s.inicio < from || s.fim > to));
   if (!parts.length) return '';
-  const a = parts.reduce((m, s) => (s.inicio < m ? s.inicio : m), parts[0].inicio);
-  const b = parts.reduce((m, s) => (s.fim > m ? s.fim : m), parts[0].fim);
-  return `<div class="banner info row-actions"><span class="grow">${parts.length} ${parts.length > 1 ? 'linhas do relatório cobrem' : 'linha do relatório cobre'} só parte do período escolhido, então os valores entram proporcionais aos dias. Para ver os mesmos números do Gerenciador, use o período do arquivo: ${fmtDate(a)} a ${fmtDate(b)}.</span><button class="btn sm" data-period="${a}|${b}">Usar ${fmtDate(a)} a ${fmtDate(b)}</button></div>`;
+  const groups = {};
+  parts.forEach((s) => { const k = s.inicio + '|' + s.fim; (groups[k] || (groups[k] = { inicio: s.inicio, fim: s.fim, dentro: share(s, from, to) === 1 })); });
+  const txt = Object.values(groups).map((g) => `o relatório de ${fmtDate(g.inicio)} a ${fmtDate(g.fim)} ${g.dentro ? '<b>conta inteiro</b> aqui, porque a maior parte dos dias dele cai neste período' : '<b>fica de fora</b>, porque a maior parte dos dias dele cai em outro período'}`).join('; ');
+  return `<div class="banner info">Como os números foram contados: ${txt}. Para números exatos por semana, exporte do Gerenciador com Detalhamento por dia.</div>`;
 }
 
 function compareView(rows, from, to) {
@@ -223,9 +224,8 @@ export function mount(root, ctx) {
     ctx.refresh();
   }));
   root.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-act],[data-edit-camp],[data-undo],[data-mtab],[data-edit-stat],[data-period]');
+    const b = e.target.closest('[data-act],[data-edit-camp],[data-undo],[data-mtab],[data-edit-stat]');
     if (!b) return;
-    if (b.dataset.period) { const [a, z] = b.dataset.period.split('|'); return ctx.setPeriod(a, z); }
     if (b.dataset.mtab) { tab = b.dataset.mtab; return ctx.refresh(); }
     if (b.dataset.editCamp) return editCampaign(store.get('campaigns', b.dataset.editCamp), ctx);
     if (b.dataset.editStat) return statDialog(store.get('adStats', b.dataset.editStat), ctx);

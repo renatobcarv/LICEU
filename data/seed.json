@@ -265,40 +265,5 @@
    "fim": "2026-09-30",
    "notas": "Meta da planilha: 5. A planilha registrava 22 avaliações (total do perfil)."
   }
- ],
- "ideas": [
-  {
-   "id": "i_preco",
-   "titulo": "Criativo sem preço no anúncio",
-   "tipo": "Teste de anúncio",
-   "status": "Ideia",
-   "indicador": "CAC de mídia",
-   "impacto": 7,
-   "confianca": 5,
-   "facilidade": 9,
-   "hipotese": "Esconder o preço no criativo aumenta as conversas, e o preço é apresentado no atendimento junto com o valor do curso."
-  },
-  {
-   "id": "i_bot",
-   "titulo": "Resposta automática no WhatsApp fora do horário",
-   "tipo": "Melhoria no atendimento",
-   "status": "Ideia",
-   "indicador": "Tempo de resposta",
-   "impacto": 7,
-   "confianca": 6,
-   "facilidade": 8,
-   "hipotese": "Responder em segundos fora do expediente evita que o lead esfrie até o dia seguinte."
-  },
-  {
-   "id": "i_form",
-   "titulo": "Comparar formulário instantâneo x mensagens",
-   "tipo": "Teste de anúncio",
-   "status": "Ideia",
-   "indicador": "CAC de mídia",
-   "impacto": 6,
-   "confianca": 5,
-   "facilidade": 6,
-   "hipotese": "Formulário dá lead mais barato, mas pode matricular menos. Decidir pelo CAC, não pelo custo por lead."
-  }
  ]
 }

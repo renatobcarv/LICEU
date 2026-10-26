@@ -138,11 +138,37 @@ export function empty(title, text, actions = '') {
   return `<div class="empty"><h3>${esc(title)}</h3><p>${esc(text)}</p>${actions ? `<div class="row-actions">${actions}</div>` : ''}</div>`;
 }
 
+// ---------- escolha de dia (mini calendário) ----------
+// Mostra o mês com a quantidade de itens já agendados em cada dia. onPick(data) ao tocar num dia.
+export function dayPicker(el, { value, markers = () => 0, onPick }) {
+  const DOW = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
+  const MES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  const p2 = (n) => String(n).padStart(2, '0');
+  const isoD = (d) => d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+  const todayIso = isoD(new Date());
+  let sel = value;
+  let m = new Date((value || todayIso) + 'T12:00:00'); m.setDate(1);
+  const draw = () => {
+    const first = new Date(m), wd = (first.getDay() + 6) % 7;
+    const start = new Date(first); start.setDate(1 - wd);
+    const cells = [];
+    for (let i = 0; i < 42; i++) { const d = new Date(start); d.setDate(start.getDate() + i); cells.push(d); if (i >= 34 && d.getMonth() !== m.getMonth()) break; }
+    el.innerHTML = `<div class="dp-head"><button type="button" class="icon-btn" data-dpn="-1" aria-label="Mês anterior">${ICON.left}</button><b>${MES[m.getMonth()]} ${m.getFullYear()}</b><button type="button" class="icon-btn" data-dpn="1" aria-label="Próximo mês">${ICON.right}</button></div>
+      <div class="dp-grid">${DOW.map((d) => `<span class="dp-dow">${d}</span>`).join('')}${cells.map((d) => { const iso = isoD(d); const n = markers(iso); return `<button type="button" class="dp-day${d.getMonth() !== m.getMonth() ? ' out' : ''}${iso === todayIso ? ' today' : ''}${iso === sel ? ' sel' : ''}${iso < todayIso ? ' past' : ''}" data-dpd="${iso}" aria-pressed="${iso === sel}" aria-label="${d.getDate()} de ${MES[d.getMonth()]}${n ? ', ' + n + (n > 1 ? ' itens' : ' item') : ''}">${d.getDate()}${n ? `<i>${'•'.repeat(Math.min(n, 3))}</i>` : ''}</button>`; }).join('')}</div>`;
+  };
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.dpn) { m.setMonth(m.getMonth() + Number(b.dataset.dpn)); draw(); return; }
+    if (b.dataset.dpd) { sel = b.dataset.dpd; draw(); onPick?.(sel); }
+  });
+  draw();
+}
+
 // ---------- contadores ----------
 // Os números dos cartões contam de zero até o valor quando a tela abre.
 export function countUp(root) {
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-  root.querySelectorAll('.kpi-v, .big, .stats dd, .idea-score b').forEach((el, k) => {
+  root.querySelectorAll('.kpi-v, .big, .stats dd, .mh-num').forEach((el, k) => {
     const node = Array.from(el.childNodes).find((n) => n.nodeType === 3 && /\d/.test(n.nodeValue));
     if (!node || /\d\/\d/.test(node.nodeValue)) return;
     const m = node.nodeValue.match(/-?\d{1,3}(?:\.\d{3})*(?:,\d+)?|-?\d+(?:,\d+)?/);
@@ -209,7 +235,8 @@ const svg = (p) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" 
 export const ICON = {
   painel: svg('<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>'),
   meta: svg('<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/>'),
-  vendas: svg('<path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.5 8.5 0 1 1 21 11.5z"/>'),
+  funil: svg('<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/>'),
+  matriculas: svg('<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>'),
   pauta: svg('<rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3"/>'),
   calendario: svg('<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>'),
   metas: svg('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>'),
