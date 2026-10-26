@@ -5,9 +5,8 @@ import { esc, $, $$, today, addDays, brl, uid, weekStart, monthStart } from '../
 import { settings, STAGES } from '../metrics.js';
 import { openDialog, toast, downloadFile, readFileText, ICON, confirmButton, copyText } from '../ui.js';
 import { auth, roleLabel, signOut, switchOrg } from '../auth.js';
-import { THEMES, getTheme, applyTheme, LOGO_MARK, TERMS_VERSION } from '../brand.js';
+import { TERMS_VERSION } from '../brand.js';
 
-const SKIN_PREVIEW = { sistema: ['linear-gradient(90deg,#F6F2EA 50%,#2B0706 50%)', '#B07A2A'], claro: ['#F6F2EA', '#B07A2A'], bordo: ['#2B0706', '#D6A453'], black: ['#050505', '#D1A04F'] };
 
 export function render() {
   const s = settings();
@@ -16,7 +15,7 @@ export function render() {
   const isAdmin = !isSb || auth.member?.role === 'admin';
   const hasDemo = COLLECTIONS.some((c) => store.all(c).some((r) => r.demo));
   return `
-  <div class="grid-2">
+  <div>
     <section class="card">
       <header class="card-head"><div><h2>Unidade</h2><p class="muted">Aparece no topo do menu e nos relatórios</p></div><button class="btn sm" data-cfg="unit">Editar</button></header>
       <dl class="stats">
@@ -30,10 +29,6 @@ export function render() {
       <p class="hint">Pilares: ${esc(s.pilares.join(' · '))}</p>
     </section>
 
-    <section class="card">
-      <header class="card-head"><div><h2>Aparência</h2><p class="muted">Vale só para este aparelho</p></div></header>
-      <div class="theme-cards">${THEMES.map((t) => `<button type="button" class="theme-card" data-skin="${t.id}" aria-pressed="${getTheme() === t.id}"><span class="sw" style="background:${SKIN_PREVIEW[t.id][0]};color:${SKIN_PREVIEW[t.id][1]}">${LOGO_MARK}</span><span class="l">${esc(t.label)}</span></button>`).join('')}</div>
-    </section>
   </div>
 
   <section class="card">
@@ -186,7 +181,6 @@ export function mount(root, ctx) {
     const b = e.target.closest('button');
     if (!b) return;
     const ds = b.dataset;
-    if (ds.skin) { applyTheme(ds.skin); $$('[data-skin]', root).forEach((x) => x.setAttribute('aria-pressed', String(x === b))); const sel = $('#theme-select'); if (sel) sel.value = ds.skin; return; }
     if (ds.course) return courseDialog(store.get('courses', ds.course), ctx);
     const a = ds.cfg;
     if (a === 'unit') unitDialog(ctx);

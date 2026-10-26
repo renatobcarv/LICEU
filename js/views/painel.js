@@ -16,7 +16,7 @@ export function render(ctx) {
     { label: 'Investimento em mídia', value: brl(o.investimento), d: delta(o.investimento, p.investimento, null), src: 'Meta Ads importado' },
     { label: 'Conversas iniciadas', value: num(o.conversas), d: delta(o.conversas, p.conversas, 'up'), src: 'Contadas pelo Meta', sub: 'Custo por conversa: ' + brl2(o.custoConversa) },
     { label: 'Leads registrados', value: num(o.leads), d: delta(o.leads, p.leads, 'up'), src: 'WhatsApp e vendas', sub: num(o.leadsMidia) + ' vindos de campanha' },
-    { label: 'Matrículas', value: num(o.matriculas), d: delta(o.matriculas, p.matriculas, 'up'), src: 'Leads marcados como matriculados', sub: 'Conversão lead → matrícula: ' + pct(o.convLead) },
+    { hero: true, label: 'Matrículas', value: num(o.matriculas), d: delta(o.matriculas, p.matriculas, 'up'), src: 'Leads marcados como matriculados', sub: 'Conversão lead → matrícula: ' + pct(o.convLead) },
     { label: 'CAC de mídia', value: brl2(o.cac), d: delta(o.cac, p.cac, 'down'), src: 'Investimento ÷ matrículas de campanha', sub: 'CPL: ' + brl2(o.cpl) },
     { label: 'Receita de matrículas', value: brl(o.receita), d: delta(o.receita, p.receita, 'up'), src: 'Valor informado na matrícula', sub: 'Retorno sobre mídia: ' + (o.roas === null ? '—' : o.roas.toFixed(1).replace('.', ',') + 'x') },
   ];
@@ -41,7 +41,7 @@ export function render(ctx) {
   return `
   ${hasDemo ? `<div class="banner warn">Este painel tem dados de exemplo misturados. Remova em <a href="#config">Configurações</a> antes de usar os números.</div>` : ''}
   <section class="kpis" aria-label="Indicadores do período">
-    ${kpis.map((k) => `<article class="kpi"><h3>${esc(k.label)}</h3><p class="kpi-v">${esc(k.value)}</p>${k.sub ? `<p class="kpi-sub">${esc(k.sub)}</p>` : ''}<p class="kpi-d ${k.d.cls}">${esc(k.d.txt)}</p><p class="kpi-src">${esc(k.src)}</p></article>`).join('')}
+    ${kpis.map((k) => `<article class="kpi${k.hero ? ' hero' : ''}"><h3>${esc(k.label)}</h3><p class="kpi-v">${esc(k.value)}</p>${k.sub ? `<p class="kpi-sub">${esc(k.sub)}</p>` : ''}<p class="kpi-d ${k.d.cls}">${esc(k.d.txt)}</p><p class="kpi-src">${esc(k.src)}</p></article>`).join('')}
   </section>
 
   <div class="grid-2">

@@ -20,13 +20,13 @@ Para responder, cada lead do WhatsApp é registrado com a campanha que o trouxe.
 | Módulo | O que faz |
 |---|---|
 | **Painel** | Investimento, conversas, leads, matrículas, CAC, receita e retorno sobre mídia, comparados ao período anterior. Funil completo (impressão → clique → conversa → lead → matrícula), prioridades geradas pelos dados, agenda da semana e metas. |
-| **Meta Ads** | Importa o CSV do Gerenciador (sem duplicar ao reimportar), compara campanhas lado a lado, aponta CTR baixo, frequência alta e custo acima da média, e detalha por anúncio. Também aceita Google Ads e digitação manual. |
+| **Meta Ads** | Importa o CSV do Gerenciador com todas as colunas (veiculação, valor gasto, resultados, custo por resultado, alcance, impressões, frequência, cliques, CPM, CTR, CPC, custos por clique único e por 1.000 alcançadas, compras), sem duplicar ao reimportar. Compara campanhas lado a lado, aponta CTR baixo, frequência alta e custo acima da média, detalha por anúncio e deixa corrigir qualquer linha à mão. Também aceita Google Ads e digitação manual. |
 | **WhatsApp e vendas** | Cadastro de lead em 10 segundos, funil em colunas (novo → conversa → qualificado → negociação → matriculado/perdido), motivo de perda, retornos atrasados, tempo de resposta, turmas com vagas e meta, respostas prontas e importação de listas. |
 | **Pauta Viral** | O gerador de briefing original (formatos, ganchos, nível de consciência, vídeo motion), agora com banco de pautas, envio direto para o calendário e dados reais do curso no briefing. |
 | **Calendário** | Mês e lista com publicações, gravações, campanhas, turmas, tarefas e eventos; resultado de cada post; controle diário de stories e resultados semanais (as três abas da planilha). |
 | **Metas e estratégias** | Metas com progresso e ritmo calculados sozinhos, funis planejados com modelos prontos e ideias/testes priorizados por nota (impacto, confiança, facilidade). |
 | **Relatórios** | Rascunho automático do período (resultados, mídia, funil, conteúdo, perdas, metas, problemas, oportunidades e próximos passos), revisão pelo coordenador, histórico, cópia em texto e download em Markdown. |
-| **Configurações** | Unidade, tema (Claro, Bordô, All Black), cursos e preços, equipe com convite e papéis, backup em JSON, dados de exemplo e ferramentas de LGPD. |
+| **Configurações** | Unidade, cursos e preços, equipe com convite e papéis, backup em JSON, dados de exemplo e ferramentas de LGPD. |
 
 Detalhes de como os dois artefatos originais foram unidos e por quê: [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
 
@@ -42,7 +42,7 @@ Detalhes de como os dois artefatos originais foram unidos e por quê: [docs/ARQU
 
 | Camada | Escolha | Por quê |
 |---|---|---|
-| Interface | HTML, CSS e JavaScript puro (módulos ES) | Sem etapa de build pesada; abre direto no navegador; fácil de manter |
+| Interface | HTML, CSS e JavaScript puro (módulos ES), visual Noir | Sem etapa de build pesada; abre direto no navegador; fácil de manter |
 | Banco e login | [Supabase](https://supabase.com) (Postgres + Auth + Realtime) | Login pronto, regras de acesso por unidade no próprio banco (RLS) e atualização em tempo real |
 | Hospedagem | [Vercel](https://vercel.com) | Deploy a cada push no GitHub, HTTPS e cabeçalhos de segurança |
 

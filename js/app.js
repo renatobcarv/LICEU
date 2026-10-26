@@ -2,10 +2,10 @@
 
 import { store, initStore, seedIfEmpty } from './store.js';
 import { $, $$, esc, today, monthStart, monthEnd, addMonths, addDays, fmtRange } from './util.js';
-import { ICON, toast } from './ui.js';
+import { ICON, toast, countUp } from './ui.js';
 import { settings } from './metrics.js';
 import { initAuth, auth, roleLabel, signOut } from './auth.js';
-import { LOGO_MARK, PRODUCT, THEMES, getTheme, applyTheme } from './brand.js';
+import { LOGO_MARK, PRODUCT, applyTheme } from './brand.js';
 import * as painel from './views/painel.js';
 import * as meta from './views/meta.js';
 import * as vendas from './views/vendas.js';
@@ -16,15 +16,34 @@ import * as relatorios from './views/relatorios.js';
 import * as config from './views/config.js';
 
 const VIEWS = [
-  { id: 'painel', label: 'Painel', mod: painel, group: 'Acompanhar' },
-  { id: 'meta', label: 'Meta Ads', mod: meta, group: 'Acompanhar' },
-  { id: 'vendas', label: 'WhatsApp e vendas', mod: vendas, group: 'Acompanhar' },
-  { id: 'pauta', label: 'Pauta Viral', mod: pauta, group: 'Produzir', noPeriod: true },
-  { id: 'calendario', label: 'Calendário', mod: calendario, group: 'Produzir', noPeriod: true },
-  { id: 'metas', label: 'Metas e estratégias', mod: metas, group: 'Decidir', noPeriod: true },
-  { id: 'relatorios', label: 'Relatórios', mod: relatorios, group: 'Decidir' },
-  { id: 'config', label: 'Configurações', mod: config, group: 'Sistema', noPeriod: true },
+  { id: 'painel', label: 'Painel', title: ['Visão', '*geral'], kicker: 'Do anúncio à matrícula', mod: painel, group: 'Acompanhar' },
+  { id: 'meta', label: 'Meta Ads', title: ['Meta', '*Ads'], kicker: 'Mídia paga', mod: meta, group: 'Acompanhar' },
+  { id: 'vendas', label: 'WhatsApp e vendas', title: ['WhatsApp', 'e', '*vendas'], kicker: 'Funil comercial', mod: vendas, group: 'Acompanhar' },
+  { id: 'pauta', label: 'Pauta Viral', title: ['Pauta', '*Viral'], kicker: 'Criação de conteúdo', mod: pauta, group: 'Produzir', noPeriod: true },
+  { id: 'calendario', label: 'Calendário', title: ['*Calendário', 'editorial'], kicker: 'Planejamento', mod: calendario, group: 'Produzir', noPeriod: true },
+  { id: 'metas', label: 'Metas e estratégias', title: ['Metas', 'e', '*estratégias'], kicker: 'Direção', mod: metas, group: 'Decidir', noPeriod: true },
+  { id: 'relatorios', label: 'Relatórios', title: ['*Relatórios', 'gerenciais'], kicker: 'Prestação de contas', mod: relatorios, group: 'Decidir' },
+  { id: 'config', label: 'Configurações', title: ['*Configurações'], kicker: 'Sistema', mod: config, group: 'Sistema', noPeriod: true },
 ];
+
+// Título com as palavras dentro de máscaras; a palavra com * vira serifada itálica em degradê.
+function titleHTML(parts) {
+  return parts.map((w, i) => {
+    const serif = w.startsWith('*');
+    const t = esc(serif ? w.slice(1) : w);
+    return `<span class="w"><span class="wi" style="--i:${i}">${serif ? `<em>${t}</em>` : t}</span></span>`;
+  }).join(' ');
+}
+
+// Liga a entrada em cascata: cada bloco e cada item ganha seu atraso.
+function stagger(main) {
+  Array.from(main.children).forEach((el, i) => el.style.setProperty('--i', Math.min(i, 6)));
+  main.querySelectorAll('.kpis').forEach((g) => Array.from(g.children).forEach((el, j) => el.style.setProperty('--j', j)));
+  main.querySelectorAll('.bars-row, .funnel, .goal-mini, .hbars, .diag').forEach((g) => {
+    g.querySelectorAll('.bar, .fn-bar, .meter span, .hb-track span').forEach((el, j) => el.style.setProperty('--j', j));
+    Array.from(g.children).forEach((el, j) => el.style.setProperty('--j', j));
+  });
+}
 
 const PREF_KEY = 'liceu.intelligence.prefs';
 function loadPrefs() { try { return JSON.parse(localStorage.getItem(PREF_KEY) || '{}'); } catch (e) { return {}; } }
@@ -62,6 +81,7 @@ function ctx(params) {
     from, to, cursoId: prefs.cursoId, params,
     f: { cursoId: prefs.cursoId },
     go: (hash) => { if (location.hash === hash) render(); else location.hash = hash; },
+    setPeriod: (a, b) => { prefs.preset = 'custom'; prefs.from = a; prefs.to = b; savePrefs(); render(); },
     refresh: () => render(),
   };
 }
@@ -70,7 +90,15 @@ function render() {
   const { view, params } = parseHash();
   current = view;
   $$('.nav a').forEach((a) => a.setAttribute('aria-current', a.dataset.view === view.id ? 'page' : 'false'));
-  $('#view-title').textContent = view.label;
+  const entering = lastView !== view.id;
+  document.body.dataset.view = view.id;
+  if (entering) {
+    const h = $('#view-title');
+    h.innerHTML = titleHTML(view.title || [view.label]);
+    h.setAttribute('aria-label', view.label);
+    h.classList.remove('enter-title'); void h.offsetWidth; h.classList.add('enter-title');
+    $('#view-kicker').textContent = view.kicker || 'LICEU Intelligence';
+  }
   document.title = view.label + ' · ' + PRODUCT;
   $('#filters').hidden = !!view.noPeriod;
   renderFilters();
@@ -80,10 +108,11 @@ function render() {
   const old = $('#main');
   const main = old.cloneNode(false);
   old.replaceWith(main);
-  if (lastView !== view.id) { window.scrollTo(0, 0); lastView = view.id; }
+  if (entering) { window.scrollTo(0, 0); lastView = view.id; }
   try {
     main.innerHTML = view.mod.render(c);
     view.mod.mount?.(main, c);
+    if (entering) { main.classList.add('enter'); stagger(main); countUp(main); }
   } catch (e) {
     console.error(e);
     main.innerHTML = `<div class="empty"><h3>Algo deu errado neste módulo</h3><p>${esc(e.message)}</p><p>Seus dados estão salvos. Recarregue a página ou exporte um backup em Configurações.</p></div>`;
@@ -123,20 +152,19 @@ function renderStatus() {
 
 function shell() {
   const groups = [...new Set(VIEWS.map((v) => v.group))];
-  $('#nav').innerHTML = groups.map((g) => `<p class="nav-group">${esc(g)}</p>` + VIEWS.filter((v) => v.group === g).map((v) => `<a href="#${v.id}" data-view="${v.id}">${ICON[v.id]}<span>${esc(v.label)}</span></a>`).join('')).join('');
+  $('#nav').innerHTML = groups.map((g) => `<p class="nav-group">${esc(g)}</p>` + VIEWS.filter((v) => v.group === g).map((v) => `<a href="#${v.id}" data-view="${v.id}"><span class="ni">${ICON[v.id]}</span><span>${esc(v.label)}</span></a>`).join('')).join('');
   $('#brand').innerHTML = LOGO_MARK + '<span class="brand-text"><span class="wordmark">LICEU</span><span class="brand-sub">Intelligence</span></span>';
   $('#menu-btn').innerHTML = ICON.menu;
   $('#menu-btn').addEventListener('click', () => $('#app').classList.toggle('nav-open'));
   $('#scrim').addEventListener('click', () => $('#app').classList.remove('nav-open'));
-  const ts = $('#theme-select');
-  ts.innerHTML = THEMES.map((t) => `<option value="${t.id}">${esc(t.label)}</option>`).join('');
-  ts.value = getTheme();
-  ts.addEventListener('change', () => { applyTheme(ts.value); if (current?.id === 'config') render(); });
   $('#logout').addEventListener('click', signOut);
   $('#f-preset').addEventListener('change', (e) => { prefs.preset = e.target.value; if (prefs.preset === 'custom') { const p = periodOf({ preset: 'mes' }); prefs.from = prefs.from || p.from; prefs.to = prefs.to || p.to; } savePrefs(); render(); });
   $('#f-curso').addEventListener('change', (e) => { prefs.cursoId = e.target.value; savePrefs(); render(); });
   ['#f-from', '#f-to'].forEach((s) => $(s).addEventListener('change', () => { prefs.from = $('#f-from').value; prefs.to = $('#f-to').value; savePrefs(); render(); }));
   window.addEventListener('hashchange', render);
+  const prog = $('#progress');
+  const onScroll = () => { const max = document.documentElement.scrollHeight - innerHeight; prog.style.transform = 'scaleX(' + (max > 0 ? scrollY / max : 0).toFixed(4) + ')'; };
+  window.addEventListener('scroll', onScroll, { passive: true });
   // Mudanças vindas de outra pessoa (nuvem) ou de outra tela redesenham, mas nunca no meio de uma digitação.
   store.on(() => {
     if (current?.mod.autoRefresh === false) { renderStatus(); return; }
@@ -148,7 +176,7 @@ function shell() {
 }
 
 async function boot() {
-  applyTheme(getTheme());
+  applyTheme();
   shell();
   $('#main').innerHTML = '<div class="loading">Carregando dados…</div>';
   const session = await initAuth(); // null quando o Supabase não está configurado

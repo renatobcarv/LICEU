@@ -37,7 +37,7 @@ const tr = (e) => ERRORS[e?.message] || (/fetch|network/i.test(e?.message || '')
 
 function loginView(resolve, notice = '') {
   const root = screen(`
-    <h1>Entrar</h1>
+    <h1>Entrar no <em>painel</em></h1>
     <form id="a-form" class="auth-form" novalidate>
       <div class="field"><label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" required></div>
       <div class="field"><label for="a-pass">Senha</label><input id="a-pass" type="password" autocomplete="current-password" required></div>
@@ -64,7 +64,7 @@ function loginView(resolve, notice = '') {
 
 function signupView(resolve) {
   const root = screen(`
-    <h1>Criar conta</h1>
+    <h1>Criar <em>conta</em></h1>
     <form id="a-form" class="auth-form" novalidate>
       <div class="field"><label for="a-nome">Seu nome</label><input id="a-nome" autocomplete="name" required></div>
       <div class="field"><label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" required></div>
@@ -94,7 +94,7 @@ function signupView(resolve) {
 
 function resetView(resolve) {
   const root = screen(`
-    <h1>Recuperar senha</h1>
+    <h1>Recuperar <em>senha</em></h1>
     <p class="muted">Enviamos um link para você criar uma senha nova.</p>
     <form id="a-form" class="auth-form" novalidate>
       <div class="field"><label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" required></div>
@@ -115,7 +115,7 @@ function resetView(resolve) {
 
 function newPasswordView(resolve) {
   const root = screen(`
-    <h1>Nova senha</h1>
+    <h1>Nova <em>senha</em></h1>
     <form id="a-form" class="auth-form" novalidate>
       <div class="field"><label for="a-pass">Nova senha</label><input id="a-pass" type="password" autocomplete="new-password" minlength="8" required><p class="hint">Pelo menos 8 caracteres.</p></div>
       <p class="auth-msg" role="alert" hidden></p>
@@ -141,7 +141,7 @@ async function chooseOrg(resolve) {
   const pick = list.find((m) => m.org_id === saved) || (list.length === 1 ? list[0] : null);
   if (pick) return finish(pick, resolve);
   if (list.length > 1) {
-    const root = screen(`<h1>Escolha a unidade</h1><div class="auth-list">${list.map((m) => `<button class="btn block" data-org="${esc(m.org_id)}">${esc(m.orgs.nome)} <small>${esc(roleLabel(m.role))}</small></button>`).join('')}</div>`);
+    const root = screen(`<h1>Escolha a <em>unidade</em></h1><div class="auth-list">${list.map((m) => `<button class="btn block" data-org="${esc(m.org_id)}">${esc(m.orgs.nome)} <small>${esc(roleLabel(m.role))}</small></button>`).join('')}</div>`);
     root.querySelectorAll('[data-org]').forEach((b) => (b.onclick = () => finish(list.find((m) => m.org_id === b.dataset.org), resolve)));
     return;
   }
@@ -151,7 +151,7 @@ async function chooseOrg(resolve) {
 function onboardingView(resolve) {
   const nome = auth.user.user_metadata?.nome || '';
   const root = screen(`
-    <h1>Sua unidade</h1>
+    <h1>Sua <em>unidade</em></h1>
     <p class="muted">Crie a unidade (você vira administrador) ou entre na equipe com o código que o coordenador passou.</p>
     <form id="o-create" class="auth-form" novalidate>
       <div class="field"><label for="o-nome">Nome da unidade</label><input id="o-nome" value="TEC Mais · Valparaíso de Goiás" required></div>

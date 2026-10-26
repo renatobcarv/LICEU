@@ -44,7 +44,9 @@ function share(stat, from, to) {
   if (s > e) return 0;
   return (daysBetween(s, e) + 1) / (daysBetween(a, b) + 1);
 }
-const METRIC_KEYS = ['investimento', 'impressoes', 'alcance', 'cliques', 'conversas', 'leadsMeta'];
+// Contagens somáveis. Taxas e custos (CTR, CPC, CPM, frequência...) são sempre recalculados a partir
+// delas, para nunca divergirem entre telas nem depois de uma correção manual.
+export const METRIC_KEYS = ['investimento', 'impressoes', 'alcance', 'cliques', 'cliquesTodos', 'cliquesLinkUnicos', 'cliquesUnicosTodos', 'resultados', 'conversas', 'leadsMeta', 'compras', 'comprasApp', 'comprasSite', 'comprasOffline', 'comprasMeta'];
 
 export function campaignFilter(f = {}) {
   return (c) => (!f.cursoId || c.cursoId === f.cursoId) && (!f.canal || c.canal === f.canal);
@@ -63,11 +65,13 @@ export function campaignRows(from, to, f = {}) {
       const w = share(s, from, to);
       if (!w) return;
       hasStats = true;
+      if (s.tipoResultado) (row.tipos || (row.tipos = new Set())).add(s.tipoResultado);
       const key = s.anuncio || '(sem nome de anúncio)';
       const ad = row.ads[key] || (row.ads[key] = { nome: key, conjunto: s.conjunto || '' });
       METRIC_KEYS.forEach((k) => { const v = (Number(s[k]) || 0) * w; row[k] += v; ad[k] = (ad[k] || 0) + v; });
     });
     row.hasStats = hasStats;
+    row.tipoResultado = row.tipos ? Array.from(row.tipos).join(' + ') : '';
     const cl = leads.filter((l) => l.campanhaId === c.id);
     row.leads = cl.filter((l) => inRange(l.entrada, from, to)).length;
     const mats = cl.filter((l) => l.etapa === 'matriculado' && inRange(l.dataMatricula, from, to));
@@ -89,6 +93,9 @@ function derive(r) {
   r.cpc = div(r.investimento, r.cliques);
   r.cpm = r.impressoes ? (r.investimento / r.impressoes) * 1000 : null;
   r.freq = div(r.impressoes, r.alcance);
+  r.custoResultado = div(r.investimento, r.resultados);
+  r.cpcUnico = div(r.investimento, r.cliquesUnicosTodos);
+  r.custoMilAlcance = r.alcance ? (r.investimento / r.alcance) * 1000 : null;
   r.custoConversa = div(r.investimento, r.conversas || r.leadsMeta);
   r.cpl = div(r.investimento, r.leads);
   r.cac = r.matriculas ? r.investimento / r.matriculas : null;
