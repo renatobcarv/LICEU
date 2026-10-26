@@ -1,102 +1,126 @@
-# LICEU
+# LICEU Intelligence
 
-**Inteligência comercial e de marketing para instituições de ensino.**
+**Marketing e matrículas em um só lugar: do anúncio à matrícula.**
 
-O LICEU conecta investimento em mídia, leads, contratos e pagamentos em uma única leitura. Assim, a gestão sabe quais campanhas geram matrículas pagas, quanto cada uma custa e em que ponto do funil os interessados se perdem.
+O LICEU Intelligence junta, numa única plataforma, o que antes vivia espalhado entre o Gerenciador de Anúncios, o WhatsApp, uma planilha de calendário e o gerador de pautas. A coordenação de marketing vê o que funciona, o que precisa melhorar e o que fazer primeiro, com base nos números reais da unidade.
 
-![Status](https://img.shields.io/badge/status-MVP%20em%20desenvolvimento-E85002)
-![Licença](https://img.shields.io/badge/licença-proprietária-333333)
+![Status](https://img.shields.io/badge/status-MVP%20funcional-B07A2A)
+![Licença](https://img.shields.io/badge/licença-proprietária-2B0706)
 
 ---
 
-## Visão geral
+## A pergunta central
 
-Em instituições de ensino, os dados comerciais costumam ficar espalhados entre plataformas de anúncio, CRM de atendimento e meio de pagamento. O resultado é conhecido: muitos números e pouca resposta.
+> **Qual campanha gera matrícula, quanto ela custa, e o que fazemos a seguir?**
 
-O LICEU parte de uma pergunta central:
+Para responder, cada lead do WhatsApp é registrado com a campanha que o trouxe. O investimento vem do Meta Ads; a matrícula vem do funil comercial. O cruzamento dos dois dá o CAC real por campanha e por anúncio.
 
-> **Qual campanha gera matrícula paga, e quanto ela custa?**
+## Módulos
 
-Para responder com confiança, o sistema concilia cada pagamento com o lead que o originou e com a campanha que trouxe esse lead.
+| Módulo | O que faz |
+|---|---|
+| **Painel** | Investimento, conversas, leads, matrículas, CAC, receita e retorno sobre mídia, comparados ao período anterior. Funil completo (impressão → clique → conversa → lead → matrícula), prioridades geradas pelos dados, agenda da semana e metas. |
+| **Meta Ads** | Importa o CSV do Gerenciador (sem duplicar ao reimportar), compara campanhas lado a lado, aponta CTR baixo, frequência alta e custo acima da média, e detalha por anúncio. Também aceita Google Ads e digitação manual. |
+| **WhatsApp e vendas** | Cadastro de lead em 10 segundos, funil em colunas (novo → conversa → qualificado → negociação → matriculado/perdido), motivo de perda, retornos atrasados, tempo de resposta, turmas com vagas e meta, respostas prontas e importação de listas. |
+| **Pauta Viral** | O gerador de briefing original (formatos, ganchos, nível de consciência, vídeo motion), agora com banco de pautas, envio direto para o calendário e dados reais do curso no briefing. |
+| **Calendário** | Mês e lista com publicações, gravações, campanhas, turmas, tarefas e eventos; resultado de cada post; controle diário de stories e resultados semanais (as três abas da planilha). |
+| **Metas e estratégias** | Metas com progresso e ritmo calculados sozinhos, funis planejados com modelos prontos e ideias/testes priorizados por nota (impacto, confiança, facilidade). |
+| **Relatórios** | Rascunho automático do período (resultados, mídia, funil, conteúdo, perdas, metas, problemas, oportunidades e próximos passos), revisão pelo coordenador, histórico, cópia em texto e download em Markdown. |
+| **Configurações** | Unidade, tema (Claro, Bordô, All Black), cursos e preços, equipe com convite e papéis, backup em JSON, dados de exemplo e ferramentas de LGPD. |
 
-## Funcionalidades
-
-- **Visão executiva:** investimento, leads, matrículas pagas, receita, CPL, CAC de mídia e progresso da meta, sempre comparados a um período equivalente.
-- **Atribuição por campanha:** custo por lead e por matrícula paga em cada campanha, com regra de atribuição explícita.
-- **Funil comercial:** conversão entre etapas, do primeiro contato ao pagamento confirmado.
-- **Alertas de investigação:** quedas de conversão, pagamentos pendentes e oportunidades, apresentados como hipóteses e não como conclusões.
-- **Memória de estratégias:** registro de experimentos com hipótese, resultado e aprendizado.
-- **Transparência de dados:** cada indicador mostra a origem, a regra de cálculo e o horário da última atualização.
-
-## Como funciona
-
-```
-Plataformas de anúncio ─┐
-                        ├─► Importação ─► Conciliação ─► Indicadores ─► Painel
-CRM de atendimento ─────┤                (lead → contrato → pagamento)
-                        │
-Meio de pagamento ──────┘
-```
-
-1. **Importação:** os dados de cada fonte são lidos e normalizados.
-2. **Conciliação:** leads, contratos e pagamentos são vinculados por um identificador comum.
-3. **Cálculo:** os indicadores seguem definições fixas e versionadas.
-4. **Leitura:** o painel apresenta resultados, comparações e pontos de atenção.
+Detalhes de como os dois artefatos originais foram unidos e por quê: [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
 
 ## Princípios de dados
 
-O LICEU é construído para ser confiável antes de ser sofisticado.
+- **Indisponível não é zero.** Sem dado, o painel mostra "—" e diz o que falta.
+- **Matrícula é matrícula.** Só conta quando o lead é marcado como matriculado, com valor e data.
+- **CAC de mídia não é CAC total**, e é rotulado assim.
+- **Comparações justas:** sempre contra o período anterior de mesmo tamanho.
+- **Diagnóstico é hipótese.** As prioridades vêm de regras explícitas (em `js/metrics.js`) e pedem confirmação antes de mudar verba.
 
-- **Indisponível não é zero.** A falta de dado é sinalizada, nunca mascarada.
-- **Contrato não é pagamento.** Uma matrícula só conta como paga com pagamento confirmado.
-- **Previsto e recebido ficam separados.**
-- **CAC de mídia não é CAC total**, e é rotulado como tal.
-- **Comparações justas:** sempre entre períodos equivalentes.
-- **Atribuição explícita:** nenhuma venda é creditada a uma campanha sem uma regra definida.
+## Tecnologia
 
-## Indicadores
+| Camada | Escolha | Por quê |
+|---|---|---|
+| Interface | HTML, CSS e JavaScript puro (módulos ES) | Sem etapa de build pesada; abre direto no navegador; fácil de manter |
+| Banco e login | [Supabase](https://supabase.com) (Postgres + Auth + Realtime) | Login pronto, regras de acesso por unidade no próprio banco (RLS) e atualização em tempo real |
+| Hospedagem | [Vercel](https://vercel.com) | Deploy a cada push no GitHub, HTTPS e cabeçalhos de segurança |
 
-| Indicador | Definição |
-|---|---|
-| Investimento | Gasto em mídia paga no período |
-| Leads válidos | Contatos únicos no período, sem duplicidades |
-| CPL | Investimento atribuível ÷ leads atribuídos |
-| Matrículas pagas | Contratos com pagamento confirmado |
-| CAC de mídia | Investimento atribuível ÷ matrículas pagas atribuídas |
-| Conversão | Avançaram ÷ elegíveis na etapa anterior |
-| Receita recebida | Valores recebidos, líquidos de estornos |
-| Atingimento da meta | Matrículas pagas ÷ meta do período |
+Com `js/config.js` vazio, o app roda em **modo de teste**: sem login, com os dados salvos só no navegador.
 
-## Tecnologias
+## Estrutura
 
-| Camada | Tecnologia |
-|---|---|
-| Backend | Python · FastAPI |
-| Banco de dados | PostgreSQL |
-| Frontend | Next.js · React |
-| Testes | Pytest |
-| Infraestrutura | Docker |
+```
+index.html            casca do app
+termos.html           Termos de Uso
+privacidade.html      Política de Privacidade (LGPD)
+css/app.css           visual e os três temas
+js/app.js             navegação, filtros e inicialização
+js/auth.js            cadastro, login, recuperação de senha e unidade
+js/store.js           dados (Supabase, navegador ou claude.ai, mesma interface)
+js/metrics.js         todos os cálculos e o diagnóstico
+js/views/*.js         um arquivo por módulo
+js/pauta-data.js      banco de ganchos e regras da Pauta Viral
+data/seed.json        dados iniciais (cursos e o calendário de setembro da planilha)
+supabase/schema.sql   tabelas, regras de acesso, convites e auditoria
+tools/write-config.mjs  gera js/config.js no build da Vercel
+```
+
+## Como colocar no ar
+
+### 1. Supabase
+
+1. Crie um projeto em [supabase.com](https://supabase.com). Escolha a região **São Paulo (sa-east-1)**.
+2. Abra **SQL Editor › New query**, cole o conteúdo de [`supabase/schema.sql`](supabase/schema.sql) e clique em **Run**.
+3. Em **Authentication › URL Configuration**, coloque o endereço da Vercel em **Site URL** (ex.: `https://liceu.vercel.app`) e o mesmo em **Redirect URLs**.
+4. Em **Authentication › Providers › Email**, deixe "Confirm email" ligado.
+5. Em **Project Settings › API Keys**, a chave **publishable** (`sb_publishable_...`) é a que vai no app. Nunca use a chave secreta (`sb_secret_...`) nem a `service_role` no front-end.
+
+### 2. Vercel
+
+1. Em [vercel.com](https://vercel.com), **Add New › Project** e importe este repositório do GitHub.
+2. Framework: **Other**. O `vercel.json` já define o build.
+3. O projeto Supabase já está em `js/config.js` (URL e chave publishable, que são públicas). Para apontar para outro projeto sem mexer no código, crie `SUPABASE_URL` e `SUPABASE_ANON_KEY` em **Environment Variables**.
+4. **Deploy**. Cada push na branch principal publica de novo.
+
+### 3. Primeiro acesso
+
+1. Abra o endereço, clique em **Criar conta**, aceite os termos e confirme o e-mail.
+2. Crie a unidade (ex.: "TEC Mais · Valparaíso de Goiás"). Você vira administrador e os cursos e o calendário de setembro já entram.
+3. Em **Configurações › Equipe**, copie o código de convite e mande para quem vai usar. Ajuste os papéis depois que entrarem.
+
+### Rodar no computador
+
+```bash
+npm run dev        # abre em http://localhost:5173, já conectado ao Supabase
+```
+
+Para testar sem login (dados só no navegador), deixe `SUPABASE_URL` vazio em `js/config.js`. Em `http://localhost:5173`, lembre de incluir esse endereço em **Redirect URLs** do Supabase.
+
+## Antes de usar com dados reais
+
+- Preencha os campos entre colchetes em `termos.html` e `privacidade.html` (razão social, CNPJ, endereço, encarregado, foro, região do banco) e peça revisão a um advogado.
+- Em Configurações, cadastre o preço de cada curso e as turmas abertas.
+- Combine com a equipe: **todo contato novo no WhatsApp vira lead, com a campanha de origem**. É isso que faz o CAC por campanha existir.
 
 ## Roadmap
 
-- [x] Direção estratégica e de produto
-- [x] Protótipo da visão geral
-- [ ] Modelo de dados e importação das fontes
-- [ ] Conciliação lead → contrato → pagamento
-- [ ] Cálculo e validação dos indicadores
-- [ ] Painel funcional
-- [ ] Piloto com a primeira instituição parceira
+- [x] Painel, Meta Ads, WhatsApp e vendas, Pauta Viral, Calendário, Metas e Relatórios
+- [x] Login, equipe por unidade, papéis e regras de acesso no banco
+- [x] Termos de uso, política de privacidade e ferramentas de LGPD
+- [ ] Integração direta com a API de Marketing do Meta (sem exportar CSV)
+- [ ] Integração com WhatsApp Business (registro automático de leads)
+- [ ] Conciliação com o meio de pagamento (matrícula paga confirmada)
+- [ ] Envio automático do relatório semanal por e-mail
 
 ## Licença
 
-Este é um software proprietário. O código está público apenas para visualização. Cópia, modificação, distribuição e uso comercial dependem de autorização por escrito. Consulte o arquivo [LICENSE](LICENSE).
+Software proprietário. O código está público apenas para visualização. Cópia, modificação, distribuição e uso comercial dependem de autorização por escrito. Veja [LICENSE](LICENSE).
 
 ## Autor
 
 **Renato B. Carvalho**
-Desenvolvedor backend · Estratégia e tecnologia para negócios de educação
-
-[renatobdev.pro](https://renatobdev.pro)
+Estratégia e tecnologia para negócios de educação · [renatobdev.pro](https://renatobdev.pro)
 
 ---
 

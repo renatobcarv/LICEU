@@ -1,0 +1,304 @@
+{
+ "settings": [
+  {
+   "id": "main",
+   "unidade": "TEC Mais · Valparaíso de Goiás",
+   "instagram": "@tecmais.valparaisodegoias",
+   "coordenador": "Coordenação de marketing",
+   "metaStoriesDia": 5,
+   "ctrMin": 0.8,
+   "freqMax": 3,
+   "pilares": [
+    "Cursos e profissões",
+    "Captação e vendas",
+    "Identificação",
+    "Relacionamento e comunidade",
+    "Bastidores",
+    "Prova social"
+   ],
+   "responsaveis": [
+    "Assistente de mídias"
+   ],
+   "respostas": [
+    {
+     "titulo": "Boas-vindas (lead de anúncio)",
+     "etapa": "Novo contato",
+     "texto": "Oi, [nome]! Aqui é da TEC Mais Valparaíso. Vi que você se interessou pelo curso de [curso]. Pra eu te passar certinho: você já trabalha na área ou está começando agora?"
+    },
+    {
+     "titulo": "Datas e valores",
+     "etapa": "Qualificado",
+     "texto": "A próxima turma de [curso] começa em [data], com aulas [dias e horário]. O investimento é [valor real] e dá pra parcelar em [condição real]. Quer que eu reserve uma vaga pra você conhecer o laboratório antes?"
+    },
+    {
+     "titulo": "Retorno depois de 2 dias",
+     "etapa": "Em conversa",
+     "texto": "Oi, [nome], tudo bem? Passando pra saber se ficou alguma dúvida sobre o curso de [curso]. Se o horário for o problema, me conta qual turno funciona melhor pra você."
+    },
+    {
+     "titulo": "Recuperar lead perdido por preço",
+     "etapa": "Recuperar perdido",
+     "texto": "Oi, [nome]! Você comentou que o valor pesou da última vez. Abrimos [condição real e verdadeira] para a turma de [data]. Se fizer sentido agora, te mando os detalhes."
+    }
+   ]
+  }
+ ],
+ "courses": [
+  {
+   "id": "c_inj",
+   "nome": "Administração de Medicamentos Injetáveis",
+   "preco": null,
+   "ativo": true
+  },
+  {
+   "id": "c_ps",
+   "nome": "Primeiros Socorros",
+   "preco": null,
+   "ativo": true
+  },
+  {
+   "id": "c_aph",
+   "nome": "Atendimento Pré-Hospitalar",
+   "preco": null,
+   "ativo": true
+  },
+  {
+   "id": "c_fer",
+   "nome": "Feridas & Curativos",
+   "preco": null,
+   "ativo": true
+  },
+  {
+   "id": "c_cui",
+   "nome": "Cuidador de Idoso",
+   "preco": null,
+   "ativo": true
+  },
+  {
+   "id": "c_inc",
+   "nome": "Prevenção & Combate a Incêndios",
+   "preco": null,
+   "ativo": true
+  },
+  {
+   "id": "c_enf",
+   "nome": "Técnico em Enfermagem",
+   "preco": null,
+   "ativo": true
+  },
+  {
+   "id": "c_seg",
+   "nome": "Técnico em Segurança do Trabalho",
+   "preco": null,
+   "ativo": true
+  },
+  {
+   "id": "c_adm",
+   "nome": "Técnico em Administração",
+   "preco": null,
+   "ativo": true
+  }
+ ],
+ "calendar": [
+  {
+   "id": "cal_set_0",
+   "data": "2026-09-02",
+   "tipo": "Publicação",
+   "titulo": "\"Essa galinha tem mais futuro que você\"",
+   "cursoId": "c_inj",
+   "campanhaTexto": "Minicurso de Injetáveis",
+   "formato": "Arte",
+   "pilar": "Cursos e profissões",
+   "objetivo": "Engajar",
+   "cta": "Chame no zap",
+   "status": "Publicado",
+   "origem": "planilha"
+  },
+  {
+   "id": "cal_set_1",
+   "data": "2026-09-03",
+   "tipo": "Publicação",
+   "titulo": "Domine a administração de medicamentos injetáveis",
+   "cursoId": "c_inj",
+   "campanhaTexto": "Minicurso de Injetáveis",
+   "formato": "Carrossel",
+   "pilar": "Captação e vendas",
+   "objetivo": "Atrair",
+   "cta": "Dê o próximo passo na sua formação",
+   "status": "Publicado",
+   "origem": "planilha"
+  },
+  {
+   "id": "cal_set_2",
+   "data": "2026-09-04",
+   "tipo": "Publicação",
+   "titulo": "Teste seus conhecimentos: qual dessas situações está correta?",
+   "cursoId": "c_inj",
+   "campanhaTexto": "Minicurso de Injetáveis",
+   "formato": "Carrossel",
+   "pilar": "Identificação",
+   "objetivo": "Gerar confiança",
+   "cta": "Clique no link",
+   "status": "Publicado",
+   "origem": "planilha"
+  },
+  {
+   "id": "cal_set_3",
+   "data": "2026-09-05",
+   "tipo": "Publicação",
+   "titulo": "\"Conhecimento também faz parte da prática\"",
+   "cursoId": "c_inj",
+   "campanhaTexto": "Minicurso de Injetáveis",
+   "formato": "Arte",
+   "pilar": "Captação e vendas",
+   "objetivo": "Atrair",
+   "cta": "Garanta sua vaga",
+   "status": "Publicado",
+   "origem": "planilha"
+  },
+  {
+   "id": "cal_set_4",
+   "data": "2026-09-07",
+   "tipo": "Publicação",
+   "titulo": "Trend viral do TikTok",
+   "cursoId": "c_inj",
+   "campanhaTexto": "Minicurso de Injetáveis",
+   "formato": "Reels",
+   "pilar": "Relacionamento e comunidade",
+   "objetivo": "Engajar",
+   "cta": "Saiba mais",
+   "status": "Publicado",
+   "origem": "planilha"
+  },
+  {
+   "id": "cal_set_5",
+   "data": "2026-09-08",
+   "tipo": "Publicação",
+   "titulo": "Vídeo \"expectativa x realidade\"",
+   "cursoId": "c_inj",
+   "campanhaTexto": "Minicurso de Injetáveis",
+   "formato": "Reels",
+   "pilar": "Bastidores",
+   "objetivo": "Gerar matrículas",
+   "cta": "",
+   "status": "Ideia",
+   "origem": "planilha"
+  },
+  {
+   "id": "cal_set_evento",
+   "data": "2026-09-19",
+   "tipo": "Evento",
+   "titulo": "Dia do curso rápido de injetáveis",
+   "cursoId": "c_inj",
+   "campanhaTexto": "Evento/Ação local",
+   "formato": "Reels",
+   "pilar": "Bastidores",
+   "objetivo": "Gerar confiança",
+   "cta": "",
+   "status": "Ideia",
+   "origem": "planilha"
+  }
+ ],
+ "stories": [
+  {
+   "id": "2026-09-25",
+   "blocos": {
+    "bomdia": "Feito",
+    "bastidores": "Pendente",
+    "aula": "Pendente",
+    "interacao": "Pendente",
+    "cta": "Pendente"
+   }
+  }
+ ],
+ "weekly": [
+  {
+   "id": "2026-08-31",
+   "seguidoresInicio": 76,
+   "seguidoresFim": 144,
+   "reels": 3,
+   "fotos": 7,
+   "depoimentos": 0,
+   "avaliacoesGoogle": 22,
+   "contatos": 65,
+   "matriculas": 0,
+   "melhorConteudo": "Reels de Administração de Medicamentos",
+   "aprendizado": ""
+  }
+ ],
+ "goals": [
+  {
+   "id": "g_set_seg",
+   "nome": "Chegar a 500 seguidores",
+   "indicador": "manual",
+   "alvo": 500,
+   "atualManual": 144,
+   "inicio": "2026-09-01",
+   "fim": "2026-09-30",
+   "notas": "Meta da planilha de setembro. Atualize o valor atual à mão."
+  },
+  {
+   "id": "g_set_reels",
+   "nome": "12 reels no mês",
+   "indicador": "reels",
+   "alvo": 12,
+   "inicio": "2026-09-01",
+   "fim": "2026-09-30",
+   "notas": "Meta da planilha de setembro."
+  },
+  {
+   "id": "g_set_dep",
+   "nome": "5 depoimentos gravados",
+   "indicador": "depoimentos",
+   "alvo": 5,
+   "inicio": "2026-09-01",
+   "fim": "2026-09-30",
+   "notas": "Meta da planilha de setembro."
+  },
+  {
+   "id": "g_set_google",
+   "nome": "Avaliações no Google",
+   "indicador": "manual",
+   "alvo": 5,
+   "atualManual": null,
+   "inicio": "2026-09-01",
+   "fim": "2026-09-30",
+   "notas": "Meta da planilha: 5. A planilha registrava 22 avaliações (total do perfil)."
+  }
+ ],
+ "ideas": [
+  {
+   "id": "i_preco",
+   "titulo": "Criativo sem preço no anúncio",
+   "tipo": "Teste de anúncio",
+   "status": "Ideia",
+   "indicador": "CAC de mídia",
+   "impacto": 7,
+   "confianca": 5,
+   "facilidade": 9,
+   "hipotese": "Esconder o preço no criativo aumenta as conversas, e o preço é apresentado no atendimento junto com o valor do curso."
+  },
+  {
+   "id": "i_bot",
+   "titulo": "Resposta automática no WhatsApp fora do horário",
+   "tipo": "Melhoria no atendimento",
+   "status": "Ideia",
+   "indicador": "Tempo de resposta",
+   "impacto": 7,
+   "confianca": 6,
+   "facilidade": 8,
+   "hipotese": "Responder em segundos fora do expediente evita que o lead esfrie até o dia seguinte."
+  },
+  {
+   "id": "i_form",
+   "titulo": "Comparar formulário instantâneo x mensagens",
+   "tipo": "Teste de anúncio",
+   "status": "Ideia",
+   "indicador": "CAC de mídia",
+   "impacto": 6,
+   "confianca": 5,
+   "facilidade": 6,
+   "hipotese": "Formulário dá lead mais barato, mas pode matricular menos. Decidir pelo CAC, não pelo custo por lead."
+  }
+ ]
+}
