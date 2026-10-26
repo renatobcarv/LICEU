@@ -227,7 +227,7 @@ function findPerson() {
   const { dlg } = openDialog({
     title: 'Localizar dados de uma pessoa', wide: true,
     fields: [{ name: 'q', label: 'Nome ou telefone', full: true }],
-    html: '<div id="fp-out"></div><p class="hint">Para atender um pedido de exclusão, abra o lead em WhatsApp e vendas e use Excluir, ou anonimize.</p>',
+    html: '<div id="fp-out"></div><p class="hint">Para atender um pedido de exclusão, abra o cartão no Funil (ou a matrícula em Matrículas) e use Excluir, ou anonimize.</p>',
   });
   const out = $('#fp-out', dlg);
   $('#f_q', dlg).addEventListener('input', (e) => {

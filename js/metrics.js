@@ -34,10 +34,23 @@ export const campaignName = (id) => store.get('campaigns', id)?.nome || (id ? 'C
 export const reached = (l) => (l.etapa === 'perdido' ? (l.etapaMax ?? 0) : Math.max(STAGE_IDX[l.etapa] ?? 0, l.etapaMax ?? 0));
 
 // ---------- Mídia ----------
-// Uma linha de métrica cobre um intervalo (início–fim). Quando o período escolhido pega só
-// parte dele, os valores entram proporcionalmente aos dias. Exporte por dia do Gerenciador
-// para não depender dessa proporção.
-function share(stat, from, to) {
+// Uma linha do relatório cobre um intervalo (início–fim) e conta INTEIRA no período onde está a maior
+// parte dos dias dela (empate: no período que contém o último dia). Assim o total bate com o
+// Gerenciador e a mesma linha nunca aparece em dois períodos vizinhos. Para números exatos por
+// semana ou por dia, exporte o relatório com "Detalhamento por dia".
+export function share(stat, from, to) {
+  const a = stat.inicio || stat.fim, b = stat.fim || stat.inicio;
+  if (!a) return 0;
+  const s = a > from ? a : from, e = b < to ? b : to;
+  if (s > e) return 0;
+  const dentro = daysBetween(s, e) + 1, total = daysBetween(a, b) + 1;
+  if (dentro * 2 > total) return 1;
+  if (dentro * 2 === total) return b >= from && b <= to ? 1 : 0;
+  return 0;
+}
+// Só para o gráfico semana a semana: espalha a linha pelos dias, senão um relatório de 30 dias
+// não cairia em semana nenhuma.
+function spread(stat, from, to) {
   const a = stat.inicio || stat.fim, b = stat.fim || stat.inicio;
   if (!a) return 0;
   const s = a > from ? a : from, e = b < to ? b : to;
@@ -183,7 +196,7 @@ export function overview(from, to, f = {}) {
     investimento: m.investimento, conversas: m.conversas || m.leadsMeta, leads: s.leads, matriculas: s.matriculas, receita: s.receita,
     custoConversa: m.custoConversa,
     cpl: div(m.investimento, leadsMidia),
-    cac: s.matriculas && m.investimento ? m.investimento / sum(rows, (r) => r.matriculas) : null,
+    cac: sum(rows, (r) => r.matriculas) && m.investimento ? m.investimento / sum(rows, (r) => r.matriculas) : null,
     cacGeral: s.matriculas ? m.investimento / s.matriculas : null,
     roas: div(s.receita, m.investimento),
     convLead: s.convLead,
@@ -210,7 +223,7 @@ export function weeklySeries(from, to, f = {}) {
       inicio: ws, label: fmtDate(a),
       leads: leads.filter((l) => inRange(l.entrada, a, b)).length,
       matriculas: leads.filter((l) => l.etapa === 'matriculado' && inRange(l.dataMatricula, a, b)).length,
-      investimento: sum(stats, (s) => (Number(s.investimento) || 0) * share(s, a, b)),
+      investimento: sum(stats, (s) => (Number(s.investimento) || 0) * spread(s, a, b)),
     };
   });
 }
@@ -281,14 +294,14 @@ export function diagnostics(from, to, f = {}) {
   const withStats = o.rows.filter((r) => r.hasStats);
 
   if (!withStats.length) add('dados', 'Dados', 'Nenhuma métrica de anúncio no período', 'Sem investimento registrado, o painel não calcula custo por lead nem CAC. Importe o relatório do Gerenciador de Anúncios.', { label: 'Importar Meta Ads', href: '#meta' });
-  if (o.conversas > 0 && o.leadsMidia < o.conversas * 0.5) add('dados', 'Dados', 'Conversas do anúncio não estão virando registro no WhatsApp', `O Meta contou ${num(o.conversas)} conversas e só ${num(o.leadsMidia)} leads foram registrados com campanha. Sem esse registro não dá para saber qual anúncio matricula.`, { label: 'Registrar leads', href: '#vendas' });
+  if (o.conversas > 0 && o.leadsMidia < o.conversas * 0.5) add('dados', 'Dados', 'Conversas do anúncio não estão virando registro no WhatsApp', `O Meta contou ${num(o.conversas)} conversas e só ${num(o.leadsMidia)} leads foram registrados com campanha. Sem esse registro não dá para saber qual anúncio matricula.`, { label: 'Abrir funil', href: '#funil' });
 
   const avgCC = o.custoConversa;
   withStats.forEach((r) => {
     if (r.impressoes > 1000 && r.ctr !== null && r.ctr * 100 < st.ctrMin) add('problema', 'Mídia', `${r.nome}: CTR de ${pct(r.ctr, 2)}`, `Abaixo de ${st.ctrMin}%. O criativo não está fazendo a pessoa parar. Teste um gancho novo nos 3 primeiros segundos.`, { label: 'Criar pauta de anúncio', href: '#pauta?curso=' + (r.cursoId || '') + '&anuncio=1' });
     if (r.freq !== null && r.freq > st.freqMax) add('atencao', 'Mídia', `${r.nome}: frequência ${String(r.freq.toFixed(1)).replace('.', ',')}`, 'O mesmo público está vendo o anúncio muitas vezes. Troque o criativo ou amplie o público antes que o custo suba.', { label: 'Ver campanha', href: '#meta?c=' + r.id });
     if (avgCC && r.custoConversa && r.custoConversa > avgCC * 1.3 && withStats.length > 1) add('problema', 'Mídia', `${r.nome}: custo por conversa ${pct(r.custoConversa / avgCC - 1, 0)} acima da média`, `${brl2(r.custoConversa)} contra ${brl2(avgCC)} de média. Revise público e criativo ou mova verba para a campanha mais barata.`, { label: 'Comparar campanhas', href: '#meta' });
-    if (r.leads >= 8 && r.matriculas === 0) add('problema', 'Comercial', `${r.nome}: ${num(r.leads)} leads e nenhuma matrícula`, 'O anúncio atrai, mas a conversa não fecha. Veja os motivos de perda e o tempo de resposta desses leads.', { label: 'Ver funil', href: '#vendas' });
+    if (r.leads >= 8 && r.matriculas === 0) add('problema', 'Comercial', `${r.nome}: ${num(r.leads)} leads e nenhuma matrícula`, 'O anúncio atrai, mas a conversa não fecha. Veja os motivos de perda e o tempo de resposta desses leads.', { label: 'Ver funil', href: '#funil' });
   });
   const goodCac = withStats.filter((r) => r.cac !== null && r.matriculas >= 2).sort((a, b) => a.cac - b.cac);
   if (goodCac.length > 1 && o.cac && goodCac[0].cac < o.cac * 0.8) {
@@ -305,9 +318,9 @@ export function diagnostics(from, to, f = {}) {
     const drop = pr !== null ? pr - r : 0;
     if (!worst || r < worst.r) worst = { i, r, pr, drop };
   }
-  if (worst && worst.r < 0.5) add(worst.drop > 0.05 ? 'problema' : 'atencao', 'Comercial', `Gargalo: ${STAGES[worst.i - 1].label} → ${STAGES[worst.i].label} (${pct(worst.r, 0)})`, 'É a etapa onde mais gente para.' + (worst.pr !== null ? ` No período anterior era ${pct(worst.pr, 0)}.` : '') + ' Revise o roteiro de atendimento dessa etapa.', { label: 'Abrir funil', href: '#vendas' });
-  if (o.s.semContato.length) add('problema', 'Comercial', `${o.s.semContato.length} ${o.s.semContato.length > 1 ? 'leads estão' : 'lead está'} sem primeiro contato há mais de 1 dia`, 'Lead de anúncio esfria rápido. Responda hoje.', { label: 'Ver leads novos', href: '#vendas?etapa=novo' });
-  if (o.s.followVencidos.length) add('atencao', 'Comercial', `${o.s.followVencidos.length} ${o.s.followVencidos.length > 1 ? 'retornos atrasados' : 'retorno atrasado'}`, 'Leads com próxima ação vencida. Cada dia sem retorno reduz a chance de matrícula.', { label: 'Ver retornos', href: '#vendas?vencidos=1' });
+  if (worst && worst.r < 0.5) add(worst.drop > 0.05 ? 'problema' : 'atencao', 'Comercial', `Gargalo: ${STAGES[worst.i - 1].label} → ${STAGES[worst.i].label} (${pct(worst.r, 0)})`, 'É a etapa onde mais gente para.' + (worst.pr !== null ? ` No período anterior era ${pct(worst.pr, 0)}.` : '') + ' Revise o roteiro de atendimento dessa etapa.', { label: 'Abrir funil', href: '#funil' });
+  if (o.s.semContato.length) add('problema', 'Comercial', `${o.s.semContato.length} ${o.s.semContato.length > 1 ? 'leads estão' : 'lead está'} sem primeiro contato há mais de 1 dia`, 'Lead de anúncio esfria rápido. Responda hoje.', { label: 'Ver leads novos', href: '#funil?etapa=novo' });
+  if (o.s.followVencidos.length) add('atencao', 'Comercial', `${o.s.followVencidos.length} ${o.s.followVencidos.length > 1 ? 'retornos atrasados' : 'retorno atrasado'}`, 'Leads com próxima ação vencida. Cada dia sem retorno reduz a chance de matrícula.', { label: 'Ver retornos', href: '#funil?vencidos=1' });
   const mot = Object.entries(o.s.motivos).sort((a, b) => b[1] - a[1])[0];
   if (mot && o.s.perdidos >= 4 && mot[1] / o.s.perdidos >= 0.3) add('atencao', 'Comercial', `"${mot[0]}" explica ${pct(mot[1] / o.s.perdidos, 0)} das perdas`, 'Crie uma resposta pronta para essa objeção e um conteúdo que a trate antes da conversa.', { label: 'Criar pauta sobre a objeção', href: '#pauta?objecao=' + encodeURIComponent(mot[0]) });
   if (o.s.tempoResposta && o.s.tempoResposta > 30) add('atencao', 'Comercial', `Tempo médio de primeira resposta: ${num(o.s.tempoResposta)} min`, 'Acima de 30 minutos a conversa costuma esfriar. Use respostas rápidas ou uma mensagem automática fora do horário.', { label: 'Registrar ideia', href: '#metas?ideia=resposta' });
@@ -344,3 +357,39 @@ export function delta(cur, prev, dir) {
 }
 
 export { iso, toDate };
+
+// ---------- Testes (ideias em teste) ----------
+// Mede o indicador do teste no período do teste e compara com a linha de base: o mesmo número de dias
+// logo antes do início. Indicadores "da campanha" usam só a campanha escolhida no teste.
+const campRow = (a, b, id) => campaignRows(a, b, {}).find((r) => r.id === id) || null;
+const pct2 = (v) => pct(v, 2);
+export const TEST_INDICATORS = [
+  ...INDICATORS.filter((i) => i.id !== 'manual'),
+  { id: 'tempoResposta', label: 'Tempo da 1ª resposta (min)', dir: 'down', fmt: (v) => (v === null || v === undefined ? '—' : num(v) + ' min'), calc: (a, b, f) => salesStats(a, b, f).tempoResposta },
+  { id: 'c_custoResultado', label: 'Custo por resultado (da campanha)', dir: 'down', fmt: brl2, camp: true, calc: (a, b, f) => campRow(a, b, f.campanhaId)?.custoResultado ?? null },
+  { id: 'c_ctr', label: 'CTR do link (da campanha)', dir: 'up', fmt: pct2, camp: true, calc: (a, b, f) => campRow(a, b, f.campanhaId)?.ctr ?? null },
+  { id: 'c_resultados', label: 'Resultados (da campanha)', dir: 'up', fmt: num, camp: true, calc: (a, b, f) => campRow(a, b, f.campanhaId)?.resultados ?? null },
+  { id: 'c_leads', label: 'Leads no WhatsApp (da campanha)', dir: 'up', fmt: num, camp: true, calc: (a, b, f) => campRow(a, b, f.campanhaId)?.leads ?? null },
+  { id: 'c_matriculas', label: 'Matrículas (da campanha)', dir: 'up', fmt: num, camp: true, calc: (a, b, f) => campRow(a, b, f.campanhaId)?.matriculas ?? null },
+  { id: 'c_cac', label: 'CAC (da campanha)', dir: 'down', fmt: brl2, camp: true, calc: (a, b, f) => campRow(a, b, f.campanhaId)?.cac ?? null },
+];
+export const TEST_IND = Object.fromEntries(TEST_INDICATORS.map((i) => [i.id, i]));
+
+export function measureTest(i) {
+  const ind = TEST_IND[i.indicador];
+  if (!ind || !i.inicioTeste) return null;
+  if (ind.camp && !i.campanhaId) return { ind, erro: 'Escolha a campanha do teste.' };
+  const t = today();
+  const a = i.inicioTeste;
+  let b = i.fimTeste && i.fimTeste < t ? i.fimTeste : t;
+  if (b < a) b = a;
+  const n = daysBetween(a, b) + 1;
+  const pa = addDays(a, -n), pb = addDays(a, -1);
+  const f = { cursoId: i.cursoId || '', campanhaId: i.campanhaId || '' };
+  const cur = ind.calc(a, b, f), base = ind.calc(pa, pb, f);
+  const delta = cur !== null && base ? (cur - base) / Math.abs(base) : null;
+  const improved = delta === null ? null : ind.dir === 'up' ? delta > 0 : delta < 0;
+  const alvo = Number(i.metaMelhoria) || 0;
+  const reached = improved && delta !== null && Math.abs(delta) * 100 >= alvo;
+  return { ind, cur, base, delta, improved, reached, dias: n, baseDe: pa, baseAte: pb, ate: b, restante: i.fimTeste ? daysBetween(t, i.fimTeste) : null };
+}

@@ -8,7 +8,8 @@ import { initAuth, auth, roleLabel, signOut } from './auth.js';
 import { LOGO_MARK, PRODUCT, applyTheme } from './brand.js';
 import * as painel from './views/painel.js';
 import * as meta from './views/meta.js';
-import * as vendas from './views/vendas.js';
+import * as funil from './views/funil.js';
+import * as matriculas from './views/matriculas.js';
 import * as pauta from './views/pauta.js';
 import * as calendario from './views/calendario.js';
 import * as metas from './views/metas.js';
@@ -18,7 +19,8 @@ import * as config from './views/config.js';
 const VIEWS = [
   { id: 'painel', label: 'Painel', title: ['Visão', '*geral'], kicker: 'Do anúncio à matrícula', mod: painel, group: 'Acompanhar' },
   { id: 'meta', label: 'Meta Ads', title: ['Meta', '*Ads'], kicker: 'Mídia paga', mod: meta, group: 'Acompanhar' },
-  { id: 'vendas', label: 'WhatsApp e vendas', title: ['WhatsApp', 'e', '*vendas'], kicker: 'Funil comercial', mod: vendas, group: 'Acompanhar' },
+  { id: 'funil', label: 'Funil', title: ['Funil', '*comercial'], kicker: 'Do WhatsApp à matrícula', mod: funil, group: 'Acompanhar' },
+  { id: 'matriculas', label: 'Matrículas', title: ['*Matrículas'], kicker: 'Quem comprou', mod: matriculas, group: 'Acompanhar' },
   { id: 'pauta', label: 'Pauta Viral', title: ['Pauta', '*Viral'], kicker: 'Criação de conteúdo', mod: pauta, group: 'Produzir', noPeriod: true },
   { id: 'calendario', label: 'Calendário', title: ['*Calendário', 'editorial'], kicker: 'Planejamento', mod: calendario, group: 'Produzir', noPeriod: true },
   { id: 'metas', label: 'Metas e estratégias', title: ['Metas', 'e', '*estratégias'], kicker: 'Direção', mod: metas, group: 'Decidir', noPeriod: true },
@@ -67,7 +69,7 @@ function parseHash() {
   const h = decodeURIComponent(location.hash.replace(/^#/, ''));
   const [id, q = ''] = h.split('?');
   const params = Object.fromEntries(new URLSearchParams(q));
-  const view = VIEWS.find((v) => v.id === id) || VIEWS[0];
+  const view = VIEWS.find((v) => v.id === (id === 'vendas' ? 'funil' : id)) || VIEWS[0];
   return { view, params };
 }
 
@@ -183,6 +185,8 @@ async function boot() {
   $('#main').innerHTML = '<div class="loading">Carregando dados da unidade…</div>';
   await initStore(session);
   const canWrite = !session || auth.member?.role !== 'leitura';
+  // Remove as 3 ideias de exemplo que vinham no início, se ninguém mexeu nelas.
+  if (canWrite) ['i_preco', 'i_bot', 'i_form'].forEach((id) => { const i = store.get('ideas', id); if (i && i.status === 'Ideia' && !i.resultado && !i.indicador) store.remove('ideas', id); });
   const seeded = canWrite ? await seedIfEmpty() : false;
   render();
   if (seeded) toast('Unidade pronta. Carregamos os cursos e o calendário de setembro da planilha.');
