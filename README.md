@@ -46,7 +46,7 @@ Detalhes de como os dois artefatos originais foram unidos e por quê: [docs/ARQU
 | Banco e login | [Supabase](https://supabase.com) (Postgres + Auth + Realtime) | Login pronto, regras de acesso por unidade no próprio banco (RLS) e atualização em tempo real |
 | Hospedagem | [Vercel](https://vercel.com) | Deploy a cada push no GitHub, HTTPS e cabeçalhos de segurança |
 
-Sem o Supabase configurado, o app roda em **modo de teste**: sem login, com os dados salvos só no navegador.
+Com `js/config.js` vazio, o app roda em **modo de teste**: sem login, com os dados salvos só no navegador.
 
 ## Estrutura
 
@@ -74,13 +74,13 @@ tools/write-config.mjs  gera js/config.js no build da Vercel
 2. Abra **SQL Editor › New query**, cole o conteúdo de [`supabase/schema.sql`](supabase/schema.sql) e clique em **Run**.
 3. Em **Authentication › URL Configuration**, coloque o endereço da Vercel em **Site URL** (ex.: `https://liceu.vercel.app`) e o mesmo em **Redirect URLs**.
 4. Em **Authentication › Providers › Email**, deixe "Confirm email" ligado.
-5. Em **Project Settings › API**, copie a **Project URL** e a chave **anon public**. Nunca use a `service_role` no front-end.
+5. Em **Project Settings › API Keys**, a chave **publishable** (`sb_publishable_...`) é a que vai no app. Nunca use a chave secreta (`sb_secret_...`) nem a `service_role` no front-end.
 
 ### 2. Vercel
 
 1. Em [vercel.com](https://vercel.com), **Add New › Project** e importe este repositório do GitHub.
 2. Framework: **Other**. O `vercel.json` já define o build.
-3. Em **Environment Variables**, crie `SUPABASE_URL` e `SUPABASE_ANON_KEY` com os valores do passo anterior.
+3. O projeto Supabase já está em `js/config.js` (URL e chave publishable, que são públicas). Para apontar para outro projeto sem mexer no código, crie `SUPABASE_URL` e `SUPABASE_ANON_KEY` em **Environment Variables**.
 4. **Deploy**. Cada push na branch principal publica de novo.
 
 ### 3. Primeiro acesso
@@ -92,10 +92,10 @@ tools/write-config.mjs  gera js/config.js no build da Vercel
 ### Rodar no computador
 
 ```bash
-npm run dev        # abre em http://localhost:5173 em modo de teste
+npm run dev        # abre em http://localhost:5173, já conectado ao Supabase
 ```
 
-Para testar com login, crie `js/config.js` com a URL e a chave anon do Supabase (o arquivo do repositório vem vazio de propósito).
+Para testar sem login (dados só no navegador), deixe `SUPABASE_URL` vazio em `js/config.js`. Em `http://localhost:5173`, lembre de incluir esse endereço em **Redirect URLs** do Supabase.
 
 ## Antes de usar com dados reais
 

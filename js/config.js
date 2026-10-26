@@ -1,5 +1,7 @@
-// Gerado pelo build da Vercel a partir das variáveis de ambiente (tools/write-config.mjs).
-// Vazio = modo de teste: sem login, dados só no navegador.
-// A chave "anon" do Supabase é pública por design; quem protege os dados são as regras RLS do schema.sql.
-export const SUPABASE_URL = '';
-export const SUPABASE_ANON_KEY = '';
+// Projeto Supabase do LICEU Intelligence.
+// A chave "publishable" é pública por design (vai para o navegador de qualquer forma);
+// quem protege os dados são as regras RLS de supabase/schema.sql.
+// Nunca coloque aqui a chave secreta (sb_secret_...) nem a service_role.
+// Na Vercel, SUPABASE_URL e SUPABASE_ANON_KEY (se definidas) substituem estes valores no build.
+export const SUPABASE_URL = 'https://kqaqccjsoqdpbnnyyemw.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_Hj2ojo0Yo9SRp88S8eQYjg_um6dJZiS';

@@ -9,6 +9,8 @@ const ORG_KEY = 'tecmais.intelligence.org';
 export const auth = { client: null, user: null, org: null, member: null, configured: false };
 
 export function supabaseConfigured() {
+  // Dentro do claude.ai (prévia) o navegador não pode falar com o Supabase; lá o app usa o banco do Artifact.
+  if (window.claude?.use) return false;
   return !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase?.createClient);
 }
 
