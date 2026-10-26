@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LICEU Intelligence</title>
+<meta name="description" content="Painel de marketing e matrículas: do anúncio à matrícula, com calendário, Pauta Viral, metas e relatórios.">
+<meta name="theme-color" content="#2B0706">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Cormorant+Garamond:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="css/app.css">
+<script>
+  // Aplica o tema antes de desenhar, para não piscar.
+  try { var t = localStorage.getItem('liceu.theme'); if (t && t !== 'sistema') document.documentElement.setAttribute('data-skin', t); } catch (e) {}
+</script>
+</head>
+<body>
+<div id="auth" hidden></div>
+
+<div id="app" class="app">
+  <aside class="side" aria-label="Menu">
+    <a class="brand" href="#painel" id="brand"></a>
+    <nav id="nav" class="nav" aria-label="Módulos"></nav>
+    <div class="side-foot">
+      <p class="unit" id="unit-name"></p>
+      <p class="user" id="user-line" hidden></p>
+      <p class="store-status" id="store-status"></p>
+      <label class="theme-pick" for="theme-select">Tema <select id="theme-select"></select></label>
+      <button type="button" class="btn sm ghost-on-dark" id="logout" hidden>Sair</button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim" aria-hidden="true"></div>
+
+  <div class="main-col">
+    <header class="topbar">
+      <button type="button" class="icon-btn menu-btn" id="menu-btn" aria-label="Abrir menu"></button>
+      <h1 id="view-title">Painel</h1>
+      <div class="filters" id="filters">
+        <label class="sr" for="f-preset">Período</label>
+        <select id="f-preset">
+          <option value="mes">Este mês</option>
+          <option value="mesAnt">Mês passado</option>
+          <option value="7d">Últimos 7 dias</option>
+          <option value="30d">Últimos 30 dias</option>
+          <option value="90d">Últimos 90 dias</option>
+          <option value="custom">Escolher datas</option>
+        </select>
+        <span id="f-custom" class="custom-dates" hidden>
+          <label class="sr" for="f-from">De</label><input type="date" id="f-from">
+          <label class="sr" for="f-to">Até</label><input type="date" id="f-to">
+        </span>
+        <label class="sr" for="f-curso">Curso</label>
+        <select id="f-curso"></select>
+        <span class="range" id="f-range"></span>
+      </div>
+    </header>
+    <main id="main" tabindex="-1"></main>
+    <footer class="app-foot"><span id="foot-brand">LICEU Intelligence</span> · <a href="termos.html" target="_blank" rel="noopener">Termos de uso</a> · <a href="privacidade.html" target="_blank" rel="noopener">Política de privacidade</a></footer>
+  </div>
+</div>
+
+<dialog id="dlg"></dialog>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
