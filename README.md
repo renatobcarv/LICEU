@@ -21,7 +21,7 @@ Para responder, cada lead do WhatsApp é registrado com a campanha que o trouxe.
 |---|---|
 | **Painel** | Matrículas em destaque com a meta e o ritmo, metas e testes em andamento, indicadores comparados ao período anterior, funil do anúncio à matrícula, prioridades geradas pelos dados e agenda da semana. |
 | **Meta Ads** | Importa o CSV do Gerenciador com todas as colunas (veiculação, valor gasto, resultados, custo por resultado, alcance, impressões, frequência, cliques, CPM, CTR, CPC, custos por clique único e por 1.000 alcançadas, compras), sem duplicar ao reimportar. Compara campanhas lado a lado, aponta CTR baixo, frequência alta e custo acima da média, detalha por anúncio e deixa corrigir qualquer linha à mão. Também aceita Google Ads e digitação manual. |
-| **Funil** | Kanban de arrastar e soltar do primeiro contato no WhatsApp até a matrícula: cadastro rápido, retornos atrasados, motivos de perda, análise por etapa e origem, respostas prontas e importação de contatos. |
+| **Funil** | Vários funis em Kanban, cada um com nome e etapas próprias (com limite de cartões por coluna). Botão de ganho, produtos que preenchem a matrícula sozinhos, adição de nomes direto na coluna, importação de listas, filtros (só ganhos, só perdidos, retornos de hoje, responsável, temperatura), cartões parados em destaque, análise por etapa, responsável e origem, e respostas prontas. |
 | **Matrículas** | Quem comprou: registro direto ou vindo do funil, valor, data, forma e status de pagamento (pago, parcial, pendente), recebido e a receber, por curso e por turma. Tudo editável à mão. |
 | **Pauta Viral** | O gerador de briefing original (formatos, ganchos, nível de consciência, vídeo motion). Ao salvar, a pauta vai direto para o calendário: você escolhe o dia num mini calendário. |
 | **Calendário** | Mês e lista com publicações, gravações, campanhas, turmas, tarefas e eventos; resultado de cada post; controle diário de stories e resultados semanais (as três abas da planilha). |
@@ -55,7 +55,7 @@ Com `js/config.js` vazio, o app roda em **modo de teste**: sem login, com os dad
 index.html            casca do app
 termos.html           Termos de Uso
 privacidade.html      Política de Privacidade (LGPD)
-css/app.css           visual e os três temas
+css/app.css           visual Noir
 js/app.js             navegação, filtros e inicialização
 js/auth.js            cadastro, login, recuperação de senha e unidade
 js/store.js           dados (Supabase, navegador ou claude.ai, mesma interface)

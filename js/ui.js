@@ -15,6 +15,7 @@ export function toast(msg, kind = '') {
 // ---------- janela de edição ----------
 // fields: [{name, label, type, options, value, required, full, hint, placeholder, step}]
 export function field(f) {
+  if (f.type === 'section') return `<h3 class="form-sec">${esc(f.label)}</h3>`;
   const id = 'f_' + f.name;
   const req = f.required ? ' required' : '';
   const ph = f.placeholder ? ` placeholder="${esc(f.placeholder)}"` : '';

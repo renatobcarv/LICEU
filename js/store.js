@@ -15,6 +15,8 @@ export const COLLECTIONS = [
   'campaigns', // campanhas de mídia (Meta, Google)
   'adStats',   // métricas importadas ou digitadas por campanha/anúncio e período
   'leads',     // contatos do WhatsApp e o funil comercial
+  'pipelines', // funis comerciais (nome e etapas de cada um)
+  'products',  // produtos vendidos: preenchem a matrícula sozinhos
   'turmas',    // turmas com vagas e meta
   'calendar',  // publicações, gravações, campanhas, tarefas
   'stories',   // controle diário de stories (id = data)
