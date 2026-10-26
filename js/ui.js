@@ -138,6 +138,33 @@ export function empty(title, text, actions = '') {
   return `<div class="empty"><h3>${esc(title)}</h3><p>${esc(text)}</p>${actions ? `<div class="row-actions">${actions}</div>` : ''}</div>`;
 }
 
+// ---------- contadores ----------
+// Os números dos cartões contam de zero até o valor quando a tela abre.
+export function countUp(root) {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  root.querySelectorAll('.kpi-v, .big, .stats dd, .idea-score b').forEach((el, k) => {
+    const node = Array.from(el.childNodes).find((n) => n.nodeType === 3 && /\d/.test(n.nodeValue));
+    if (!node || /\d\/\d/.test(node.nodeValue)) return;
+    const m = node.nodeValue.match(/-?\d{1,3}(?:\.\d{3})*(?:,\d+)?|-?\d+(?:,\d+)?/);
+    if (!m) return;
+    const raw = m[0];
+    const dec = raw.includes(',') ? raw.split(',')[1].length : 0;
+    const val = Number(raw.replace(/\./g, '').replace(',', '.'));
+    if (!val) return;
+    const pre = node.nodeValue.slice(0, m.index), post = node.nodeValue.slice(m.index + raw.length);
+    const fmt = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    const t0 = performance.now() + k * 40, dur = 1100;
+    const step = (now) => {
+      const p = Math.max(0, Math.min(1, (now - t0) / dur));
+      const e = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
+      node.nodeValue = pre + fmt.format(val * e) + post;
+      if (p < 1 && node.isConnected) requestAnimationFrame(step);
+    };
+    node.nodeValue = pre + fmt.format(0) + post;
+    requestAnimationFrame(step);
+  });
+}
+
 // ---------- arquivos ----------
 // Dentro do claude.ai o download passa pela confirmação do próprio claude.ai; fora dele, link comum.
 export async function downloadFile(filename, data, type = 'text/plain') {

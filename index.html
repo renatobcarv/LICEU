@@ -5,18 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>LICEU Intelligence</title>
 <meta name="description" content="Painel de marketing e matrículas: do anúncio à matrícula, com calendário, Pauta Viral, metas e relatórios.">
-<meta name="theme-color" content="#2B0706">
+<meta name="theme-color" content="#070605">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Cormorant+Garamond:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&family=Cinzel:wght@500;600&display=swap">
 <link rel="stylesheet" href="css/app.css">
-<script>
-  // Aplica o tema antes de desenhar, para não piscar.
-  try { var t = localStorage.getItem('liceu.theme'); if (t && t !== 'sistema') document.documentElement.setAttribute('data-skin', t); } catch (e) {}
-</script>
 </head>
 <body>
+<div class="fx" aria-hidden="true"><div class="glow g1"></div><div class="glow g2"></div><div class="grid"></div></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="progress" id="progress" aria-hidden="true"></div>
 <div id="auth" hidden></div>
 
 <div id="app" class="app">
@@ -27,7 +26,6 @@
       <p class="unit" id="unit-name"></p>
       <p class="user" id="user-line" hidden></p>
       <p class="store-status" id="store-status"></p>
-      <label class="theme-pick" for="theme-select">Tema <select id="theme-select"></select></label>
       <button type="button" class="btn sm ghost-on-dark" id="logout" hidden>Sair</button>
     </div>
   </aside>
@@ -36,7 +34,10 @@
   <div class="main-col">
     <header class="topbar">
       <button type="button" class="icon-btn menu-btn" id="menu-btn" aria-label="Abrir menu"></button>
-      <h1 id="view-title">Painel</h1>
+      <div class="title-wrap">
+        <span class="kicker" id="view-kicker">LICEU Intelligence</span>
+        <h1 id="view-title">Painel</h1>
+      </div>
       <div class="filters" id="filters">
         <label class="sr" for="f-preset">Período</label>
         <select id="f-preset">

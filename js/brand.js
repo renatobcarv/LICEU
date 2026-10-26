@@ -15,18 +15,8 @@ export const PRODUCT = 'LICEU Intelligence';
 // Mude a versão quando o texto dos termos ou da política mudar. Ela fica gravada no aceite de cada pessoa.
 export const TERMS_VERSION = '2026-10-26';
 
-// Temas: "sistema" segue o aparelho (claro ou bordô).
-export const THEMES = [
-  { id: 'sistema', label: 'Automático' },
-  { id: 'claro', label: 'Claro' },
-  { id: 'bordo', label: 'Bordô' },
-  { id: 'black', label: 'All Black' },
-];
-const THEME_KEY = 'liceu.theme';
-
-export function getTheme() { try { return localStorage.getItem(THEME_KEY) || 'sistema'; } catch (e) { return 'sistema'; } }
-export function applyTheme(id = getTheme()) {
-  const root = document.documentElement;
-  if (id === 'sistema') root.removeAttribute('data-skin'); else root.setAttribute('data-skin', id);
-  try { localStorage.setItem(THEME_KEY, id); } catch (e) { /* opcional */ }
+// Tema único: Noir. Remove preferências antigas de tema salvas no navegador.
+export function applyTheme() {
+  document.documentElement.removeAttribute('data-skin');
+  try { localStorage.removeItem('liceu.theme'); } catch (e) { /* opcional */ }
 }
