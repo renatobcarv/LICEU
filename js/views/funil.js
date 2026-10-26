@@ -5,7 +5,7 @@
 import { store } from '../store.js';
 import { esc, $, $$, brl, num, pct, fmtDate, today, daysBetween, parseCSV, parseDate, norm, phoneKey, toCSV, inRange, sum } from '../util.js';
 import { STAGES, ORIGENS, salesStats, courseName, campaignName, settings } from '../metrics.js';
-import { toast, ICON, funnel, empty, readFileText, downloadFile, copyText, openDialog, badge } from '../ui.js';
+import { toast, ICON, funnel, empty, readFileText, downloadFile, copyText, openDialog, badge, confirmButton } from '../ui.js';
 import {
   matriculaDialog, loseDialog, editLead, courseOpts, campOpts, moveToCol, pipelines, pipeline, leadCol, leadStage, leadPipeId,
   pipeDialog, productDialog, responsaveis, tagList, TEMPERATURAS, myName, recebido,
@@ -26,6 +26,7 @@ const initials = (s) => String(s || '').trim().split(/\s+/).map((w) => w[0]).sli
 export function render(ctx) {
   const { from, to, f, params } = ctx;
   if (params.etapa || params.vencidos) tab = 'lista';
+  if (params.pipe) { setPipe(params.pipe); tab = 'kanban'; history.replaceState(null, '', '#funil'); }
   const p = pipeline(pipeId);
   pipeId = p.id;
   const s = salesStats(from, to, { ...f, funilId: p.id });
@@ -183,8 +184,8 @@ function list(ctx, p) {
   const multi = prm.etapa || prm.vencidos;
   return `${filterBar()}
   ${multi ? `<p class="row-actions"><a class="btn sm ghost" href="#funil">Tirar filtro: ${prm.etapa ? esc(prm.etapa === 'matriculado' ? 'matriculados' : STAGES.find((x) => x.id === prm.etapa)?.label || prm.etapa) : 'retornos atrasados'} (todos os funis)</a></p>` : ''}
-  ${leads.length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>Pessoa</th>${multi ? '<th>Funil</th>' : ''}<th>Etapa</th><th>Interesse</th><th>Origem</th><th>Responsável</th><th>Próxima ação</th><th class="r">Valor</th></tr></thead><tbody>${leads.map((l) => `<tr>
-    <td><button class="link" data-edit="${esc(l.id)}">${esc(l.nome)}</button><small class="cell-sub">${esc(l.telefone || '')}${l.temperatura ? ' · ' + esc(l.temperatura) : ''}</small></td>
+  ${leads.length ? `<div class="row-actions bulk"><span class="muted" id="sel-n">${leads.length} na lista</span><button type="button" class="btn sm danger ghost" data-act="del-sel" disabled>Excluir selecionados</button></div><div class="table-wrap"><table class="tbl"><thead><tr><th class="sel"><input type="checkbox" id="sel-all" aria-label="Selecionar todos"></th><th>Pessoa</th>${multi ? '<th>Funil</th>' : ''}<th>Etapa</th><th>Interesse</th><th>Origem</th><th>Responsável</th><th>Próxima ação</th><th class="r">Valor</th></tr></thead><tbody>${leads.map((l) => `<tr>
+    <td class="sel"><input type="checkbox" data-sel="${esc(l.id)}" aria-label="Selecionar ${esc(l.nome)}"></td><td><button class="link" data-edit="${esc(l.id)}">${esc(l.nome)}</button><small class="cell-sub">${esc(l.telefone || '')}${l.temperatura ? ' · ' + esc(l.temperatura) : ''}</small></td>
     ${multi ? `<td>${esc(pipeline(leadPipeId(l)).nome)}</td>` : ''}
     <td>${badge(leadStage(l), l.etapa === 'matriculado' ? 'good' : l.etapa === 'perdido' ? 'bad' : '')}${l.motivoPerda && l.etapa === 'perdido' ? `<small class="cell-sub">${esc(l.motivoPerda)}</small>` : ''}</td>
     <td>${esc(store.get('products', l.produtoId)?.nome || courseName(l.cursoId))}${tagList(l.etiquetas).length ? `<small class="cell-sub">${esc(tagList(l.etiquetas).join(', '))}</small>` : ''}</td>
@@ -377,6 +378,9 @@ function bindBody(root, ctx) {
       setTimeout(() => { const f2 = $(`[data-colform="${CSS.escape(st.id)}"]`); if (f2) { f2.hidden = false; $('textarea', f2).focus(); } }, 60);
     });
   });
+  const sync = () => { const n = $$('[data-sel]:checked', root).length; const b = $('[data-act="del-sel"]', root); if (b) { b.disabled = !n; b.textContent = n ? 'Excluir ' + n + ' selecionado' + (n > 1 ? 's' : '') : 'Excluir selecionados'; } };
+  $('#sel-all', root)?.addEventListener('change', (e) => { $$('[data-sel]', root).forEach((c) => { c.checked = e.target.checked; }); sync(); });
+  $$('[data-sel]', root).forEach((c) => c.addEventListener('change', sync));
   bindDrag(root, ctx);
 }
 
@@ -444,6 +448,13 @@ export function mount(root, ctx) {
       const recs = store.all('courses').filter((c) => c.ativo !== false && !prods.some((x) => x.cursoId === c.id)).map((c) => ({ nome: c.nome, cursoId: c.id, valor: c.preco || null, ativo: true }));
       store.putMany('products', recs);
       toast(recs.length + ' produtos criados. Abra cada um para pôr o valor e a condição de pagamento.');
+      return ctx.refresh();
+    }
+    if (ds.act === 'del-sel') {
+      const ids = $$('[data-sel]:checked', root).map((c) => c.dataset.sel);
+      if (!ids.length || !confirmButton(b, 'Confirmar: apagar ' + ids.length + ' de vez')) return;
+      ids.forEach((id) => store.remove('leads', id));
+      toast(ids.length === 1 ? '1 lead excluído.' : ids.length + ' leads excluídos.');
       return ctx.refresh();
     }
     if (ds.act === 'resp') return respDialog(null, ctx);

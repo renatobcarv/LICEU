@@ -6,6 +6,8 @@ import { settings, STAGES } from '../metrics.js';
 import { openDialog, toast, downloadFile, readFileText, ICON, confirmButton, copyText } from '../ui.js';
 import { auth, roleLabel, signOut, switchOrg } from '../auth.js';
 import { TERMS_VERSION } from '../brand.js';
+import { productDialog, pipeDialog, pipelines, leadPipeId } from '../leads.js';
+import { courseName } from '../metrics.js';
 
 
 export function render() {
@@ -34,6 +36,16 @@ export function render() {
   <section class="card">
     <header class="card-head"><div><h2>Cursos</h2><p class="muted">O preço é usado como valor padrão da matrícula</p></div><button class="btn sm" data-cfg="course">${ICON.plus} Novo curso</button></header>
     <div class="table-wrap"><table class="tbl"><thead><tr><th>Curso</th><th class="r">Preço</th><th>Situação</th><th></th></tr></thead><tbody>${courses.map((c) => `<tr><td>${esc(c.nome)}</td><td class="r">${c.preco ? brl(c.preco) : '—'}</td><td>${c.ativo === false ? 'Inativo' : 'Ativo'}</td><td class="r"><button class="btn sm" data-course="${esc(c.id)}">Editar</button></td></tr>`).join('')}</tbody></table></div>
+  </section>
+
+  <section class="card">
+    <header class="card-head"><div><h2>Produtos</h2><p class="muted">O que você vende. No ganho, o produto preenche curso, valor e pagamento</p></div><button class="btn sm" data-cfg="product">${ICON.plus} Novo produto</button></header>
+    ${store.all('products').length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>Produto</th><th>Curso</th><th class="r">Valor</th><th>Condição</th><th>Situação</th><th></th></tr></thead><tbody>${store.all('products').sort((a, b) => a.nome.localeCompare(b.nome)).map((p) => `<tr><td>${esc(p.nome)}</td><td>${esc(p.cursoId ? courseName(p.cursoId) : '—')}</td><td class="r">${p.valor ? brl(p.valor) : '—'}</td><td>${esc([p.formaPagamento, p.parcelas ? p.parcelas + 'x' : ''].filter(Boolean).join(' · ') || '—')}</td><td>${p.ativo === false ? 'Fora de venda' : 'À venda'}</td><td class="r"><button class="btn sm" data-product="${esc(p.id)}">Editar</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="empty-sm">Nenhum produto. Crie um por curso, com valor e condição (ex.: "Injetáveis · 6x no cartão").</p>'}
+  </section>
+
+  <section class="card">
+    <header class="card-head"><div><h2>Funis comerciais</h2><p class="muted">Nome, etapas e limite de cada funil. Excluir pede para onde vão os leads</p></div><button class="btn sm" data-cfg="pipe">${ICON.plus} Novo funil</button></header>
+    <div class="table-wrap"><table class="tbl"><thead><tr><th>Funil</th><th>Etapas</th><th class="r">Leads</th><th></th></tr></thead><tbody>${pipelines().map((p) => `<tr><td>${esc(p.nome)}</td><td>${esc(p.etapas.map((e) => e.nome).join(' → '))}</td><td class="r">${store.all('leads').filter((l) => leadPipeId(l) === p.id).length}</td><td class="r"><button class="btn sm" data-pipe-edit="${esc(p.id)}">Editar ou excluir</button></td></tr>`).join('')}</tbody></table></div>
   </section>
 
   ${isSb ? team(isAdmin) : `<section class="card"><header class="card-head"><div><h2>Equipe e login</h2></div></header><p class="note">${store.mode === 'cloud' ? 'Este painel está rodando dentro do claude.ai: quem tem acesso ao link vê os mesmos dados.' : 'Modo de teste: os dados ficam só neste navegador. Para login, equipe e dados na nuvem, configure o Supabase (veja o README do projeto).'}</p></section>`}
@@ -182,6 +194,10 @@ export function mount(root, ctx) {
     if (!b) return;
     const ds = b.dataset;
     if (ds.course) return courseDialog(store.get('courses', ds.course), ctx);
+    if (ds.product) return productDialog(store.get('products', ds.product), ctx);
+    if (ds.pipeEdit) return pipeDialog(pipelines().find((p) => p.id === ds.pipeEdit), ctx);
+    if (ds.cfg === 'product') return productDialog(null, ctx);
+    if (ds.cfg === 'pipe') return pipeDialog(null, ctx);
     const a = ds.cfg;
     if (a === 'unit') unitDialog(ctx);
     if (a === 'course') courseDialog(null, ctx);

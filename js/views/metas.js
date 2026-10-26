@@ -6,6 +6,7 @@ import { esc, $, $$, today, monthStart, monthEnd, fmtDate, num, brl2, addDays, d
 import { INDICATORS, goalProgress, courseName, campaignName, campaignRows, STAGES, STAGE_IDX, TEST_INDICATORS, TEST_IND, measureTest } from '../metrics.js';
 import { openDialog, toast, meter, badge, ICON, empty } from '../ui.js';
 import { ice } from './painel.js';
+import { pipelines, leadPipeId, leadCol } from '../leads.js';
 
 let tab = 'metas';
 
@@ -94,9 +95,28 @@ function liveCount(estagio) {
   return leads.filter((l) => l.etapa === estagio).length;
 }
 
+// Visão rápida dos funis comerciais: só leitura, um clique abre o Kanban completo.
+function pipesQuick() {
+  const leads = store.all('leads');
+  const t = today();
+  return `<h2 class="sec-title">Funis comerciais <em>agora</em></h2>
+  <div class="pipe-quick">${pipelines().map((p) => {
+    const mine = leads.filter((l) => leadPipeId(l) === p.id);
+    const open = mine.filter((l) => !['matriculado', 'perdido'].includes(l.etapa));
+    const ganhosMes = mine.filter((l) => l.etapa === 'matriculado' && (l.dataMatricula || '') >= monthStart(t)).length;
+    const cols = p.etapas.map((e) => ({ e, items: open.filter((l) => leadCol(l, p) === e.id) }));
+    return `<a class="card pq" href="#funil?pipe=${encodeURIComponent(p.id)}">
+      <header class="card-head"><div><h3>${esc(p.nome)}</h3><p class="muted">${open.length} em aberto · ${ganhosMes} ganho${ganhosMes === 1 ? '' : 's'} no mês</p></div><span class="btn sm">Abrir ${ICON.arrow}</span></header>
+      <div class="pq-board">${cols.map(({ e, items }) => `<div class="pq-col${e.limite && items.length > e.limite ? ' over' : ''}"><p class="pq-h"><span>${esc(e.nome)}</span><b>${items.length}${e.limite ? '/' + e.limite : ''}</b></p>${items.slice(0, 3).map((l) => `<p class="pq-card">${esc(l.nome)}</p>`).join('')}${items.length > 3 ? `<p class="pq-more">+${items.length - 3}</p>` : ''}</div>`).join('')}
+        <div class="pq-col win"><p class="pq-h"><span>Ganho</span><b>${ganhosMes}</b></p></div></div>
+    </a>`;
+  }).join('')}</div>
+  <h2 class="sec-title">Funis <em>planejados</em></h2>`;
+}
+
 function funnels() {
   const list = store.all('funnels').sort((a, b) => FUNNEL_STATUS.indexOf(a.status) - FUNNEL_STATUS.indexOf(b.status));
-  return `<div class="row-actions"><span class="muted">Começar de um modelo:</span>${Object.entries(TEMPLATES).map(([k, v]) => `<button class="btn sm" data-tpl="${k}">${esc(v.nome)}</button>`).join('')}</div>
+  return `${pipesQuick()}<div class="row-actions"><span class="muted">Começar de um modelo:</span>${Object.entries(TEMPLATES).map(([k, v]) => `<button class="btn sm" data-tpl="${k}">${esc(v.nome)}</button>`).join('')}</div>
   ${list.length ? list.map((fn) => `<section class="card funnel-board">
     <header class="card-head"><div><p class="eyebrow">${esc(fn.status || 'Rascunho')}${fn.cursoId ? ' · ' + esc(courseName(fn.cursoId)) : ''}</p><h2>${esc(fn.nome)}</h2>${fn.objetivo ? `<p class="muted">${esc(fn.objetivo)}${fn.publico ? ' · Público: ' + esc(fn.publico) : ''}</p>` : ''}</div><div class="row-actions"><a class="btn sm" href="#funil">Abrir funil comercial</a><button class="btn sm" data-fn="${esc(fn.id)}">Editar</button></div></header>
     <div class="board kanban-plan">${(fn.etapas || []).map((e, i) => { const n = liveCount(e.estagio); return `<section class="col"><header><h3><span class="flow-n">${i + 1}</span>${esc(e.nome)}</h3>${n !== null ? `<span class="count" title="Pessoas nesta etapa agora">${n}</span>` : ''}</header>

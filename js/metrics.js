@@ -125,7 +125,9 @@ export function mediaTotals(rows) {
 
 // ---------- Comercial ----------
 // Funil ao qual o lead pertence. Leads antigos, ou de um funil excluído, ficam no funil principal.
-export const leadPipeId = (l) => (l.funilId && l.funilId !== 'principal' && store.get('pipelines', l.funilId) ? l.funilId : 'principal');
+const pipeVisible = (id) => { const p = store.get('pipelines', id); return id === 'principal' ? !p?.oculto : !!(p && !p.oculto && p.etapas?.length); };
+export const defaultPipeId = () => (pipeVisible('principal') ? 'principal' : store.all('pipelines').filter((p) => !p.oculto && p.etapas?.length).sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''))[0]?.id || 'principal');
+export const leadPipeId = (l) => (l.funilId && pipeVisible(l.funilId) ? l.funilId : defaultPipeId());
 const leadFilter = (f = {}) => (l) => (!f.cursoId || l.cursoId === f.cursoId) && (!f.funilId || leadPipeId(l) === f.funilId);
 
 export function salesStats(from, to, f = {}) {
