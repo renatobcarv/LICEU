@@ -748,3 +748,47 @@ dialog#dlg { background: rgba(22, 19, 16, .92); -webkit-backdrop-filter: blur(30
 }
 .toolbar .tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .toolbar .tabs .tab { flex: none; }
+
+/* ---------- Formas "squircle": cantos arredondados, sem pílulas, com mais respiro ---------- */
+.btn, .chip, .chip-radio span, .seg-b, .pipe-tab { border-radius: 12px; }
+.btn.sm { border-radius: 10px; }
+.tabs, .seg { border-radius: 14px; }
+.tab { border-radius: 11px; }
+.search-row input, .filter-bar input[type="search"] { border-radius: 12px; }
+.badge { border-radius: 8px; }
+.card { border-radius: 24px; padding: 24px; }
+.kpi { border-radius: 22px; padding: 20px; }
+.board { grid-auto-columns: minmax(236px, 1fr); gap: 14px; }
+.col { border-radius: 22px; padding: 12px; gap: 10px; }
+.col header { padding: 4px 4px 2px; }
+.lead { border-radius: 18px; padding: 14px; gap: 6px; }
+.lead-open small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.lead-top { min-width: 0; }
+.lead-top .lead-open { min-width: 0; }
+.lead-meta { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.lead-actions { flex-wrap: nowrap; }
+.lead-actions .btn { padding: 0 10px; border-radius: 10px; }
+.col-empty { border-radius: 16px; }
+dialog#dlg { border-radius: 26px; }
+
+/* Metas: visão rápida dos funis comerciais */
+.sec-title { font: 600 20px var(--f-display); margin: 6px 2px 12px; }
+.sec-title em { font-family: var(--f-serif); font-style: italic; font-weight: 400; color: var(--gold-ink); }
+.pipe-quick { display: grid; gap: 14px; margin-bottom: 26px; }
+.pq { text-decoration: none; color: inherit; }
+.pq:hover { border-color: rgba(227, 179, 95, .45); }
+.pq h3 { font-size: 17px; }
+.pq-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(130px, 1fr); gap: 8px; overflow-x: auto; }
+.pq-col { background: rgba(255, 255, 255, .03); border: 1px solid var(--hair, var(--line)); border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 6px; min-height: 92px; }
+.pq-col.over { border-color: rgba(255, 107, 94, .5); }
+.pq-col.win { border-color: rgba(95, 211, 138, .35); }
+.pq-col.win .pq-h b { color: var(--good); }
+.pq-h { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; color: var(--muted); }
+.pq-h b { font: 600 16px var(--f-display); color: var(--ink); }
+.pq-card { font-size: 12.5px; padding: 6px 8px; border-radius: 10px; background: rgba(255, 255, 255, .05); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pq-more { font-size: 12px; color: var(--dim); }
+.bulk { align-items: center; margin-bottom: 8px; }
+.tbl .sel { width: 36px; }
+.tbl .sel input { width: 16px; height: 16px; accent-color: var(--gold); }
+.btn.danger.ghost { color: var(--bad); border-color: rgba(255, 107, 94, .4); background: transparent; }
+.btn[disabled] { opacity: .45; pointer-events: none; }

@@ -4,7 +4,7 @@
 import { store } from './store.js';
 import { esc, $, $$, today, fmtDate, phoneKey, brl, uid } from './util.js';
 import { STAGES, STAGE_IDX, LOSS_REASONS, ORIGENS, reached, leadPipeId } from './metrics.js';
-import { openDialog, toast, field } from './ui.js';
+import { openDialog, toast, field, confirmButton } from './ui.js';
 import { auth } from './auth.js';
 
 export { leadPipeId };
@@ -30,9 +30,10 @@ const sid = () => 'e' + Math.random().toString(36).slice(2, 9);
 export const DEFAULT_PIPE = { id: 'principal', nome: 'Funil comercial', etapas: NIVEIS.map(([id, nome]) => ({ id, nome, nivel: id })) };
 
 export function pipelines() {
-  const list = store.all('pipelines').filter((p) => p.etapas?.length).sort((a, b) => (a.id === 'principal' ? -1 : b.id === 'principal' ? 1 : (a.createdAt || '').localeCompare(b.createdAt || '')));
-  if (!list.some((p) => p.id === 'principal')) list.unshift(DEFAULT_PIPE);
-  return list;
+  const stored = store.all('pipelines');
+  const list = stored.filter((p) => p.etapas?.length && !p.oculto).sort((a, b) => (a.id === 'principal' ? -1 : b.id === 'principal' ? 1 : (a.createdAt || '').localeCompare(b.createdAt || '')));
+  if (!stored.some((p) => p.id === 'principal')) list.unshift(DEFAULT_PIPE);
+  return list.length ? list : [DEFAULT_PIPE];
 }
 export const pipeline = (id) => pipelines().find((p) => p.id === id) || pipelines()[0];
 
@@ -140,9 +141,14 @@ export function matriculaDialog(l, ctx, { onDone } = {}) {
     saveLabel: jaMatriculado ? 'Salvar alterações' : 'Confirmar ganho',
     fields: main,
     html: `<details class="more dlg-more"${isNew ? ' open' : ''}><summary>Dados do aluno e origem</summary><div class="form-grid">${extra.map(field).join('')}</div></details>${respList()}
-      ${jaMatriculado ? '<p class="hint">Cancelou? "Desfazer matrícula" devolve o aluno para a última etapa do funil.</p>' : ''}`,
+      ${jaMatriculado ? '<p class="hint">Cancelou? "Desfazer matrícula" devolve o aluno para a última etapa do funil. "Excluir de vez" apaga o registro inteiro.</p>' : ''}
+      ${!isNew ? '<div class="row-actions"><button type="button" class="btn sm danger ghost" id="lead-del">Excluir lead de vez</button></div>' : ''}`,
     onOpen: (form) => {
       const g = (n) => $(`[name="${n}"]`, form);
+      $('#lead-del', form)?.addEventListener('click', (e) => {
+        if (!confirmButton(e.currentTarget, 'Clique de novo para apagar')) return;
+        store.remove('leads', l.id); dlg.close(); toast(l.nome + ' foi excluído.'); ctx.refresh();
+      });
       const syncPago = () => { g('valorPago').closest('.field').hidden = g('statusPagamento').value === 'Pago'; };
       g('statusPagamento').addEventListener('change', syncPago); syncPago();
       g('produtoId').addEventListener('change', () => {
@@ -291,6 +297,7 @@ export function editLead(l, ctx, preset = {}) {
 export function pipeDialog(p, ctx, { onSaved } = {}) {
   const isNew = !p;
   p = p ? JSON.parse(JSON.stringify(p)) : { nome: '', etapas: NIVEIS.map(([id, nome]) => ({ id: sid(), nome, nivel: id })) };
+  const others = pipelines().filter((o) => o.id !== p.id);
   const row = (e) => `<li class="st-row" data-id="${esc(e.id || '')}">
     <input data-k="nome" value="${esc(e.nome || '')}" placeholder="Nome da etapa" aria-label="Nome da etapa">
     <select data-k="nivel" aria-label="Equivale a">${NIVEIS.map(([v, t]) => `<option value="${v}"${v === e.nivel ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>
@@ -307,7 +314,8 @@ export function pipeDialog(p, ctx, { onSaved } = {}) {
     html: `<h3 class="form-sec">Etapas</h3>
       <p class="hint">Ganho e Perdido entram sozinhos no fim. "Equivale a" diz como a etapa conta nos relatórios. O limite avisa quando a coluna acumula cartões demais.</p>
       <ol class="st-list" id="st-list">${p.etapas.map(row).join('')}</ol>
-      <button type="button" class="btn sm" id="st-add">+ Adicionar etapa</button>`,
+      <button type="button" class="btn sm" id="st-add">+ Adicionar etapa</button>
+      ${!isNew && others.length ? `<h3 class="form-sec">Excluir este funil</h3><div class="field"><label for="pipe-dest">Ao excluir, os leads dele vão para</label><select id="pipe-dest">${others.map((o) => `<option value="${esc(o.id)}">${esc(o.nome)}</option>`).join('')}<option value="__del">Apagar os leads junto (não tem volta)</option></select></div>` : !isNew ? '<p class="hint">Para excluir este funil, crie outro antes: os leads precisam de um lugar para ir.</p>' : ''}`,
     onOpen: (form) => {
       const list = $('#st-list', form);
       $('#st-add', form).addEventListener('click', () => { list.insertAdjacentHTML('beforeend', row({ nivel: 'conversa' })); $('.st-row:last-child input', list).focus(); });
@@ -327,7 +335,15 @@ export function pipeDialog(p, ctx, { onSaved } = {}) {
       onSaved?.(saved);
       ctx.refresh();
     },
-    onDelete: isNew || p.id === 'principal' ? null : () => { store.remove('pipelines', p.id); toast('Funil excluído. Os leads dele voltaram para o funil principal.'); onSaved?.(null); ctx.refresh(); },
+    onDelete: isNew || others.length === 0 ? null : () => {
+      const dest = $('#pipe-dest', dlg).value;
+      const leads = store.all('leads').filter((l) => leadPipeId(l) === p.id);
+      if (dest === '__del') leads.forEach((l) => store.remove('leads', l.id));
+      else { const d = pipeline(dest); store.putMany('leads', leads.map((l) => { const st = d.etapas.find((e) => e.nivel === l.etapa) || d.etapas[0]; return { ...l, funilId: d.id, etapaFunil: st.id }; })); }
+      if (p.id === 'principal') store.put('pipelines', { ...p, oculto: true }); else store.remove('pipelines', p.id);
+      toast('Funil excluído. ' + (dest === '__del' ? leads.length + ' leads apagados.' : leads.length + ' leads foram para ' + pipeline(dest).nome + '.'));
+      onSaved?.(dest === '__del' ? null : { id: dest }); ctx.refresh();
+    },
     deleteLabel: 'Excluir funil',
   });
   return dlg;
