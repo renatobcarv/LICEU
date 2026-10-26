@@ -1,121 +1,240 @@
-// Funil comercial em Kanban: cada conversa do WhatsApp vira um cartão que você arrasta até a matrícula.
-// É a peça central da operação: sem o lead registrado com a campanha, não existe CAC real.
+// Funil comercial em Kanban. Vários funis (cada um com nome e etapas próprias), botão de ganho,
+// produtos que preenchem a matrícula, adição rápida direto na coluna e filtros de foco.
+// Sem o lead registrado com a campanha, não existe CAC real.
 
 import { store } from '../store.js';
 import { esc, $, $$, brl, num, pct, fmtDate, today, daysBetween, parseCSV, parseDate, norm, phoneKey, toCSV, inRange, sum } from '../util.js';
-import { STAGES, STAGE_IDX, ORIGENS, salesStats, courseName, campaignName, settings } from '../metrics.js';
+import { STAGES, ORIGENS, salesStats, courseName, campaignName, settings } from '../metrics.js';
 import { toast, ICON, funnel, empty, readFileText, downloadFile, copyText, openDialog, badge } from '../ui.js';
-import { moveLead, matriculaDialog, loseDialog, editLead, courseOpts, campOpts, stageLabel } from '../leads.js';
+import {
+  matriculaDialog, loseDialog, editLead, courseOpts, campOpts, moveToCol, pipelines, pipeline, leadCol, leadStage, leadPipeId,
+  pipeDialog, productDialog, responsaveis, tagList, TEMPERATURAS, myName, recebido,
+} from '../leads.js';
 
+const PIPE_KEY = 'liceu.funil.atual';
 let tab = 'kanban';
 let q = '';
-let fCurso = '';
+let view = 'todos';   // todos | abertos | hoje | ganhos | perdidos
+let fResp = '';
+let fTemp = '';
+let pipeId = (() => { try { return localStorage.getItem(PIPE_KEY) || 'principal'; } catch (e) { return 'principal'; } })();
 
-const COLS = [...STAGES, { id: 'perdido', label: 'Perdido' }];
+const setPipe = (id) => { pipeId = id || 'principal'; try { localStorage.setItem(PIPE_KEY, pipeId); } catch (e) { /* opcional */ } };
+const OPEN = (l) => !['matriculado', 'perdido'].includes(l.etapa);
+const initials = (s) => String(s || '').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
 export function render(ctx) {
   const { from, to, f, params } = ctx;
   if (params.etapa || params.vencidos) tab = 'lista';
-  const s = salesStats(from, to, f);
-  const tabs = [['kanban', 'Kanban'], ['lista', 'Lista'], ['analise', 'Análise'], ['respostas', 'Respostas prontas']];
+  const p = pipeline(pipeId);
+  pipeId = p.id;
+  const s = salesStats(from, to, { ...f, funilId: p.id });
+  const pipes = pipelines();
+  const abertosPorFunil = (id) => store.all('leads').filter((l) => OPEN(l) && leadPipeId(l) === id).length;
+  const tabs = [['kanban', 'Kanban'], ['lista', 'Lista'], ['analise', 'Análise'], ['produtos', 'Produtos'], ['respostas', 'Respostas prontas']];
   return `
+  <section class="pipe-bar" aria-label="Funis">
+    <div class="pipe-tabs scroll-x" role="tablist">${pipes.map((x) => `<button type="button" class="pipe-tab" role="tab" data-pipe="${esc(x.id)}" aria-selected="${x.id === p.id}"><span>${esc(x.nome)}</span><small>${abertosPorFunil(x.id)}</small></button>`).join('')}
+      <button type="button" class="pipe-tab add" data-act="new-pipe">${ICON.plus} Novo funil</button></div>
+    <button type="button" class="btn sm ghost" data-act="edit-pipe">Editar funil</button>
+  </section>
+  ${p.descricao ? `<p class="pipe-desc">${esc(p.descricao)}</p>` : ''}
+
   <form class="quick card" id="quick" autocomplete="off" aria-label="Registrar lead">
-    <h2>Nova conversa no WhatsApp</h2>
+    <h2>Nova conversa em <em>${esc(p.nome)}</em></h2>
     <div class="quick-grid">
       <div class="field"><label for="q-nome">Nome</label><input id="q-nome" name="nome" required placeholder="Como a pessoa se apresentou"></div>
       <div class="field"><label for="q-tel">WhatsApp</label><input id="q-tel" name="telefone" inputmode="tel" placeholder="(61) 9 0000-0000"></div>
-      <div class="field"><label for="q-curso">Curso de interesse</label><select id="q-curso" name="cursoId">${courseOpts().map(([v, l]) => `<option value="${esc(v)}"${v === f.cursoId ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+      <div class="field"><label for="q-curso">Curso de interesse</label><select id="q-curso" name="cursoId">${courseOpts().map(([v, l]) => `<option value="${esc(v)}"${v === (f.cursoId || p.cursoId) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
       <div class="field"><label for="q-origem">Como chegou</label><select id="q-origem" name="origem">${ORIGENS.map((o) => `<option>${esc(o)}</option>`).join('')}</select></div>
       <div class="field" id="q-camp-wrap"><label for="q-camp">Campanha</label><select id="q-camp" name="campanhaId">${campOpts().map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select></div>
-      <div class="field"><label for="q-resp">1ª resposta (min)</label><input id="q-resp" name="primeiraResposta" type="number" min="0" inputmode="numeric" placeholder="ex.: 5"></div>
-      <button class="btn primary" type="submit">${ICON.plus} Adicionar ao funil</button>
+      <div class="field"><label for="q-temp">Temperatura</label><select id="q-temp" name="temperatura"><option value="">—</option>${TEMPERATURAS.map((t) => `<option>${t}</option>`).join('')}</select></div>
+      <button class="btn primary" type="submit">${ICON.plus} Adicionar</button>
     </div>
   </form>
 
   <section class="kpis compact" aria-label="Funil no período">
-    ${[['Entraram no período', num(s.leads)], ['Em aberto', num(s.abertos.length)], ['Matrículas', num(s.matriculas)], ['Conversão', pct(s.convLead)], ['Em negociação', brl(sum(s.abertos.filter((l) => l.etapa === 'negociacao'), (l) => l.valor))], ['Retornos atrasados', num(s.followVencidos.length)], ['Sem 1º contato', num(s.semContato.length)], ['1ª resposta média', s.tempoResposta === null ? '—' : num(s.tempoResposta) + ' min']].map(([l, v]) => `<article class="kpi"><h3>${l}</h3><p class="kpi-v">${v}</p></article>`).join('')}
+    ${[['Entraram no período', num(s.leads)], ['Em aberto', num(s.abertos.length)], ['Ganhos', num(s.matriculas)], ['Conversão', pct(s.convLead)], ['Em aberto (R$)', brl(sum(s.abertos, (l) => l.valor))], ['Ganho (R$)', brl(s.receita)], ['Retornos atrasados', num(s.followVencidos.length)], ['Sem 1º contato', num(s.semContato.length)]].map(([l, v]) => `<article class="kpi"><h3>${l}</h3><p class="kpi-v">${v}</p></article>`).join('')}
   </section>
 
   <div class="toolbar">
     <div class="tabs" role="tablist">${tabs.map(([id, l]) => `<button type="button" role="tab" class="tab" data-tab="${id}" aria-selected="${tab === id}">${l}</button>`).join('')}</div>
     <span class="grow"></span>
-    <button class="btn sm" data-act="import">${ICON.upload} Importar contatos</button>
+    <button class="btn sm" data-act="import">${ICON.upload} Importar lista</button>
     <button class="btn sm" data-act="export">${ICON.download} CSV</button>
   </div>
-  <div id="tab-body">${body(ctx, s)}</div>`;
+  <div id="tab-body">${body(ctx, s, p)}</div>`;
 }
 
-function body(ctx, s) {
-  if (tab === 'kanban') return board(ctx);
-  if (tab === 'lista') return list(ctx);
-  if (tab === 'analise') return analysis(ctx, s);
+function body(ctx, s, p) {
+  if (tab === 'kanban') return board(ctx, p);
+  if (tab === 'lista') return list(ctx, p);
+  if (tab === 'analise') return analysis(ctx, s, p);
+  if (tab === 'produtos') return produtos(ctx);
   return respostas();
 }
 
+// Filtros comuns: curso do topo, busca, responsável e temperatura.
 function filtered(ctx) {
   const qq = norm(q);
-  return store.all('leads').filter((l) => (!ctx.f.cursoId || l.cursoId === ctx.f.cursoId) && (!fCurso || l.cursoId === fCurso) && (!qq || norm(l.nome + ' ' + l.telefone + ' ' + (l.notas || '')).includes(qq)));
+  return store.all('leads').filter((l) => (!ctx.f.cursoId || l.cursoId === ctx.f.cursoId)
+    && (!fResp || (fResp === '—' ? !l.responsavel : l.responsavel === fResp))
+    && (!fTemp || l.temperatura === fTemp)
+    && (!qq || norm([l.nome, l.telefone, l.email, l.cidade, l.notas, l.proximaAcao, ...tagList(l.etiquetas)].join(' ')).includes(qq)));
 }
 
-function cardHTML(l) {
+const daysInStage = (l) => { const h = (l.historico || []).at(-1); const d = h?.data || l.entrada; return d ? daysBetween(d, today()) : 0; };
+
+function cardHTML(l, p) {
   const t = today();
-  const dias = l.entrada ? daysBetween(l.entrada, t) : 0;
-  const late = l.proximaData && l.proximaData < t && !['matriculado', 'perdido'].includes(l.etapa);
-  const idx = STAGE_IDX[l.etapa];
-  return `<article class="lead${late ? ' late' : ''}" draggable="true" data-drag="${esc(l.id)}" aria-label="${esc(l.nome)}, ${esc(stageLabel(l.etapa))}">
-    <button type="button" class="lead-open" data-edit="${esc(l.id)}"><b>${esc(l.nome)}</b><small>${esc(courseName(l.cursoId))}</small></button>
-    <p class="lead-meta">${esc(l.origem || '')}${l.campanhaId ? ' · ' + esc(campaignName(l.campanhaId)) : ''}</p>
-    ${l.etapa === 'matriculado' ? `<p class="lead-meta"><b class="good">${brl(l.valor)}</b> · ${esc(l.statusPagamento || 'Pago')} · ${fmtDate(l.dataMatricula)}</p>` : `<p class="lead-meta">${dias === 0 ? 'Entrou hoje' : 'Há ' + dias + (dias > 1 ? ' dias' : ' dia')}${l.proximaData ? ` · <span class="${late ? 'bad' : ''}">retorno ${fmtDate(l.proximaData)}</span>` : ''}</p>`}
-    ${l.proximaAcao && l.etapa !== 'matriculado' ? `<p class="lead-next">${esc(l.proximaAcao)}</p>` : ''}
-    ${idx < 4 ? `<div class="lead-actions"><button type="button" class="btn sm" data-adv="${esc(l.id)}">${idx === 3 ? 'Matricular' : 'Avançar'} ${ICON.arrow}</button><button type="button" class="btn sm ghost" data-lose="${esc(l.id)}">Perdido</button></div>` : ''}
+  const late = l.proximaData && l.proximaData < t && OPEN(l);
+  const due = l.proximaData && l.proximaData === t && OPEN(l);
+  const col = leadCol(l, p);
+  const i = p.etapas.findIndex((e) => e.id === col);
+  const next = i >= 0 && i < p.etapas.length - 1 ? p.etapas[i + 1] : null;
+  const parado = OPEN(l) ? daysInStage(l) : 0;
+  const prod = store.get('products', l.produtoId);
+  const tags = tagList(l.etiquetas);
+  const temp = l.temperatura ? `<span class="temp t-${norm(l.temperatura)}" title="${esc(l.temperatura)}" aria-label="${esc(l.temperatura)}"></span>` : '';
+  return `<article class="lead${late ? ' late' : ''}${parado >= 7 ? ' stale' : ''}" draggable="true" data-drag="${esc(l.id)}" aria-label="${esc(l.nome)}, ${esc(leadStage(l))}">
+    <div class="lead-top">
+      <button type="button" class="lead-open" data-edit="${esc(l.id)}"><b>${temp}${esc(l.nome)}</b><small>${esc(prod?.nome || courseName(l.cursoId))}</small></button>
+      ${l.responsavel ? `<span class="avatar" title="${esc(l.responsavel)}">${esc(initials(l.responsavel))}</span>` : ''}
+    </div>
+    ${tags.length ? `<p class="tags">${tags.slice(0, 3).map((x) => `<span class="tag">${esc(x)}</span>`).join('')}</p>` : ''}
+    ${l.origem || l.campanhaId ? `<p class="lead-meta">${esc(l.origem || '')}${l.campanhaId ? ' · ' + esc(campaignName(l.campanhaId)) : ''}</p>` : ''}
+    ${l.etapa === 'matriculado'
+      ? `<p class="lead-meta"><b class="good">${brl(l.valor)}</b> · ${esc(l.statusPagamento || 'Pago')}${l.statusPagamento && l.statusPagamento !== 'Pago' ? ' (' + brl(recebido(l)) + ')' : ''} · ${fmtDate(l.dataMatricula)}</p>`
+      : l.etapa === 'perdido'
+        ? `<p class="lead-meta">${esc(l.motivoPerda || 'Sem motivo')} · ${fmtDate(l.dataPerda)}</p>`
+        : `<p class="lead-meta">${l.valor ? `<b>${brl(l.valor)}</b> · ` : ''}<span class="${parado >= 7 ? 'warn-t' : ''}">${parado === 0 ? 'Mudou hoje' : parado + (parado > 1 ? ' dias' : ' dia') + ' na etapa'}</span>${l.proximaData ? ` · <span class="${late ? 'bad' : due ? 'warn-t' : ''}">${due ? 'retorno hoje' : 'retorno ' + fmtDate(l.proximaData)}</span>` : ''}</p>`}
+    ${l.proximaAcao && OPEN(l) ? `<p class="lead-next">${esc(l.proximaAcao)}</p>` : ''}
+    ${OPEN(l) ? `<div class="lead-actions">
+      ${next ? `<button type="button" class="btn sm" data-move="${esc(l.id)}" data-to="${esc(next.id)}" title="Mover para ${esc(next.nome)}">${ICON.arrow}</button>` : ''}
+      <button type="button" class="btn sm win" data-win="${esc(l.id)}">✓ Ganho</button>
+      <button type="button" class="btn sm ghost" data-lose="${esc(l.id)}">Perdido</button>
+    </div>` : ''}
   </article>`;
 }
 
-function board(ctx) {
-  const leads = filtered(ctx);
-  // Abertos aparecem sempre; matriculados e perdidos só do período, para o quadro não crescer sem fim.
-  const visible = leads.filter((l) => !['matriculado', 'perdido'].includes(l.etapa) || inRange(l.dataMatricula || l.dataPerda || l.entrada, ctx.from, ctx.to));
-  if (!store.all('leads').length) return empty('O funil está vazio', 'Registre cada conversa nova no formulário acima. Depois arraste o cartão entre as colunas até a matrícula.');
-  const counts = COLS.map((c) => visible.filter((l) => l.etapa === c.id).length);
-  return `<div class="search-row"><label class="sr" for="v-q">Buscar no funil</label><input type="search" id="v-q" placeholder="Buscar por nome, telefone ou anotação" value="${esc(q)}"><span class="muted">Arraste os cartões entre as colunas. No celular, use os botões do cartão.</span></div>
-  <div class="board" id="board">${COLS.map((c, i) => {
-    const items = visible.filter((l) => l.etapa === c.id).sort((a, b) => (a.proximaData || '9').localeCompare(b.proximaData || '9') || (b.entrada || '').localeCompare(a.entrada || ''));
-    const more = items.length - 15;
+function filterBar() {
+  const views = [['todos', 'Tudo'], ['abertos', 'Em aberto'], ['hoje', 'Retornos de hoje'], ['ganhos', 'Só ganhos'], ['perdidos', 'Só perdidos']];
+  const resp = responsaveis();
+  return `<div class="filter-bar">
+    <label class="sr" for="v-q">Buscar no funil</label><input type="search" id="v-q" placeholder="Buscar nome, telefone, etiqueta…" value="${esc(q)}">
+    <div class="seg" role="group" aria-label="Mostrar">${views.map(([id, l]) => `<button type="button" class="seg-b" data-view="${id}" aria-pressed="${view === id}">${l}</button>`).join('')}</div>
+    <select id="v-resp" aria-label="Responsável"><option value="">Todos os responsáveis</option>${resp.map((r) => `<option${r === fResp ? ' selected' : ''}>${esc(r)}</option>`).join('')}<option value="—"${fResp === '—' ? ' selected' : ''}>Sem responsável</option></select>
+    <select id="v-temp" aria-label="Temperatura"><option value="">Qualquer temperatura</option>${TEMPERATURAS.map((t) => `<option${t === fTemp ? ' selected' : ''}>${t}</option>`).join('')}</select>
+  </div>`;
+}
+
+function board(ctx, p) {
+  const all = filtered(ctx).filter((l) => leadPipeId(l) === p.id);
+  const t = today();
+  // Abertos aparecem sempre; ganhos e perdidos só do período, para o quadro não crescer sem fim.
+  const inPeriod = (l) => OPEN(l) || inRange(l.dataMatricula || l.dataPerda || l.entrada, ctx.from, ctx.to);
+  let leads = all.filter(inPeriod);
+  if (view === 'hoje') leads = leads.filter((l) => OPEN(l) && ((l.proximaData && l.proximaData <= t) || (l.etapa === 'novo' && !l.proximaData)));
+  const sorter = (a, b) => (a.proximaData || '9').localeCompare(b.proximaData || '9') || (b.entrada || '').localeCompare(a.entrada || '');
+  const noLeads = !store.all('leads').some((l) => leadPipeId(l) === p.id);
+
+  if (view === 'ganhos' || view === 'perdidos') {
+    const etapa = view === 'ganhos' ? 'matriculado' : 'perdido';
+    const items = leads.filter((l) => l.etapa === etapa).sort((a, b) => (b.dataMatricula || b.dataPerda || '').localeCompare(a.dataMatricula || a.dataPerda || ''));
+    return `${filterBar()}
+      <p class="list-sum">${items.length} ${view === 'ganhos' ? 'ganho' : 'perdido'}${items.length === 1 ? '' : 's'} de ${fmtDate(ctx.from)} a ${fmtDate(ctx.to)}${view === 'ganhos' && items.length ? ` · <b class="good">${brl(sum(items, (l) => l.valor))}</b> · recebido ${brl(sum(items, recebido))}` : ''}</p>
+      ${items.length ? `<div class="lead-grid col-${view === 'ganhos' ? 'matriculado' : 'perdido'}">${items.map((l) => cardHTML(l, p)).join('')}</div>` : '<p class="empty-sm">Nada aqui no período escolhido no topo.</p>'}`;
+  }
+
+  const cols = [...p.etapas.map((e) => ({ ...e, open: true })), ...(view === 'todos' ? [{ id: 'ganho', nome: 'Ganho', nivel: 'matriculado' }, { id: 'perdido', nome: 'Perdido', nivel: 'perdido' }] : [])];
+  return `${filterBar()}
+  ${noLeads ? '<p class="hint">Funil vazio. Use o formulário acima, o <b>+</b> no topo de cada coluna (aceita vários nomes, um por linha) ou "Importar lista".</p>' : ''}
+  <div class="board" id="board">${cols.map((c) => {
+    const items = leads.filter((l) => leadCol(l, p) === c.id).sort(sorter);
+    const more = items.length - 20;
     const valor = sum(items, (l) => l.valor);
-    const conv = i > 0 && i < 5 && counts[i - 1] ? Math.round((counts[i] / (counts[i - 1] + counts[i])) * 100) : null;
-    return `<section class="col col-${c.id}" data-drop="${c.id}" aria-label="${esc(c.label)}">
-      <header><h3>${esc(c.label)}</h3><span class="count">${items.length}</span></header>
-      ${valor && (c.id === 'negociacao' || c.id === 'matriculado') ? `<p class="col-sum">${brl(valor)}</p>` : ''}
-      <div class="col-body">${items.slice(0, 15).map(cardHTML).join('') || '<p class="col-empty">Solte um cartão aqui</p>'}${more > 0 ? `<a class="link" href="#funil?etapa=${c.id}">Ver todos (+${more})</a>` : ''}</div>
+    const over = c.limite && items.length > c.limite;
+    return `<section class="col col-${esc(c.nivel)}${over ? ' wip-over' : ''}" data-drop="${esc(c.id)}" aria-label="${esc(c.nome)}">
+      <header><h3>${esc(c.nome)}</h3><span class="col-h-r"><span class="count" title="${c.limite ? 'Limite: ' + c.limite : ''}">${items.length}${c.limite ? '/' + c.limite : ''}</span>${c.open ? `<button type="button" class="icon-btn sm" data-addcol="${esc(c.id)}" aria-label="Adicionar em ${esc(c.nome)}">${ICON.plus}</button>` : ''}</span></header>
+      ${c.open ? `<form class="col-add" data-colform="${esc(c.id)}" hidden><label class="sr" for="ca-${esc(c.id)}">Nomes</label><textarea id="ca-${esc(c.id)}" rows="2" placeholder="Nome, telefone&#10;Um por linha"></textarea><div class="row-actions"><button class="btn sm primary" type="submit">Adicionar</button><button class="btn sm ghost" type="button" data-addcol="${esc(c.id)}">Fechar</button></div></form>` : ''}
+      ${valor ? `<p class="col-sum">${brl(valor)}</p>` : ''}
+      ${over ? `<p class="col-warn">Acima do limite: destrave antes de puxar mais.</p>` : ''}
+      <div class="col-body">${items.slice(0, 20).map((l) => cardHTML(l, p)).join('') || `<p class="col-empty">${c.id === 'ganho' ? 'Solte aqui quem fechou' : 'Solte um cartão aqui'}</p>`}${more > 0 ? `<button type="button" class="link" data-tab="lista">Ver todos (+${more})</button>` : ''}</div>
     </section>`;
   }).join('')}</div>
-  <p class="hint">Matriculados e perdidos aparecem só dentro do período escolhido no topo. Soltar em Matriculado abre a matrícula; em Perdido, o motivo.</p>`;
+  <p class="hint">Arraste os cartões entre as colunas ou use os botões. Ganhos e perdidos aparecem só dentro do período escolhido no topo. Cartão com borda âmbar está parado há 7 dias ou mais.</p>`;
 }
 
-function list(ctx) {
+function list(ctx, p) {
   const t = today();
+  const prm = ctx.params;
   let leads = filtered(ctx);
-  const p = ctx.params;
-  if (p.etapa) leads = leads.filter((l) => l.etapa === p.etapa);
-  if (p.vencidos) leads = leads.filter((l) => !['matriculado', 'perdido'].includes(l.etapa) && l.proximaData && l.proximaData < t);
+  // Atalhos do Painel (#funil?etapa=… ou ?vencidos=1) olham todos os funis.
+  if (prm.etapa) leads = leads.filter((l) => l.etapa === prm.etapa);
+  else if (prm.vencidos) leads = leads.filter((l) => OPEN(l) && l.proximaData && l.proximaData < t);
+  else leads = leads.filter((l) => leadPipeId(l) === p.id);
+  if (!prm.etapa && !prm.vencidos) {
+    if (view === 'abertos') leads = leads.filter(OPEN);
+    if (view === 'hoje') leads = leads.filter((l) => OPEN(l) && l.proximaData && l.proximaData <= t);
+    if (view === 'ganhos') leads = leads.filter((l) => l.etapa === 'matriculado');
+    if (view === 'perdidos') leads = leads.filter((l) => l.etapa === 'perdido');
+  }
   leads.sort((a, b) => (b.entrada || '').localeCompare(a.entrada || ''));
-  return `<div class="search-row"><label class="sr" for="v-q">Buscar no funil</label><input type="search" id="v-q" placeholder="Buscar por nome, telefone ou anotação" value="${esc(q)}">${p.etapa || p.vencidos ? `<a class="btn sm ghost" href="#funil">Tirar filtro: ${p.etapa ? esc(stageLabel(p.etapa)) : 'retornos atrasados'}</a>` : ''}</div>
-  ${leads.length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>Pessoa</th><th>Curso</th><th>Origem</th><th>Entrada</th><th>Etapa</th><th>Próxima ação</th><th class="r">Valor</th></tr></thead><tbody>${leads.map((l) => `<tr><td><button class="link" data-edit="${esc(l.id)}">${esc(l.nome)}</button><small class="cell-sub">${esc(l.telefone || '')}</small></td><td>${esc(courseName(l.cursoId))}</td><td>${esc(l.origem || '')}${l.campanhaId ? `<small class="cell-sub">${esc(campaignName(l.campanhaId))}</small>` : ''}</td><td>${fmtDate(l.entrada)}</td><td>${badge(stageLabel(l.etapa), l.etapa === 'matriculado' ? 'good' : l.etapa === 'perdido' ? 'bad' : '')}${l.motivoPerda ? `<small class="cell-sub">${esc(l.motivoPerda)}</small>` : ''}</td><td>${l.proximaData ? `<span class="${l.proximaData < t && !['matriculado', 'perdido'].includes(l.etapa) ? 'bad' : ''}">${fmtDate(l.proximaData)}</span> ` : ''}${esc(l.proximaAcao || '')}</td><td class="r">${l.valor ? brl(l.valor) : '—'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty-sm">Ninguém neste filtro.</p>'}`;
+  const multi = prm.etapa || prm.vencidos;
+  return `${filterBar()}
+  ${multi ? `<p class="row-actions"><a class="btn sm ghost" href="#funil">Tirar filtro: ${prm.etapa ? esc(prm.etapa === 'matriculado' ? 'matriculados' : STAGES.find((x) => x.id === prm.etapa)?.label || prm.etapa) : 'retornos atrasados'} (todos os funis)</a></p>` : ''}
+  ${leads.length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>Pessoa</th>${multi ? '<th>Funil</th>' : ''}<th>Etapa</th><th>Interesse</th><th>Origem</th><th>Responsável</th><th>Próxima ação</th><th class="r">Valor</th></tr></thead><tbody>${leads.map((l) => `<tr>
+    <td><button class="link" data-edit="${esc(l.id)}">${esc(l.nome)}</button><small class="cell-sub">${esc(l.telefone || '')}${l.temperatura ? ' · ' + esc(l.temperatura) : ''}</small></td>
+    ${multi ? `<td>${esc(pipeline(leadPipeId(l)).nome)}</td>` : ''}
+    <td>${badge(leadStage(l), l.etapa === 'matriculado' ? 'good' : l.etapa === 'perdido' ? 'bad' : '')}${l.motivoPerda && l.etapa === 'perdido' ? `<small class="cell-sub">${esc(l.motivoPerda)}</small>` : ''}</td>
+    <td>${esc(store.get('products', l.produtoId)?.nome || courseName(l.cursoId))}${tagList(l.etiquetas).length ? `<small class="cell-sub">${esc(tagList(l.etiquetas).join(', '))}</small>` : ''}</td>
+    <td>${esc(l.origem || '')}${l.campanhaId ? `<small class="cell-sub">${esc(campaignName(l.campanhaId))}</small>` : ''}</td>
+    <td>${esc(l.responsavel || '—')}</td>
+    <td>${l.proximaData ? `<span class="${l.proximaData < t && OPEN(l) ? 'bad' : ''}">${fmtDate(l.proximaData)}</span> ` : ''}${esc(l.proximaAcao || '')}</td>
+    <td class="r">${l.valor ? brl(l.valor) : '—'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty-sm">Ninguém neste filtro.</p>'}`;
 }
 
-function analysis(ctx, s) {
+function analysis(ctx, s, p) {
   const stages = STAGES.map((st, i) => ({ label: st.label, count: s.funil[i] }));
   const motivos = Object.entries(s.motivos).sort((a, b) => b[1] - a[1]);
   const maxM = Math.max(1, ...motivos.map((m) => m[1]));
+  const leads = store.all('leads').filter((l) => leadPipeId(l) === p.id && (!ctx.f.cursoId || l.cursoId === ctx.f.cursoId));
+  const abertos = leads.filter(OPEN);
+  const porEtapa = p.etapas.map((e) => { const its = abertos.filter((l) => leadCol(l, p) === e.id); return { e, n: its.length, valor: sum(its, (l) => l.valor), parado: its.length ? Math.round(sum(its, daysInStage) / its.length) : 0 }; });
+  const maxE = Math.max(1, ...porEtapa.map((x) => x.n));
+  const resp = {};
+  leads.forEach((l) => {
+    const r = l.responsavel || 'Sem responsável';
+    const x = resp[r] || (resp[r] = { r, abertos: 0, ganhos: 0, perdidos: 0, valor: 0 });
+    if (OPEN(l)) x.abertos++;
+    if (l.etapa === 'matriculado' && inRange(l.dataMatricula, ctx.from, ctx.to)) { x.ganhos++; x.valor += Number(l.valor) || 0; }
+    if (l.etapa === 'perdido' && inRange(l.dataPerda, ctx.from, ctx.to)) x.perdidos++;
+  });
+  const rs = Object.values(resp).sort((a, b) => b.ganhos - a.ganhos || b.abertos - a.abertos);
   return `<div class="grid-2">
+    <section class="card"><header class="card-head"><div><h2>Etapas de ${esc(p.nome)}</h2><p class="muted">Cartões em aberto agora e há quanto tempo, em média, estão parados</p></div></header>
+      ${abertos.length ? `<ul class="hbars">${porEtapa.map((x) => `<li><span>${esc(x.e.nome)}${x.e.limite && x.n > x.e.limite ? ' <b class="bad">acima do limite</b>' : ''}</span><span class="hb-track"><span style="width:${(x.n / maxE) * 100}%"></span></span><b>${x.n}</b><small class="muted">${x.parado} d${x.valor ? ' · ' + brl(x.valor) : ''}</small></li>`).join('')}</ul>` : '<p class="empty-sm">Nenhum cartão em aberto.</p>'}</section>
     <section class="card"><header class="card-head"><div><h2>Conversão por etapa</h2><p class="muted">Quem entrou no período e até onde chegou</p></div></header>${s.leads ? funnel(stages) : '<p class="empty-sm">Sem conversas no período.</p>'}</section>
+    <section class="card"><header class="card-head"><div><h2>Por responsável</h2><p class="muted">Ganhos e perdas no período; abertos agora</p></div></header>
+      ${rs.length ? `<table class="tbl"><thead><tr><th>Pessoa</th><th class="r">Abertos</th><th class="r">Ganhos</th><th class="r">Perdidos</th><th class="r">Ganho (R$)</th></tr></thead><tbody>${rs.map((x) => `<tr><td>${esc(x.r)}</td><td class="r">${x.abertos}</td><td class="r">${x.ganhos}</td><td class="r">${x.perdidos}</td><td class="r">${x.valor ? brl(x.valor) : '—'}</td></tr>`).join('')}</tbody></table>` : '<p class="empty-sm">Sem leads neste funil.</p>'}
+    </section>
     <section class="card"><header class="card-head"><div><h2>Motivos de perda</h2><p class="muted">Mostra onde o atendimento trava</p></div></header>
       ${motivos.length ? `<ul class="hbars">${motivos.map(([m, c]) => `<li><span>${esc(m)}</span><span class="hb-track"><span style="width:${(c / maxM) * 100}%"></span></span><b>${c}</b></li>`).join('')}</ul>` : '<p class="empty-sm">Nenhuma perda registrada no período.</p>'}
     </section>
     <section class="card"><header class="card-head"><h2>Por origem</h2></header>
-      ${s.porOrigem.length ? `<table class="tbl"><thead><tr><th>Origem</th><th class="r">Conversas</th><th class="r">Matrículas</th><th class="r">Conversão</th></tr></thead><tbody>${s.porOrigem.map((o) => `<tr><td>${esc(o.origem)}</td><td class="r">${o.leads}</td><td class="r">${o.matriculas}</td><td class="r">${pct(o.leads ? o.matriculas / o.leads : null, 0)}</td></tr>`).join('')}</tbody></table>` : '<p class="empty-sm">Sem conversas no período.</p>'}
+      ${s.porOrigem.length ? `<table class="tbl"><thead><tr><th>Origem</th><th class="r">Conversas</th><th class="r">Ganhos</th><th class="r">Conversão</th></tr></thead><tbody>${s.porOrigem.map((o) => `<tr><td>${esc(o.origem)}</td><td class="r">${o.leads}</td><td class="r">${o.matriculas}</td><td class="r">${pct(o.leads ? o.matriculas / o.leads : null, 0)}</td></tr>`).join('')}</tbody></table>` : '<p class="empty-sm">Sem conversas no período.</p>'}
     </section>
   </div>`;
+}
+
+function produtos(ctx) {
+  const prods = store.all('products').sort((a, b) => (a.ativo === false) - (b.ativo === false) || a.nome.localeCompare(b.nome));
+  const vendas = (id) => store.all('leads').filter((l) => l.etapa === 'matriculado' && l.produtoId === id && inRange(l.dataMatricula, ctx.from, ctx.to));
+  const semProduto = store.all('courses').filter((c) => c.ativo !== false && !prods.some((p) => p.cursoId === c.id));
+  return `<p class="hint">Produto é o que você vende: curso, valor e condição. No ganho, escolher o produto preenche a matrícula em um toque.</p>
+  <div class="row-actions"><button class="btn primary" data-act="new-prod">${ICON.plus} Novo produto</button>${semProduto.length ? `<button class="btn" data-act="prod-from-courses">Criar um por curso (${semProduto.length})</button>` : ''}</div>
+  ${prods.length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>Produto</th><th>Curso</th><th class="r">Valor</th><th>Condição</th><th class="r">Vendas no período</th><th class="r">Receita</th></tr></thead><tbody>${prods.map((p) => { const v = vendas(p.id); return `<tr${p.ativo === false ? ' class="muted"' : ''}><td><button class="link" data-prod="${esc(p.id)}">${esc(p.nome)}</button>${p.ativo === false ? '<small class="cell-sub">fora de venda</small>' : ''}</td><td>${esc(p.cursoId ? courseName(p.cursoId) : '—')}</td><td class="r">${p.valor ? brl(p.valor) : '—'}</td><td>${esc([p.formaPagamento, p.parcelas ? p.parcelas + 'x' : ''].filter(Boolean).join(' · ') || '—')}</td><td class="r">${v.length}</td><td class="r">${v.length ? brl(sum(v, (l) => l.valor)) : '—'}</td></tr>`; }).join('')}</tbody></table></div>`
+    : empty('Nenhum produto cadastrado', 'Cadastre os cursos com valor e condição (ex.: "Injetáveis · à vista" e "Injetáveis · 6x no cartão"). Depois o ganho fica em um toque.')}`;
 }
 
 function respostas() {
@@ -140,62 +259,88 @@ function respDialog(i, ctx) {
   });
 }
 
-// Solta um cartão numa coluna. Matrícula e perda pedem os dados antes de mover.
-function dropTo(id, etapa, ctx) {
-  const l = store.get('leads', id);
-  if (!l || l.etapa === etapa) return;
-  if (etapa === 'matriculado') return matriculaDialog(l, ctx);
-  if (etapa === 'perdido') return loseDialog(l, ctx);
-  moveLead(l, etapa);
-  toast(l.nome + ' → ' + stageLabel(etapa));
-  ctx.refresh();
+// Cria um lead novo numa etapa do funil atual.
+function newLead(p, st, d) {
+  return { nome: d.nome, telefone: d.telefone || '', cursoId: d.cursoId || p.cursoId || '', origem: d.origem || '', campanhaId: d.campanhaId || '', temperatura: d.temperatura || '', etiquetas: d.etiquetas || [], responsavel: d.responsavel ?? myName(), primeiraResposta: d.primeiraResposta ?? null, entrada: d.entrada || today(), funilId: p.id, etapaFunil: st.id, etapa: st.nivel, etapaMax: STAGES.findIndex((x) => x.id === st.nivel), historico: [{ data: today(), etapa: st.nivel, col: st.id }] };
 }
 
-function importDialog(ctx) {
+// Linhas "Nome, telefone" (ou ; ou tab) viram leads. Telefones já cadastrados são ignorados.
+function parseLines(txt) {
+  return txt.split(/\r?\n/).map((ln) => ln.trim()).filter(Boolean).map((ln) => {
+    const parts = ln.split(/\s*[;\t,]\s*/);
+    let nome = parts[0], telefone = parts[1] || '';
+    if (!telefone && /\d{8,}/.test(ln.replace(/\D/g, ''))) { const m = ln.match(/[+()\d][\d\s()+-]{7,}/); if (m) { telefone = m[0].trim(); nome = ln.replace(m[0], '').trim() || telefone; } }
+    return { nome, telefone };
+  });
+}
+
+function addMany(rows, p, st, extra = {}) {
+  const known = new Set(store.all('leads').map((l) => phoneKey(l.telefone)).filter(Boolean));
+  let dup = 0;
+  const recs = [];
+  rows.forEach((r) => {
+    const k = phoneKey(r.telefone);
+    if (k && known.has(k)) { dup++; return; }
+    if (k) known.add(k);
+    recs.push(newLead(p, st, { ...extra, ...r }));
+  });
+  if (recs.length) store.putMany('leads', recs);
+  return { added: recs.length, dup };
+}
+
+function importDialog(ctx, p) {
   let parsed = null;
   const { dlg } = openDialog({
     title: 'Importar lista de contatos', wide: true, saveLabel: 'Importar',
     fields: [
+      { name: 'funilId', label: 'Funil', type: 'select', options: pipelines().map((x) => [x.id, x.nome]), value: p.id },
+      { name: 'etapa', label: 'Etapa', type: 'select', options: p.etapas.map((e) => [e.id, e.nome]) },
       { name: 'origem', label: 'Origem padrão', type: 'select', options: ORIGENS, value: 'Meta Ads' },
       { name: 'campanhaId', label: 'Campanha padrão', type: 'select', options: campOpts() },
-      { name: 'cursoId', label: 'Curso padrão', type: 'select', options: courseOpts('Nenhum') },
+      { name: 'cursoId', label: 'Curso padrão', type: 'select', options: courseOpts('Nenhum'), value: p.cursoId },
+      { name: 'etiqueta', label: 'Etiqueta para a lista', placeholder: 'ex.: feira 10/10' },
     ],
-    html: `<p class="hint">Aceita CSV (WhatsApp Business, planilha ou CRM) ou uma lista colada: <code>nome; telefone; data</code>. Telefones repetidos são ignorados.</p>
+    html: `<p class="hint">Aceita CSV (WhatsApp Business, planilha ou CRM) ou uma lista colada, uma pessoa por linha: <code>nome, telefone</code>. Telefones repetidos são ignorados.</p>
       <div class="drop"><label class="btn" for="li-file">${ICON.upload} Escolher arquivo</label><input type="file" id="li-file" accept=".csv,.txt" class="sr"><span class="muted" id="li-name"></span></div>
-      <div class="field full"><label for="li-text">Conteúdo</label><textarea id="li-text" rows="6" placeholder="nome;telefone;data&#10;Maria Souza;61999990000;2026-10-20"></textarea></div><p class="note" id="li-prev"></p>`,
+      <div class="field full"><label for="li-text">Conteúdo</label><textarea id="li-text" rows="6" placeholder="Maria Souza, 61999990000&#10;João Lima, 61988880000"></textarea></div><p class="note" id="li-prev"></p>`,
+    onOpen: (form) => {
+      const fs = $('[name="funilId"]', form);
+      fs.addEventListener('change', () => { const x = pipeline(fs.value); $('[name="etapa"]', form).innerHTML = x.etapas.map((e) => `<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join(''); });
+      $('#li-text', form).focus();
+    },
     onSave: (d) => {
       if (!parsed?.length) { const e = $('.form-error', dlg); e.textContent = 'Nada para importar.'; e.hidden = false; return false; }
-      const known = new Set(store.all('leads').map((l) => phoneKey(l.telefone)).filter(Boolean));
+      const px = pipeline(d.funilId);
+      const st = px.etapas.find((e) => e.id === d.etapa) || px.etapas[0];
       const courses = store.all('courses'); const camps = store.all('campaigns');
-      let dup = 0;
-      const recs = [];
-      parsed.forEach((r) => {
-        const k = phoneKey(r.telefone);
-        if (k && known.has(k)) { dup++; return; }
-        if (k) known.add(k);
-        const curso = r.curso ? courses.find((c) => norm(c.nome).includes(norm(r.curso)))?.id : '';
-        const camp = r.campanha ? camps.find((c) => norm(c.nome) === norm(r.campanha))?.id : '';
-        recs.push({ nome: r.nome || r.telefone || 'Sem nome', telefone: r.telefone, entrada: r.data || today(), origem: ORIGENS.find((o) => norm(o) === norm(r.origem)) || d.origem, campanhaId: camp || d.campanhaId, cursoId: curso || d.cursoId, anuncio: r.anuncio || '', etapa: 'novo', etapaMax: 0, historico: [{ data: today(), etapa: 'novo' }] });
-      });
-      store.putMany('leads', recs);
-      store.put('imports', { fonte: 'Contatos WhatsApp', lidas: parsed.length, novas: recs.length, substituidas: 0, ignoradas: dup });
-      toast(recs.length + ' contatos no funil' + (dup ? ', ' + dup + ' repetidos ignorados.' : '.'));
+      const rows = parsed.map((r) => ({
+        nome: r.nome || r.telefone || 'Sem nome', telefone: r.telefone || '', entrada: r.data || today(),
+        origem: ORIGENS.find((o) => norm(o) === norm(r.origem)) || d.origem,
+        campanhaId: (r.campanha && camps.find((c) => norm(c.nome) === norm(r.campanha))?.id) || d.campanhaId,
+        cursoId: (r.curso && courses.find((c) => norm(c.nome).includes(norm(r.curso)))?.id) || d.cursoId,
+        anuncio: r.anuncio || '', email: r.email || '',
+      }));
+      const res = addMany(rows, px, st, { etiquetas: d.etiqueta ? [d.etiqueta] : [] });
+      store.put('imports', { fonte: 'Contatos · ' + px.nome, lidas: parsed.length, novas: res.added, substituidas: 0, ignoradas: res.dup });
+      toast(res.added + ' contatos em ' + px.nome + (res.dup ? ', ' + res.dup + ' repetidos ignorados.' : '.'));
+      setPipe(px.id);
       ctx.refresh();
     },
   });
   const prev = () => {
     const txt = $('#li-text', dlg).value.trim();
     if (!txt) { parsed = null; $('#li-prev', dlg).textContent = ''; return; }
-    const p = parseCSV(txt);
-    const H = p.headers.map(norm);
-    const find = (...keys) => p.headers[H.findIndex((h) => keys.some((k) => h.includes(k)))];
-    const hasHeader = H.some((h) => /nome|name|telefone|phone|celular|whats/.test(h));
+    const first = txt.split(/\r?\n/)[0];
+    const H = first.split(/[;,\t]/).map(norm);
+    const hasHeader = H.some((h) => /^(nome|name|telefone|phone|celular|whats|e-?mail)/.test(h));
     if (hasHeader) {
-      const cn = find('nome', 'name'), ct = find('telefone', 'phone', 'celular', 'whats', 'numero'), cd = find('data', 'date', 'criad'), co = find('origem', 'source'), cc = find('curso', 'interesse'), ca = find('campanha', 'campaign'), cad = find('anuncio', 'ad name');
-      parsed = p.rows.map((r) => ({ nome: r[cn], telefone: r[ct], data: parseDate(r[cd]), origem: r[co], curso: r[cc], campanha: r[ca], anuncio: r[cad] })).filter((r) => r.nome || r.telefone);
+      const p = parseCSV(txt);
+      const HH = p.headers.map(norm);
+      const find = (...keys) => p.headers[HH.findIndex((h) => keys.some((k) => h.includes(k)))];
+      const cn = find('nome', 'name'), ct = find('telefone', 'phone', 'celular', 'whats', 'numero'), cd = find('data', 'date', 'criad'), co = find('origem', 'source'), cc = find('curso', 'interesse'), ca = find('campanha', 'campaign'), cad = find('anuncio', 'ad name'), ce = find('email', 'e-mail');
+      parsed = p.rows.map((r) => ({ nome: r[cn], telefone: r[ct], data: parseDate(r[cd]), origem: r[co], curso: r[cc], campanha: r[ca], anuncio: r[cad], email: r[ce] })).filter((r) => r.nome || r.telefone);
     } else {
-      const all = [p.headers, ...p.rows.map((r) => Object.values(r))];
-      parsed = all.map((cols) => ({ nome: cols[0], telefone: cols[1], data: parseDate(cols[2]) })).filter((r) => r.nome || r.telefone);
+      parsed = parseLines(txt);
     }
     $('#li-prev', dlg).textContent = parsed.length + ' contatos encontrados. Primeiro: ' + (parsed[0] ? (parsed[0].nome || '') + ' ' + (parsed[0].telefone || '') : '');
   };
@@ -203,13 +348,36 @@ function importDialog(ctx) {
   $('#li-file', dlg).addEventListener('change', async (e) => { const fl = e.target.files[0]; if (!fl) return; $('#li-name', dlg).textContent = fl.name; $('#li-text', dlg).value = await readFileText(fl); prev(); });
 }
 
-function bindSearch(root, ctx) {
-  $('#v-q', root)?.addEventListener('input', (e) => {
-    q = e.target.value; const pos = e.target.selectionStart;
-    $('#tab-body', root).innerHTML = body(ctx, salesStats(ctx.from, ctx.to, ctx.f));
-    const inp = $('#v-q', root); inp.focus(); inp.setSelectionRange(pos, pos);
-    bindSearch(root, ctx); bindDrag(root, ctx);
+function rerenderBody(root, ctx) {
+  const p = pipeline(pipeId);
+  const inp = $('#v-q', root);
+  const focused = document.activeElement === inp;
+  const pos = inp?.selectionStart;
+  $('#tab-body', root).innerHTML = body(ctx, salesStats(ctx.from, ctx.to, { ...ctx.f, funilId: p.id }), p);
+  bindBody(root, ctx);
+  if (focused) { const i2 = $('#v-q', root); i2.focus(); i2.setSelectionRange(pos, pos); }
+}
+
+function bindBody(root, ctx) {
+  $('#v-q', root)?.addEventListener('input', (e) => { q = e.target.value; rerenderBody(root, ctx); });
+  $('#v-resp', root)?.addEventListener('change', (e) => { fResp = e.target.value; rerenderBody(root, ctx); });
+  $('#v-temp', root)?.addEventListener('change', (e) => { fTemp = e.target.value; rerenderBody(root, ctx); });
+  $$('[data-colform]', root).forEach((form) => {
+    const ta = $('textarea', form);
+    ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !ta.value.includes('\n')) { e.preventDefault(); form.requestSubmit(); } if (e.key === 'Escape') form.hidden = true; });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const rows = parseLines(ta.value);
+      if (!rows.length) return ta.focus();
+      const p = pipeline(pipeId);
+      const st = p.etapas.find((x) => x.id === form.dataset.colform);
+      const res = addMany(rows, p, st, { origem: '' });
+      toast(res.added + (res.added === 1 ? ' lead adicionado' : ' leads adicionados') + ' em ' + st.nome + (res.dup ? '. ' + res.dup + ' telefone(s) já existiam.' : '.'));
+      ctx.refresh();
+      setTimeout(() => { const f2 = $(`[data-colform="${CSS.escape(st.id)}"]`); if (f2) { f2.hidden = false; $('textarea', f2).focus(); } }, 60);
+    });
   });
+  bindDrag(root, ctx);
 }
 
 function bindDrag(root, ctx) {
@@ -225,7 +393,7 @@ function bindDrag(root, ctx) {
       e.preventDefault(); col.classList.remove('over');
       const id = dragId || e.dataTransfer.getData('text/plain');
       dragId = null;
-      if (id) dropTo(id, col.dataset.drop, ctx);
+      if (id) moveToCol(store.get('leads', id), col.dataset.drop, ctx, pipeline(pipeId));
     });
   });
 }
@@ -240,32 +408,56 @@ export function mount(root, ctx) {
     if (!d.nome.trim()) { $('#q-nome', root).focus(); return; }
     const dup = d.telefone && store.all('leads').find((x) => phoneKey(x.telefone) === phoneKey(d.telefone));
     if (dup) { toast('Esse telefone já está no funil como ' + dup.nome + '. Abrindo o cartão.', 'warn'); editLead(dup, ctx); return; }
-    store.put('leads', { nome: d.nome.trim(), telefone: d.telefone.trim(), cursoId: d.cursoId, origem: d.origem, campanhaId: ['Meta Ads', 'Google'].includes(d.origem) ? d.campanhaId : '', primeiraResposta: d.primeiraResposta ? Number(d.primeiraResposta) : null, entrada: today(), etapa: 'novo', etapaMax: 0, historico: [{ data: today(), etapa: 'novo' }] });
-    toast('Adicionado ao funil.');
+    const p = pipeline(pipeId);
+    store.put('leads', newLead(p, p.etapas[0], { ...d, nome: d.nome.trim(), telefone: d.telefone.trim(), campanhaId: ['Meta Ads', 'Google'].includes(d.origem) ? d.campanhaId : '' }));
+    toast('Adicionado em ' + p.nome + '.');
     ctx.refresh();
     setTimeout(() => $('#q-nome')?.focus(), 50);
   });
-  bindSearch(root, ctx);
-  bindDrag(root, ctx);
+  bindBody(root, ctx);
   root.addEventListener('click', (e) => {
     const b = e.target.closest('button,[data-tab]');
     if (!b) return;
     const ds = b.dataset;
+    const p = pipeline(pipeId);
+    if (ds.pipe) { setPipe(ds.pipe); return ctx.refresh(); }
     if (ds.tab) { tab = ds.tab; if (ctx.params.etapa || ctx.params.vencidos) location.hash = '#funil'; else ctx.refresh(); return; }
-    if (ds.edit) return editLead(store.get('leads', ds.edit), ctx);
-    if (ds.adv) {
-      const l = store.get('leads', ds.adv);
-      const idx = STAGE_IDX[l.etapa];
-      return dropTo(l.id, STAGES[idx + 1].id, ctx);
+    if (ds.view) { view = ds.view; return rerenderBody(root, ctx); }
+    if (ds.addcol) {
+      const f = $(`[data-colform="${CSS.escape(ds.addcol)}"]`, root);
+      f.hidden = !f.hidden;
+      if (!f.hidden) $('textarea', f).focus();
+      return;
     }
+    if (ds.edit) return editLead(store.get('leads', ds.edit), ctx);
+    if (ds.move) return moveToCol(store.get('leads', ds.move), ds.to, ctx, p);
+    if (ds.win) return matriculaDialog(store.get('leads', ds.win), ctx);
     if (ds.lose) return loseDialog(store.get('leads', ds.lose), ctx);
+    if (ds.prod) return productDialog(store.get('products', ds.prod), ctx);
     if (ds.resp !== undefined) return respDialog(Number(ds.resp), ctx);
     if (ds.copy !== undefined) return copyText(settings().respostas[Number(ds.copy)].texto, $('#resp-' + ds.copy, root));
+    if (ds.act === 'new-pipe') return pipeDialog(null, ctx, { onSaved: (x) => x && setPipe(x.id) });
+    if (ds.act === 'edit-pipe') return pipeDialog(p, ctx, { onSaved: (x) => setPipe(x ? x.id : 'principal') });
+    if (ds.act === 'new-prod') return productDialog(null, ctx);
+    if (ds.act === 'prod-from-courses') {
+      const prods = store.all('products');
+      const recs = store.all('courses').filter((c) => c.ativo !== false && !prods.some((x) => x.cursoId === c.id)).map((c) => ({ nome: c.nome, cursoId: c.id, valor: c.preco || null, ativo: true }));
+      store.putMany('products', recs);
+      toast(recs.length + ' produtos criados. Abra cada um para pôr o valor e a condição de pagamento.');
+      return ctx.refresh();
+    }
     if (ds.act === 'resp') return respDialog(null, ctx);
-    if (ds.act === 'import') return importDialog(ctx);
+    if (ds.act === 'import') return importDialog(ctx, p);
     if (ds.act === 'export') {
-      downloadFile('funil-liceu-' + today() + '.csv', toCSV(store.all('leads'), [{ key: 'nome', label: 'Nome' }, { key: 'telefone', label: 'Telefone' }, { label: 'Curso', get: (l) => courseName(l.cursoId) }, { key: 'origem', label: 'Origem' }, { label: 'Campanha', get: (l) => (l.campanhaId ? campaignName(l.campanhaId) : '') }, { key: 'anuncio', label: 'Anúncio' }, { key: 'entrada', label: 'Entrada' }, { label: 'Etapa', get: (l) => stageLabel(l.etapa) }, { key: 'valor', label: 'Valor' }, { key: 'motivoPerda', label: 'Motivo perda' }, { key: 'proximaData', label: 'Próximo retorno' }, { key: 'proximaAcao', label: 'Próxima ação' }]), 'text/csv');
+      downloadFile('funil-liceu-' + today() + '.csv', toCSV(store.all('leads'), [
+        { key: 'nome', label: 'Nome' }, { key: 'telefone', label: 'Telefone' }, { key: 'email', label: 'E-mail' }, { key: 'cidade', label: 'Cidade' },
+        { label: 'Funil', get: (l) => pipeline(leadPipeId(l)).nome }, { label: 'Etapa', get: leadStage },
+        { label: 'Produto', get: (l) => store.get('products', l.produtoId)?.nome || '' }, { label: 'Curso', get: (l) => courseName(l.cursoId) },
+        { key: 'temperatura', label: 'Temperatura' }, { key: 'responsavel', label: 'Responsável' }, { label: 'Etiquetas', get: (l) => tagList(l.etiquetas).join(', ') },
+        { key: 'origem', label: 'Origem' }, { label: 'Campanha', get: (l) => (l.campanhaId ? campaignName(l.campanhaId) : '') }, { key: 'anuncio', label: 'Anúncio' },
+        { key: 'entrada', label: 'Entrada' }, { key: 'valor', label: 'Valor' }, { key: 'objecao', label: 'Objeção' }, { key: 'motivoPerda', label: 'Motivo perda' },
+        { key: 'proximaData', label: 'Próximo retorno' }, { key: 'proximaAcao', label: 'Próxima ação' },
+      ]), 'text/csv');
     }
   });
-  void fCurso;
 }
