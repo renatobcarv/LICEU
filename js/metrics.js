@@ -65,6 +65,23 @@ export function campaignFilter(f = {}) {
   return (c) => (!f.cursoId || c.cursoId === f.cursoId) && (!f.canal || c.canal === f.canal);
 }
 
+// Matrículas lançadas só como número na campanha (sem cadastrar o aluno): ex. "3 matrículas no balcão vindas do quiz".
+// Uma função só, usada por Painel, Matrículas, Funil, Meta Ads, Metas e Relatórios, para os números baterem.
+export function extraMatriculas(from, to, f = {}) {
+  const out = { n: 0, valor: 0, porCurso: {}, porCampanha: {}, itens: [] };
+  store.all('campaigns').filter((c) => !f.cursoId || c.cursoId === f.cursoId).forEach((c) => {
+    (c.matriculasExtras || []).forEach((e) => {
+      if (!inRange(e.data, from, to)) return;
+      const q = Number(e.qtd) || 0, v = Number(e.valor) || 0;
+      out.n += q; out.valor += v;
+      out.porCurso[c.cursoId || ''] = (out.porCurso[c.cursoId || ''] || 0) + q;
+      out.porCampanha[c.id] = (out.porCampanha[c.id] || 0) + q;
+      out.itens.push({ ...e, campanhaId: c.id, cursoId: c.cursoId });
+    });
+  });
+  return out;
+}
+
 // Agrega mídia + comercial por campanha no período.
 export function campaignRows(from, to, f = {}) {
   const camps = store.all('campaigns').filter(campaignFilter(f));
@@ -88,8 +105,10 @@ export function campaignRows(from, to, f = {}) {
     const cl = leads.filter((l) => l.campanhaId === c.id && (!f.cursoId || !l.cursoId || l.cursoId === f.cursoId));
     row.leads = cl.filter((l) => inRange(l.entrada, from, to)).length;
     const mats = cl.filter((l) => l.etapa === 'matriculado' && inRange(l.dataMatricula, from, to));
-    row.matriculas = mats.length;
-    row.receita = sum(mats, (l) => l.valor);
+    const ex = (c.matriculasExtras || []).filter((e) => inRange(e.data, from, to));
+    row.matriculasExtra = sum(ex, (e) => e.qtd);
+    row.matriculas = mats.length + row.matriculasExtra;
+    row.receita = sum(mats, (l) => l.valor) + sum(ex, (e) => e.valor);
     Object.values(row.ads).forEach((ad) => {
       const al = cl.filter((l) => l.anuncio && l.anuncio === ad.nome);
       ad.leads = al.filter((l) => inRange(l.entrada, from, to)).length;
@@ -145,12 +164,13 @@ export function salesStats(from, to, f = {}) {
     x.leads++;
     if (l.etapa === 'matriculado' && inRange(l.dataMatricula, from, to)) x.matriculas++;
   });
+  const extra = f.funilId ? { n: 0, valor: 0 } : extraMatriculas(from, to, f);
   const t = today();
   const followVencidos = all.filter((l) => !['matriculado', 'perdido'].includes(l.etapa) && l.proximaData && l.proximaData < t);
   const semContato = all.filter((l) => l.etapa === 'novo' && l.entrada && daysBetween(l.entrada, t) >= 1);
   const resp = entrou.map((l) => Number(l.primeiraResposta)).filter((v) => v > 0);
   return {
-    leads: entrou.length, matriculas: mats.length, receita: sum(mats, (l) => l.valor), perdidos: perdidos.length,
+    leads: entrou.length, matriculas: mats.length + extra.n, matriculasExtra: extra.n, matriculasCadastradas: mats.length, receita: sum(mats, (l) => l.valor) + extra.valor, perdidos: perdidos.length,
     funil: counts, motivos, porOrigem: Object.values(porOrigem).sort((a, b) => b.leads - a.leads),
     followVencidos, semContato, abertos: all.filter((l) => !['matriculado', 'perdido'].includes(l.etapa)),
     tempoResposta: resp.length ? sum(resp) / resp.length : null, convLead: div(mats.length, entrou.length),
@@ -234,7 +254,7 @@ export function weeklySeries(from, to, f = {}) {
     return {
       inicio: ws, label: fmtDate(a),
       leads: leads.filter((l) => inRange(l.entrada, a, b)).length,
-      matriculas: leads.filter((l) => l.etapa === 'matriculado' && inRange(l.dataMatricula, a, b)).length,
+      matriculas: leads.filter((l) => l.etapa === 'matriculado' && inRange(l.dataMatricula, a, b)).length + extraMatriculas(a, b, f).n,
       investimento: sum(stats, (s) => (Number(s.investimento) || 0) * spread(s, a, b)),
     };
   });
@@ -307,6 +327,12 @@ export function diagnostics(from, to, f = {}) {
 
   if (!withStats.length) add('dados', 'Dados', 'Nenhuma métrica de anúncio no período', 'Sem investimento registrado, o painel não calcula custo por lead nem CAC. Importe o relatório do Gerenciador de Anúncios.', { label: 'Importar Meta Ads', href: '#meta' });
   if (o.conversas > 0 && o.leadsMidia < o.conversas * 0.5) add('dados', 'Dados', 'Conversas do anúncio não estão virando registro no WhatsApp', `O Meta contou ${num(o.conversas)} conversas e só ${num(o.leadsMidia)} leads foram registrados com campanha. Sem esse registro não dá para saber qual anúncio matricula.`, { label: 'Abrir funil', href: '#funil' });
+
+  // Limites e metas definidos no cadastro da campanha.
+  withStats.forEach((r) => {
+    if (r.cacMax && r.cac !== null && r.cac > r.cacMax) add('problema', 'Mídia', `${r.nome}: CAC acima do limite`, `${brl2(r.cac)} por matrícula, limite de ${brl2(r.cacMax)}. Revise criativo e atendimento antes de pôr mais verba.`, { label: 'Abrir campanha', href: '#meta?c=' + r.id });
+    if (r.cacMax && !r.matriculas && r.investimento > r.cacMax) add('atencao', 'Mídia', `${r.nome}: já gastou mais que o CAC limite sem matrícula`, `${brl2(r.investimento)} investidos e nenhuma matrícula registrada. Se houve matrícula fora do funil, lance no cadastro da campanha.`, { label: 'Abrir campanha', href: '#meta?c=' + r.id });
+  });
 
   const avgCC = o.custoConversa;
   withStats.forEach((r) => {

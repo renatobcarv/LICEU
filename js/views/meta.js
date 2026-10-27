@@ -171,6 +171,25 @@ function historyView() {
   return `<section class="card"><header class="card-head"><h2>Histórico de importações</h2></header><div class="table-wrap"><table class="tbl"><thead><tr><th>Quando</th><th>Arquivo</th><th class="r">Linhas lidas</th><th class="r">Novas</th><th class="r">Substituídas</th><th class="r">Ignoradas</th><th></th></tr></thead><tbody>${imports.map((i) => `<tr><td>${esc(new Date(i.createdAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }))}</td><td>${esc(i.arquivo || i.fonte)}</td><td class="r">${num(i.lidas)}</td><td class="r">${num(i.novas)}</td><td class="r">${num(i.substituidas)}</td><td class="r">${num(i.ignoradas)}</td><td class="r">${i.fonte?.includes('Ads') ? `<button class="btn sm ghost" data-undo="${esc(i.id)}">Desfazer</button>` : ''}</td></tr>`).join('')}</tbody></table></div></section>`;
 }
 
+// Plano da campanha (cadastro manual) contra o realizado no período.
+function planBlock(r) {
+  const c = store.get('campaigns', r.id) || {};
+  const itens = [];
+  if (c.formato) itens.push(['Leva para', esc(c.formato) + (c.linkDestino ? ` · <a href="${esc(c.linkDestino)}" target="_blank" rel="noopener">abrir</a>` : '')]);
+  if (c.inicio) itens.push(['Período', fmtDate(c.inicio) + (c.fim ? ' a ' + fmtDate(c.fim) : ' · sem data de fim')]);
+  if (c.orcamentoDia) itens.push(['Orçamento/dia', brl2(c.orcamentoDia)]);
+  if (c.metaMatriculas) itens.push(['Matrículas x meta', `<b class="${r.matriculas >= c.metaMatriculas ? 'good' : ''}">${num(r.matriculas)}</b> de ${num(c.metaMatriculas)}${r.matriculasExtra ? ` <small class="muted">(${num(r.matriculasExtra)} sem cadastro)</small>` : ''}`]);
+  else if (r.matriculasExtra) itens.push(['Matrículas', `${num(r.matriculas)} <small class="muted">(${num(r.matriculasExtra)} sem cadastro)</small>`]);
+  if (c.metaVendas) itens.push(['Vendas x meta', `<b class="${r.receita >= c.metaVendas ? 'good' : ''}">${brl(r.receita)}</b> de ${brl(c.metaVendas)}`]);
+  if (c.cacMax) itens.push(['CAC x limite', r.cac === null ? 'sem matrícula ainda · limite ' + brl2(c.cacMax) : `<b class="${r.cac > c.cacMax ? 'bad' : 'good'}">${brl2(r.cac)}</b> · limite ${brl2(c.cacMax)}`]);
+  if (c.metaConversas) itens.push(['Conversas x meta', `${num(r.resultados)} de ${num(c.metaConversas)}`]);
+  if (c.respostasQuiz) itens.push(['Respostas do quiz', num(c.respostasQuiz) + (r.investimento ? ' · ' + brl2(r.investimento / c.respostasQuiz) + ' cada' : '')]);
+  if (c.oferta) itens.push(['Oferta', esc(c.oferta)]);
+  if (c.publico) itens.push(['Público', esc(c.publico)]);
+  if (!itens.length) return `<p class="hint">Sem plano cadastrado. Em "Editar campanha" você define formato (quiz, WhatsApp…), data de início, metas e lança matrículas que não passaram pelo funil.</p>`;
+  return `<h3 class="sub-h">Plano da campanha</h3><dl class="stats wide plan">${itens.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
+}
+
 function detail(r, t, from, to) {
   const diag = diagnostics(from, to, {}).filter((d) => d.titulo.startsWith(r.nome));
   const vs = (k, dir) => { const c = COLS.find((x) => x.key === k); if (r[k] === null || r[k] === undefined || t[k] === null || !t[k]) return ''; const d = r[k] / t[k] - 1; const good = dir === 'up' ? d > 0 : d < 0; return `<small class="${Math.abs(d) < 0.05 ? 'neutral' : good ? 'good' : 'bad'}">média ${c.fmt(t[k])}</small>`; };
@@ -186,6 +205,7 @@ function detail(r, t, from, to) {
         <a class="icon-btn" href="#meta" aria-label="Fechar detalhe">${ICON.x}</a>
       </div>
     </header>
+    ${planBlock(r)}
     <h3 class="sub-h">Mídia (Meta)</h3>
     <dl class="stats wide">
       <div><dt>Valor gasto</dt><dd>${brl2(r.investimento)}</dd></div>
@@ -266,22 +286,65 @@ export function guessCourse(name) {
   return hit?.id || '';
 }
 
+export const FORMATOS = ['WhatsApp (mensagens)', 'Quiz', 'Formulário instantâneo', 'Página de captura / site', 'Direct do Instagram', 'Ligação', 'Outro'];
+
+// Cadastro manual da campanha: o que o Gerenciador não sabe (formato, metas, matrículas que não passaram pelo funil).
 function editCampaign(c, ctx) {
-  openDialog({
-    title: c ? 'Editar campanha' : 'Nova campanha',
+  const extras = (c?.matriculasExtras || []).map((e) => ({ ...e }));
+  const row = (e) => `<li class="ex-row" data-id="${esc(e.id || '')}">
+    <input type="date" data-k="data" value="${esc(e.data || today())}" aria-label="Data">
+    <input type="number" min="0" inputmode="numeric" data-k="qtd" value="${esc(e.qtd ?? 1)}" aria-label="Quantidade" placeholder="Qtd.">
+    <input type="number" min="0" step="any" inputmode="decimal" data-k="valor" value="${esc(e.valor ?? '')}" aria-label="Valor total (R$)" placeholder="Valor total R$">
+    <input data-k="nota" value="${esc(e.nota || '')}" aria-label="Observação" placeholder="ex.: balcão, vieram pelo quiz">
+    <button type="button" class="icon-btn sm" data-rmx aria-label="Remover lançamento">×</button></li>`;
+  const sec = (label) => ({ type: 'section', label, name: '_' });
+  const { dlg } = openDialog({
+    title: c ? 'Campanha: ' + c.nome : 'Nova campanha', wide: true,
     fields: [
+      sec('Identificação'),
       { name: 'nome', label: 'Nome (igual ao do Gerenciador)', value: c?.nome, required: true, full: true },
       { name: 'canal', label: 'Canal', type: 'select', options: ['Meta', 'Google', 'Outro'], value: c?.canal || 'Meta' },
       { name: 'cursoId', label: 'Curso', type: 'select', options: courseOptions(), value: c?.cursoId },
-      { name: 'objetivo', label: 'Objetivo', type: 'select', options: ['Mensagens no WhatsApp', 'Cadastro (formulário)', 'Vendas (compras)', 'Tráfego', 'Engajamento', 'Visitas ao perfil', 'Alcance', 'Remarketing', 'Pesquisa (Google)', 'Outro'], value: c?.objetivo || 'Mensagens no WhatsApp' },
+      { name: 'objetivo', label: 'Objetivo no Gerenciador', type: 'select', options: ['Mensagens no WhatsApp', 'Cadastro (formulário)', 'Vendas (compras)', 'Tráfego', 'Engajamento', 'Visitas ao perfil', 'Alcance', 'Remarketing', 'Pesquisa (Google)', 'Outro'], value: c?.objetivo || 'Mensagens no WhatsApp' },
+      { name: 'formato', label: 'Para onde o anúncio leva', type: 'select', options: ['', ...FORMATOS], value: c?.formato || '' },
+      { name: 'linkDestino', label: 'Link do quiz, formulário ou página', type: 'url', value: c?.linkDestino, placeholder: 'https://' },
+      { name: 'inicio', label: 'Começou em', type: 'date', value: c?.inicio },
+      { name: 'fim', label: 'Termina em (se tiver)', type: 'date', value: c?.fim },
+      { name: 'orcamentoDia', label: 'Orçamento por dia (R$)', type: 'number', value: c?.orcamentoDia },
       { name: 'veiculacao', label: 'Veiculação', type: 'select', options: ['', ...VEIC_LABELS], value: c?.veiculacao || '' },
       { name: 'status', label: 'Situação no painel', type: 'select', options: ['Ativa', 'Pausada', 'Encerrada'], value: c?.status || 'Ativa' },
-      { name: 'notas', label: 'Observações', type: 'textarea', value: c?.notas, full: true },
+      { name: 'publico', label: 'Público', value: c?.publico, placeholder: 'ex.: mulheres 25-45, 15 km de Valparaíso' },
+      { name: 'oferta', label: 'Oferta', value: c?.oferta, placeholder: 'ex.: matrícula grátis até sexta', full: true },
+      sec('Metas da campanha'),
+      { name: 'metaMatriculas', label: 'Meta de matrículas', type: 'number', value: c?.metaMatriculas },
+      { name: 'metaVendas', label: 'Meta de vendas (R$)', type: 'number', value: c?.metaVendas },
+      { name: 'cacMax', label: 'CAC máximo aceitável (R$)', type: 'number', value: c?.cacMax, hint: 'Acima disso o painel avisa.' },
+      { name: 'metaConversas', label: 'Meta de conversas ou cadastros', type: 'number', value: c?.metaConversas },
+      sec('Resultados contados à mão'),
+      { name: 'respostasQuiz', label: 'Pessoas que responderam o quiz/formulário', type: 'number', value: c?.respostasQuiz, hint: 'Se o Gerenciador não mostra esse número.' },
+      { name: 'notas', label: 'Observações e aprendizados', type: 'textarea', value: c?.notas, full: true },
     ],
-    onSave: (d) => { store.put('campaigns', { ...(c || {}), ...d }); toast('Campanha salva.'); ctx.refresh(); },
+    html: `<h3 class="form-sec">Matrículas sem cadastro de aluno</h3>
+      <p class="hint">Matrículas que essa campanha gerou mas que não estão no funil (ex.: a pessoa viu o anúncio e foi direto ao balcão). Lance só o número: elas entram no total de matrículas, na receita e no CAC, igual em todas as telas. Não lance de novo quem você já registrou como aluno.</p>
+      <ol class="ex-list" id="ex-list">${extras.map(row).join('')}</ol>
+      <button type="button" class="btn sm" id="ex-add">${ICON.plus} Lançar matrículas</button>`,
+    onOpen: (form) => {
+      const list = $('#ex-list', form);
+      $('#ex-add', form).addEventListener('click', () => { list.insertAdjacentHTML('beforeend', row({})); $('.ex-row:last-child [data-k="qtd"]', list).focus(); });
+      list.addEventListener('click', (e) => { if (e.target.closest('[data-rmx]')) e.target.closest('.ex-row').remove(); });
+      $('[name="nome"]', form).focus();
+    },
+    onSave: (d, form) => {
+      const ex = $$('.ex-row', form).map((li) => ({ id: li.dataset.id || uid('mx'), data: $('[data-k="data"]', li).value, qtd: Number($('[data-k="qtd"]', li).value) || 0, valor: $('[data-k="valor"]', li).value === '' ? 0 : Number($('[data-k="valor"]', li).value), nota: $('[data-k="nota"]', li).value.trim() })).filter((e) => e.qtd > 0 && e.data);
+      const { _, ...rest } = d;
+      store.put('campaigns', { ...(c || {}), ...rest, matriculasExtras: ex });
+      toast('Campanha salva.' + (ex.length ? ' ' + ex.reduce((a, e) => a + e.qtd, 0) + ' matrículas sem cadastro contadas.' : ''));
+      ctx.refresh();
+    },
     onDelete: c ? () => { store.remove('campaigns', c.id); store.removeWhere('adStats', (s) => s.campanhaId === c.id); toast('Campanha e métricas excluídas.'); ctx.go('#meta'); } : null,
     deleteLabel: 'Excluir campanha e métricas',
   });
+  return dlg;
 }
 
 function campaignsDialog(ctx) {

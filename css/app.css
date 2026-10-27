@@ -850,3 +850,8 @@ dialog#dlg { border-radius: 26px; }
   .icon-btn.sm { width: 40px; height: 40px; }
 }
 .card > .tbl { display: block; max-width: 100%; overflow-x: auto; }
+.ex-list { list-style: none; padding: 0; margin: 8px 0 10px; display: flex; flex-direction: column; gap: 6px; }
+.ex-row { display: grid; grid-template-columns: 150px 80px 140px 1fr auto; gap: 6px; align-items: center; }
+.ex-row input { width: 100%; min-height: 40px; border: 1px solid var(--line-2); border-radius: 12px; background: rgba(255,255,255,.045); padding: 6px 10px; }
+@media (max-width: 640px) { .ex-row { grid-template-columns: 1fr 1fr; } .ex-row [data-k="nota"] { grid-column: 1 / -1; } }
+.plan dd a { color: var(--gold-ink); }

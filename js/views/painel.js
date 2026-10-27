@@ -2,7 +2,7 @@
 
 import { store } from '../store.js';
 import { esc, brl, brl2, num, pct, fmtDate, fmtDow, today, addDays, inRange, sum, daysBetween } from '../util.js';
-import { overview, prevPeriod, delta, diagnostics, NIVEL, weeklySeries, goalProgress, STAGES, courseName, measureTest } from '../metrics.js';
+import { extraMatriculas, overview, prevPeriod, delta, diagnostics, NIVEL, weeklySeries, goalProgress, STAGES, courseName, measureTest } from '../metrics.js';
 import { barChart, funnel, meter, badge, ICON } from '../ui.js';
 import { recebido } from '../leads.js';
 
@@ -16,11 +16,14 @@ export function render(ctx) {
 
   // Matrículas
   const mats = store.all('leads').filter((l) => l.etapa === 'matriculado' && inRange(l.dataMatricula, from, to) && (!f.cursoId || l.cursoId === f.cursoId));
-  const dMat = delta(mats.length, p.matriculas, 'up');
+  const ex = extraMatriculas(from, to, f);
+  const totalMat = mats.length + ex.n;
+  const dMat = delta(totalMat, p.matriculas, 'up');
   const goal = store.all('goals').find((g) => g.indicador === 'matriculas' && g.inicio <= to && g.fim >= from && (!f.cursoId || !g.cursoId || g.cursoId === f.cursoId));
   const gp = goal ? goalProgress(goal) : null;
   const byCourse = {};
   mats.forEach((l) => { byCourse[l.cursoId || ''] = (byCourse[l.cursoId || ''] || 0) + 1; });
+  Object.entries(ex.porCurso).forEach(([k, n]) => { byCourse[k] = (byCourse[k] || 0) + n; });
   const topCourses = Object.entries(byCourse).sort((a, b) => b[1] - a[1]).slice(0, 4);
   const falta = gp && gp.alvo > (gp.atual || 0) ? gp.alvo - (gp.atual || 0) : 0;
   const diasRest = goal ? Math.max(0, daysBetween(t, goal.fim)) : 0;
@@ -61,8 +64,8 @@ export function render(ctx) {
     <section class="card mat-hero hero-ring">
       <div class="mh-main">
         <p class="eyebrow">Matrículas no período</p>
-        <p class="mh-num">${num(mats.length)}${gp ? `<small>de ${num(gp.alvo)}</small>` : ''}</p>
-        <p class="kpi-d ${dMat.cls}">${esc(dMat.txt)}</p>
+        <p class="mh-num">${num(totalMat)}${gp ? `<small>de ${num(gp.alvo)}</small>` : ''}</p>
+        <p class="kpi-d ${dMat.cls}">${esc(dMat.txt)}</p>${ex.n ? `<p class="muted">${num(mats.length)} com aluno cadastrado + ${num(ex.n)} lançada${ex.n > 1 ? 's' : ''} nas campanhas</p>` : ''}
         ${gp ? `${meter(gp.progresso, gp.status)}<p class="goal-status ${gp.status}">${esc(gp.texto)}${falta && diasRest ? ` · faltam ${num(falta)} em ${diasRest} ${diasRest > 1 ? 'dias' : 'dia'}` : ''}</p>` : '<p class="muted">Defina uma meta de matrículas em <a href="#metas">Metas</a> para acompanhar o ritmo.</p>'}
       </div>
       ${topCourses.length ? `<ul class="mh-courses">${topCourses.map(([k, n]) => `<li><span>${esc(courseName(k))}</span><b>${n}</b></li>`).join('')}</ul>` : ''}
