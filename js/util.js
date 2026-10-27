@@ -116,4 +116,6 @@ export function toCSV(rows, cols) {
 }
 
 export const onlyDigits = (s) => String(s || '').replace(/\D/g, '');
-export const phoneKey = (s) => { const d = onlyDigits(s); return d.length > 11 && d.startsWith('55') ? d.slice(2) : d; };
+// Chave para achar telefone repetido: sem +55 e sem o 9 extra do celular, então
+// (61) 9 9999-0000 e (61) 9999-0000 contam como o mesmo número.
+export const phoneKey = (s) => { let d = onlyDigits(s); if (d.length > 11 && d.startsWith('55')) d = d.slice(2); if (d.length === 11 && d[2] === '9') d = d.slice(0, 2) + d.slice(3); return d; };

@@ -29,7 +29,7 @@ export function field(f) {
     return `<label class="check-field${f.full ? ' full' : ''}"><input type="checkbox" id="${id}" name="${f.name}"${v ? ' checked' : ''}> ${esc(f.label)}</label>`;
   } else {
     const t = f.type || 'text';
-    const extra = t === 'number' ? ` step="${f.step || 'any'}" inputmode="decimal"` : '';
+    const extra = t === 'number' ? ` step="${f.step || 'any'}" inputmode="decimal"${f.allowNegative ? '' : ' min="0"'}` : '';
     input = `<input type="${t}" id="${id}" name="${f.name}" value="${esc(v)}"${req}${ph}${extra}${f.list ? ` list="${f.list}"` : ''}>`;
   }
   return `<div class="field${f.full ? ' full' : ''}"><label for="${id}">${esc(f.label)}${f.required ? ' <span class="req" aria-hidden="true">*</span>' : ''}</label>${input}${f.hint ? `<p class="hint">${esc(f.hint)}</p>` : ''}</div>`;
