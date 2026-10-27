@@ -120,7 +120,7 @@ function cardHTML(l, p) {
 }
 
 function filterBar() {
-  const views = [['todos', 'Tudo'], ['abertos', 'Em aberto'], ['hoje', 'Retornos de hoje'], ['ganhos', 'Só ganhos'], ['perdidos', 'Só perdidos']];
+  const views = [['todos', 'Tudo'], ['abertos', 'Em aberto'], ['hoje', 'Para fazer hoje'], ['ganhos', 'Só ganhos'], ['perdidos', 'Só perdidos']];
   const resp = responsaveis();
   return `<div class="filter-bar">
     <label class="sr" for="v-q">Buscar no funil</label><input type="search" id="v-q" placeholder="Buscar nome, telefone, etiqueta…" value="${esc(q)}">

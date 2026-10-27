@@ -23,7 +23,7 @@ export const turmaOpts = (cursoId) => [['', 'Sem turma definida'], ...store.all(
 export const stageLabel = (id) => (id === 'perdido' ? 'Perdido' : STAGES[STAGE_IDX[id]]?.label || id);
 
 // Valor já recebido de uma matrícula.
-export const recebido = (l) => (['Pendente', 'Parcial'].includes(l.statusPagamento) ? Number(l.valorPago) || 0 : Number(l.valor) || 0);
+export const recebido = (l) => { const v = Math.max(0, Number(l.valor) || 0); return ['Pendente', 'Parcial'].includes(l.statusPagamento) ? Math.min(v || Infinity, Math.max(0, Number(l.valorPago) || 0)) : v; };
 
 // ---------- Funis ----------
 const sid = () => 'e' + Math.random().toString(36).slice(2, 9);
@@ -69,7 +69,7 @@ export function productDialog(p, ctx) {
       { name: 'ativo', label: 'Disponível para venda', type: 'checkbox', value: p.ativo !== false, full: true },
     ],
     html: '<p class="hint">Ao marcar um lead como ganho, escolher o produto preenche curso, valor, forma de pagamento e parcelas.</p>',
-    onSave: (d) => { store.put('products', { ...p, ...d }); toast('Produto salvo.'); ctx.refresh(); },
+    onSave: (d) => { if ((d.valor ?? 0) < 0 || (d.parcelas ?? 0) < 0) { toast('Valor e parcelas não podem ser negativos.', 'bad'); return false; } store.put('products', { ...p, ...d }); toast('Produto salvo.'); ctx.refresh(); },
     onDelete: isNew ? null : () => { store.remove('products', p.id); toast('Produto excluído. As matrículas já feitas não mudam.'); ctx.refresh(); },
   });
 }
@@ -169,6 +169,9 @@ export function matriculaDialog(l, ctx, { onDone } = {}) {
         const dup = store.all('leads').find((x) => phoneKey(x.telefone) === phoneKey(d.telefone));
         if (dup) toast('Atenção: esse telefone já existe como ' + dup.nome + '. Confira se não é a mesma pessoa.', 'warn');
       }
+      if ((d.valor ?? 0) < 0) { toast('O valor da matrícula não pode ser negativo.', 'bad'); return false; }
+      if ((d.valorPago ?? 0) < 0) { toast('O valor recebido não pode ser negativo.', 'bad'); return false; }
+      if (d.statusPagamento !== 'Pago' && d.valorPago && d.valor && d.valorPago > d.valor) { toast('Recebido (' + brl(d.valorPago) + ') maior que o valor da matrícula (' + brl(d.valor) + '). Corrija um dos dois ou marque como Pago.', 'bad'); return false; }
       if (d.statusPagamento === 'Pago') d.valorPago = null;
       const base = { ...l, ...d, valor: d.valor ?? 0, entrada: l.entrada || d.dataMatricula };
       delete base._;
@@ -272,6 +275,7 @@ export function editLead(l, ctx, preset = {}) {
     onSave: (d) => {
       const dup = d.telefone && store.all('leads').find((x) => x.id !== l.id && phoneKey(x.telefone) === phoneKey(d.telefone));
       if (dup && isNew) toast('Atenção: já existe um lead com esse telefone (' + dup.nome + ').', 'warn');
+      if ((d.valor ?? 0) < 0) { toast('O valor em negociação não pode ser negativo.', 'bad'); return false; }
       const { col, _, ...rest } = d;
       const p = pipeline(d.funilId);
       const base = { ...l, ...rest, etiquetas: tagList(d.etiquetas) };
