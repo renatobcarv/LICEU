@@ -180,7 +180,7 @@ export function matriculaDialog(l, ctx, { onDone } = {}) {
     onDelete: jaMatriculado ? () => {
       const p = pipeline(leadPipeId(l));
       const last = p.etapas[p.etapas.length - 1];
-      moveLead(l, last.nivel, { etapaFunil: last.id });
+      moveLead({ ...l, etapaMax: STAGE_IDX[last.nivel] ?? 3 }, last.nivel, { etapaFunil: last.id });
       toast('Matrícula desfeita. ' + l.nome + ' voltou para ' + last.nome + '.');
       ctx.refresh();
     } : null,

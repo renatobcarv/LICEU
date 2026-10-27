@@ -5,7 +5,8 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { esc, $ } from './util.js';
 import { LOGO_MARK, TERMS_VERSION } from './brand.js';
 
-const ORG_KEY = 'tecmais.intelligence.org';
+const ORG_KEY = 'liceu.intelligence.org';
+const OLD_ORG_KEY = 'tecmais.intelligence.org'; // nome antigo, lido só para não perder a unidade escolhida
 export const auth = { client: null, user: null, org: null, member: null, configured: false };
 
 export function supabaseConfigured() {
@@ -137,7 +138,7 @@ async function chooseOrg(resolve) {
   const { data, error } = await auth.client.from('members').select('role, nome, email, org_id, orgs(id, nome, invite_code)').eq('user_id', auth.user.id);
   if (error) { const root = screen(`<h1>Não foi possível carregar sua unidade</h1><p class="auth-msg bad">${esc(tr(error))}</p><p class="muted">Confira se o banco foi criado com o arquivo supabase/schema.sql.</p><button class="btn block" id="retry">Tentar de novo</button>`); $('#retry', root).onclick = () => chooseOrg(resolve); return; }
   const list = (data || []).filter((m) => m.orgs);
-  let saved = null; try { saved = localStorage.getItem(ORG_KEY); } catch (e) { /* opcional */ }
+  let saved = null; try { saved = localStorage.getItem(ORG_KEY) || localStorage.getItem(OLD_ORG_KEY); } catch (e) { /* opcional */ }
   const pick = list.find((m) => m.org_id === saved) || (list.length === 1 ? list[0] : null);
   if (pick) return finish(pick, resolve);
   if (list.length > 1) {

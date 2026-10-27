@@ -3,7 +3,7 @@
 
 import { store } from '../store.js';
 import { esc, $, brl, num, pct, fmtDate, today, daysBetween, norm, toCSV, inRange, sum, div } from '../util.js';
-import { courseName, campaignName, goalProgress } from '../metrics.js';
+import { courseName, campaignName, goalProgress, extraMatriculas } from '../metrics.js';
 import { openDialog, toast, ICON, meter, empty, downloadFile, badge } from '../ui.js';
 import { matriculaDialog, recebido, courseOpts, PAG_STATUS } from '../leads.js';
 
@@ -17,7 +17,8 @@ export function render(ctx) {
   const { from, to, f } = ctx;
   const all = store.all('leads').filter((l) => isMat(l) && (!f.cursoId || l.cursoId === f.cursoId));
   const per = all.filter((l) => inRange(l.dataMatricula, from, to));
-  const receita = sum(per, (l) => l.valor), rec = sum(per, recebido);
+  const ex = extraMatriculas(from, to, f);
+  const receita = sum(per, (l) => l.valor) + ex.valor, rec = sum(per, recebido) + ex.valor;
   const goal = store.all('goals').find((g) => g.indicador === 'matriculas' && g.inicio <= to && g.fim >= from && (!f.cursoId || !g.cursoId || g.cursoId === f.cursoId));
   const gp = goal ? goalProgress(goal) : null;
   const tabs = [['lista', 'Matriculados'], ['cursos', 'Por curso'], ['turmas', 'Turmas']];
@@ -25,14 +26,15 @@ export function render(ctx) {
   <section class="mat-hero card">
     <div class="mh-main">
       <p class="eyebrow">Matrículas no período</p>
-      <p class="mh-num">${num(per.length)}${gp ? `<small>de ${num(gp.alvo)} na meta</small>` : ''}</p>
+      <p class="mh-num">${num(per.length + ex.n)}${gp ? `<small>de ${num(gp.alvo)} na meta</small>` : ''}</p>
+      ${ex.n ? `<p class="muted">${num(per.length)} com aluno cadastrado + ${num(ex.n)} lançada${ex.n > 1 ? 's' : ''} só como número nas campanhas (${Object.entries(ex.porCampanha).map(([id, n]) => esc(campaignName(id)) + ': ' + n).join(' · ')}). <a href="#meta">Ver no Meta Ads</a></p>` : ''}
       ${gp ? `${meter(gp.progresso, gp.status)}<p class="goal-status ${gp.status}">${esc(gp.texto)}</p>` : '<p class="muted">Sem meta de matrículas para este período. <a href="#metas">Criar meta</a></p>'}
     </div>
     <dl class="stats mh-stats">
       <div><dt>Valor matriculado</dt><dd>${brl(receita)}</dd></div>
       <div><dt>Recebido</dt><dd>${brl(rec)}</dd></div>
       <div><dt>A receber</dt><dd class="${receita - rec > 0 ? 'warn' : ''}">${brl(receita - rec)}</dd></div>
-      <div><dt>Ticket médio</dt><dd>${brl(div(receita, per.length))}</dd></div>
+      <div><dt>Ticket médio</dt><dd>${brl(div(receita, per.length + ex.n))}</dd></div>
     </dl>
     <div class="mh-actions"><button class="btn primary" data-act="new">${ICON.plus} Registrar matrícula</button><a class="btn" href="#funil">Abrir funil</a></div>
   </section>

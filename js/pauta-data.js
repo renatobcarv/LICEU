@@ -1,3 +1,4 @@
+import { settings } from './metrics.js';
 // Conteúdo da Pauta Viral original (banco de ganchos, moldes de roteiro e regras de escrita).
 // Mantido igual ao artefato que já funcionava; só mudou de lugar.
 
@@ -131,7 +132,7 @@ export const OBJETIVOS = [
   ['Compartilhamentos', 'Compartilhamentos'], ['Conversas no WhatsApp', 'WhatsApp'], ['Matrículas', 'Matrícula'],
 ];
 export const CONSCIENCIA = [
-  ['Claude avalia', 'Claude avalia'],
+  ['Claude avalia', 'Deixar o Claude avaliar (no chat)'],
   ['Nível 1: nem sabe que precisa (eduque, não venda)', 'Nem sabe que precisa'],
   ['Nível 2: sente o problema, não conhece a solução (mostre o caminho, não a marca)', 'Sente o problema'],
   ['Nível 3: sabe que um curso resolve, não escolheu onde (por que a TecMais)', 'Sabe que curso resolve'],
@@ -139,7 +140,7 @@ export const CONSCIENCIA = [
   ['Nível 5: já quer, falta o empurrão (oferta real, urgência real, CTA direto)', 'Já quer, falta o empurrão'],
 ];
 export const OBJECOES = [['', 'Não sei'], ['Preço', 'Preço'], ['Falta de tempo', 'Tempo'], ['Medo de não conseguir acompanhar', 'Medo de não conseguir'], ['Não confia na escola ainda', 'Confiança'], ['Não vê necessidade', 'Não vê necessidade']];
-export const CENARIOS = [['Padaria', 'Padaria'], ['Ônibus / ponto de ônibus', 'Ônibus'], ['Festa de família', 'Festa'], ['Casa', 'Casa'], ['Obra / trabalho', 'Obra'], ['Claude escolhe', 'Claude escolhe']];
+export const CENARIOS = [['Padaria', 'Padaria'], ['Ônibus / ponto de ônibus', 'Ônibus'], ['Festa de família', 'Festa'], ['Casa', 'Casa'], ['Obra / trabalho', 'Obra'], ['Claude escolhe', 'Deixar o Claude escolher (no chat)']];
 
 export const ROTEIRO = {
   'Reels': 'Roteiro cena a cena, de 20 a 45 segundos. Para cada cena: **00:00–00:03** · Imagem · Fala · Texto na tela. O gancho ocupa só os 3 primeiros segundos. A entrega útil chega antes da metade. Termine com a ação final dita de forma natural, sem cara de anúncio.',
@@ -219,7 +220,13 @@ function buildMotion(d) {
   ].filter((x) => x !== null).join('\n');
 }
 
+// A unidade e o @ vêm das Configurações; o texto-base foi escrito para a unidade de Valparaíso.
 export function buildBrief(d) {
+  const st = settings();
+  return briefRaw(d).replaceAll('TecMais Valparaíso de Goiás', st.unidade || 'TecMais Valparaíso de Goiás').replaceAll('@tecmais.valparaisodegoias', st.instagram || '@tecmais.valparaisodegoias');
+}
+
+function briefRaw(d) {
   if (d.formato === 'Vídeo motion') return buildMotion(d);
   const hooks = fmtHooks(d);
   return [

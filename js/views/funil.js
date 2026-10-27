@@ -3,8 +3,8 @@
 // Sem o lead registrado com a campanha, não existe CAC real.
 
 import { store } from '../store.js';
-import { esc, $, $$, brl, num, pct, fmtDate, today, daysBetween, parseCSV, parseDate, norm, phoneKey, toCSV, inRange, sum } from '../util.js';
-import { STAGES, ORIGENS, salesStats, courseName, campaignName, settings } from '../metrics.js';
+import { esc, $, $$, brl, num, pct, fmtDate, today, daysBetween, weekStart, parseCSV, parseDate, norm, phoneKey, toCSV, inRange, sum } from '../util.js';
+import { STAGES, STAGE_IDX, ORIGENS, salesStats, courseName, campaignName, settings, reached } from '../metrics.js';
 import { toast, ICON, funnel, empty, readFileText, downloadFile, copyText, openDialog, badge, confirmButton } from '../ui.js';
 import {
   matriculaDialog, loseDialog, editLead, courseOpts, campOpts, moveToCol, pipelines, pipeline, leadCol, leadStage, leadPipeId,
@@ -17,6 +17,7 @@ let q = '';
 let view = 'todos';   // todos | abertos | hoje | ganhos | perdidos
 let fResp = '';
 let fTemp = '';
+let lote = '';        // id da importação de contatos em foco na Lista
 let pipeId = (() => { try { return localStorage.getItem(PIPE_KEY) || 'principal'; } catch (e) { return 'principal'; } })();
 
 const setPipe = (id) => { pipeId = id || 'principal'; try { localStorage.setItem(PIPE_KEY, pipeId); } catch (e) { /* opcional */ } };
@@ -170,19 +171,24 @@ function list(ctx, p) {
   const t = today();
   const prm = ctx.params;
   let leads = filtered(ctx);
+  const lotes = store.all('imports').filter((i) => i.tipo === 'leads').sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  const loteRec = lote && store.get('imports', lote);
+  if (loteRec) leads = store.all('leads').filter((l) => l.importId === lote);
   // Atalhos do Painel (#funil?etapa=… ou ?vencidos=1) olham todos os funis.
-  if (prm.etapa) leads = leads.filter((l) => l.etapa === prm.etapa);
+  if (loteRec) { /* lote: todos os funis */ } else if (prm.etapa) leads = leads.filter((l) => l.etapa === prm.etapa);
   else if (prm.vencidos) leads = leads.filter((l) => OPEN(l) && l.proximaData && l.proximaData < t);
   else leads = leads.filter((l) => leadPipeId(l) === p.id);
-  if (!prm.etapa && !prm.vencidos) {
+  if (!prm.etapa && !prm.vencidos && !loteRec) {
     if (view === 'abertos') leads = leads.filter(OPEN);
     if (view === 'hoje') leads = leads.filter((l) => OPEN(l) && l.proximaData && l.proximaData <= t);
     if (view === 'ganhos') leads = leads.filter((l) => l.etapa === 'matriculado');
     if (view === 'perdidos') leads = leads.filter((l) => l.etapa === 'perdido');
   }
   leads.sort((a, b) => (b.entrada || '').localeCompare(a.entrada || ''));
-  const multi = prm.etapa || prm.vencidos;
+  const multi = prm.etapa || prm.vencidos || loteRec;
   return `${filterBar()}
+  ${lotes.length ? `<div class="lote-bar"><label for="v-lote">Lista importada</label><select id="v-lote"><option value="">Todas (sem filtro de lista)</option>${lotes.map((i) => `<option value="${esc(i.id)}"${i.id === lote ? ' selected' : ''}>${esc(fmtDate((i.createdAt || '').slice(0, 10)) + ' · ' + (i.arquivo || i.fonte) + ' · ' + (i.novas ?? 0) + ' novos')}</option>`).join('')}</select>
+    ${loteRec ? `<span class="muted">${leads.length} lead${leads.length === 1 ? '' : 's'} desta lista · ${leads.filter((l) => l.etapa === 'matriculado').length} matriculado(s) · ${leads.filter((l) => !OPEN(l) || (l.historico || []).length > 1).length} já trabalhado(s)</span><button type="button" class="btn sm danger ghost" data-act="undo-lote">Desfazer importação</button>` : ''}</div>` : ''}
   ${multi ? `<p class="row-actions"><a class="btn sm ghost" href="#funil">Tirar filtro: ${prm.etapa ? esc(prm.etapa === 'matriculado' ? 'matriculados' : STAGES.find((x) => x.id === prm.etapa)?.label || prm.etapa) : 'retornos atrasados'} (todos os funis)</a></p>` : ''}
   ${leads.length ? `<div class="row-actions bulk"><span class="muted" id="sel-n">${leads.length} na lista</span><button type="button" class="btn sm danger ghost" data-act="del-sel" disabled>Excluir selecionados</button></div><div class="table-wrap"><table class="tbl"><thead><tr><th class="sel"><input type="checkbox" id="sel-all" aria-label="Selecionar todos"></th><th>Pessoa</th>${multi ? '<th>Funil</th>' : ''}<th>Etapa</th><th>Interesse</th><th>Origem</th><th>Responsável</th><th>Próxima ação</th><th class="r">Valor</th></tr></thead><tbody>${leads.map((l) => `<tr>
     <td class="sel"><input type="checkbox" data-sel="${esc(l.id)}" aria-label="Selecionar ${esc(l.nome)}"></td><td><button class="link" data-edit="${esc(l.id)}">${esc(l.nome)}</button><small class="cell-sub">${esc(l.telefone || '')}${l.temperatura ? ' · ' + esc(l.temperatura) : ''}</small></td>
@@ -212,7 +218,27 @@ function analysis(ctx, s, p) {
     if (l.etapa === 'perdido' && inRange(l.dataPerda, ctx.from, ctx.to)) x.perdidos++;
   });
   const rs = Object.values(resp).sort((a, b) => b.ganhos - a.ganhos || b.abertos - a.abertos);
+  // Gargalo: maior queda entre duas etapas seguidas, entre quem entrou no período.
+  const ent = leads.filter((l) => inRange(l.entrada, ctx.from, ctx.to));
+  const reach = STAGES.map((_, i) => ent.filter((l) => reached(l) >= i).length);
+  let garg = null;
+  for (let i = 1; i < reach.length; i++) { if (!reach[i - 1]) continue; const r = reach[i] / reach[i - 1]; if (!garg || r < garg.r) garg = { i, r, perde: reach[i - 1] - reach[i] }; }
+  // Tempo médio em cada etapa, medido pelo histórico de mudanças (só etapas já concluídas).
+  const tempo = {};
+  leads.forEach((l) => { const h = l.historico || []; for (let i = 0; i < h.length - 1; i++) { const k = h[i].etapa; const d = daysBetween(h[i].data, h[i + 1].data); if (d >= 0 && STAGE_IDX[k] !== undefined && k !== 'matriculado') (tempo[k] = tempo[k] || []).push(d); } });
+  // Coorte: cada semana de entrada, quanto avançou até hoje.
+  const semanas = {};
+  ent.forEach((l) => { const w = weekStart(l.entrada); (semanas[w] = semanas[w] || []).push(l); });
+  const coorte = Object.entries(semanas).sort((a, b) => b[0].localeCompare(a[0]));
+  const pc = (n, d) => (d ? Math.round((n / d) * 100) + '%' : '—');
   return `<div class="grid-2">
+    <section class="card span-2 garg"><header class="card-head"><div><p class="eyebrow">Onde o funil trava</p><h2>${garg ? `${esc(STAGES[garg.i - 1].label)} → ${esc(STAGES[garg.i].label)}` : 'Sem dados suficientes no período'}</h2>
+      <p class="muted">${garg ? `Só ${pc(reach[garg.i], reach[garg.i - 1])} passam desta etapa: ${garg.perde} pessoa${garg.perde === 1 ? '' : 's'} ficaram pelo caminho entre quem entrou de ${fmtDate(ctx.from)} a ${fmtDate(ctx.to)}. Comece a melhorar por aqui.` : 'Registre os leads que entram no período para o sistema apontar o gargalo.'}</p></div></header>
+      <div class="table-wrap"><table class="tbl"><thead><tr><th>Etapa</th><th class="r">Chegaram</th><th class="r">Passaram da anterior</th><th class="r">Tempo médio na etapa</th></tr></thead><tbody>${STAGES.map((st, i) => `<tr${garg && garg.i === i ? ' class="hl"' : ''}><td>${esc(st.label)}</td><td class="r">${reach[i]}</td><td class="r">${i ? pc(reach[i], reach[i - 1]) : '—'}</td><td class="r">${tempo[st.id]?.length ? (sum(tempo[st.id]) / tempo[st.id].length).toFixed(1).replace('.', ',') + ' dias' : st.id === 'matriculado' ? 'fim' : 'sem histórico'}</td></tr>`).join('')}</tbody></table></div>
+    </section>
+    <section class="card span-2"><header class="card-head"><div><h2>Coorte por semana de entrada</h2><p class="muted">Quem entrou em cada semana e até onde chegou hoje. Mostra se o atendimento melhorou ou piorou com o tempo.</p></div></header>
+      ${coorte.length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>Semana</th><th class="r">Entraram</th>${STAGES.slice(1).map((x) => `<th class="r">${esc(x.label)}</th>`).join('')}<th class="r">Perdidos</th></tr></thead><tbody>${coorte.map(([w, ls]) => `<tr><td>${fmtDate(w)}</td><td class="r">${ls.length}</td>${STAGES.slice(1).map((_, j) => `<td class="r">${pc(ls.filter((l) => reached(l) >= j + 1).length, ls.length)}</td>`).join('')}<td class="r">${pc(ls.filter((l) => l.etapa === 'perdido').length, ls.length)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty-sm">Ninguém entrou neste funil no período escolhido no topo.</p>'}
+    </section>
     <section class="card"><header class="card-head"><div><h2>Etapas de ${esc(p.nome)}</h2><p class="muted">Cartões em aberto agora e há quanto tempo, em média, estão parados</p></div></header>
       ${abertos.length ? `<ul class="hbars">${porEtapa.map((x) => `<li><span>${esc(x.e.nome)}${x.e.limite && x.n > x.e.limite ? ' <b class="bad">acima do limite</b>' : ''}</span><span class="hb-track"><span style="width:${(x.n / maxE) * 100}%"></span></span><b>${x.n}</b><small class="muted">${x.parado} d${x.valor ? ' · ' + brl(x.valor) : ''}</small></li>`).join('')}</ul>` : '<p class="empty-sm">Nenhum cartão em aberto.</p>'}</section>
     <section class="card"><header class="card-head"><div><h2>Conversão por etapa</h2><p class="muted">Quem entrou no período e até onde chegou</p></div></header>${s.leads ? funnel(stages) : '<p class="empty-sm">Sem conversas no período.</p>'}</section>
@@ -262,7 +288,7 @@ function respDialog(i, ctx) {
 
 // Cria um lead novo numa etapa do funil atual.
 function newLead(p, st, d) {
-  return { nome: d.nome, telefone: d.telefone || '', cursoId: d.cursoId || p.cursoId || '', origem: d.origem || '', campanhaId: d.campanhaId || '', temperatura: d.temperatura || '', etiquetas: d.etiquetas || [], responsavel: d.responsavel ?? myName(), primeiraResposta: d.primeiraResposta ?? null, entrada: d.entrada || today(), funilId: p.id, etapaFunil: st.id, etapa: st.nivel, etapaMax: STAGES.findIndex((x) => x.id === st.nivel), historico: [{ data: today(), etapa: st.nivel, col: st.id }] };
+  return { nome: d.nome, telefone: d.telefone || '', cursoId: d.cursoId || p.cursoId || '', origem: d.origem || '', campanhaId: d.campanhaId || '', temperatura: d.temperatura || '', etiquetas: d.etiquetas || [], responsavel: d.responsavel ?? myName(), primeiraResposta: d.primeiraResposta ?? null, entrada: d.entrada || today(), email: d.email || '', anuncio: d.anuncio || '', ...(d.importId ? { importId: d.importId } : {}), funilId: p.id, etapaFunil: st.id, etapa: st.nivel, etapaMax: STAGES.findIndex((x) => x.id === st.nivel), historico: [{ data: today(), etapa: st.nivel, col: st.id }] };
 }
 
 // Linhas "Nome, telefone" (ou ; ou tab) viram leads. Telefones já cadastrados são ignorados.
@@ -321,8 +347,10 @@ function importDialog(ctx, p) {
         cursoId: (r.curso && courses.find((c) => norm(c.nome).includes(norm(r.curso)))?.id) || d.cursoId,
         anuncio: r.anuncio || '', email: r.email || '',
       }));
-      const res = addMany(rows, px, st, { etiquetas: d.etiqueta ? [d.etiqueta] : [] });
-      store.put('imports', { fonte: 'Contatos · ' + px.nome, lidas: parsed.length, novas: res.added, substituidas: 0, ignoradas: res.dup });
+      const imp = store.put('imports', { tipo: 'leads', fonte: 'Contatos · ' + px.nome, arquivo: $('#li-name', dlg).textContent || 'Lista colada', lidas: parsed.length });
+      const res = addMany(rows, px, st, { etiquetas: d.etiqueta ? [d.etiqueta] : [], importId: imp.id });
+      store.put('imports', { ...imp, novas: res.added, substituidas: 0, ignoradas: res.dup });
+      lote = imp.id; tab = 'lista';
       toast(res.added + ' contatos em ' + px.nome + (res.dup ? ', ' + res.dup + ' repetidos ignorados.' : '.'));
       setPipe(px.id);
       ctx.refresh();
@@ -363,6 +391,7 @@ function bindBody(root, ctx) {
   $('#v-q', root)?.addEventListener('input', (e) => { q = e.target.value; rerenderBody(root, ctx); });
   $('#v-resp', root)?.addEventListener('change', (e) => { fResp = e.target.value; rerenderBody(root, ctx); });
   $('#v-temp', root)?.addEventListener('change', (e) => { fTemp = e.target.value; rerenderBody(root, ctx); });
+  $('#v-lote', root)?.addEventListener('change', (e) => { lote = e.target.value; rerenderBody(root, ctx); });
   $$('[data-colform]', root).forEach((form) => {
     const ta = $('textarea', form);
     ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !ta.value.includes('\n')) { e.preventDefault(); form.requestSubmit(); } if (e.key === 'Escape') form.hidden = true; });
@@ -448,6 +477,19 @@ export function mount(root, ctx) {
       const recs = store.all('courses').filter((c) => c.ativo !== false && !prods.some((x) => x.cursoId === c.id)).map((c) => ({ nome: c.nome, cursoId: c.id, valor: c.preco || null, ativo: true }));
       store.putMany('products', recs);
       toast(recs.length + ' produtos criados. Abra cada um para pôr o valor e a condição de pagamento.');
+      return ctx.refresh();
+    }
+    if (ds.act === 'undo-lote') {
+      const its = store.all('leads').filter((l) => l.importId === lote);
+      // Só sai quem ainda não foi trabalhado: matriculados e leads que mudaram de etapa ficam.
+      const keep = its.filter((l) => !OPEN(l) || (l.historico || []).length > 1);
+      const del = its.filter((l) => !keep.includes(l));
+      if (!confirmButton(b, 'Confirmar: apagar ' + del.length + (keep.length ? ' (mantém ' + keep.length + ' já trabalhados)' : ''))) return;
+      del.forEach((l) => store.remove('leads', l.id));
+      const imp = store.get('imports', lote);
+      if (!keep.length && imp) store.remove('imports', lote); else if (imp) store.put('imports', { ...imp, desfeita: true, novas: keep.length });
+      toast(del.length + ' leads da lista removidos' + (keep.length ? '; ' + keep.length + ' já trabalhados foram mantidos.' : '.'));
+      lote = '';
       return ctx.refresh();
     }
     if (ds.act === 'del-sel') {
