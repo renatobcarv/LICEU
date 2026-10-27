@@ -2,7 +2,7 @@
 // chamam as mesmas funções, então um número nunca aparece diferente em duas telas.
 
 import { store } from './store.js';
-import { sum, div, inRange, daysBetween, addDays, weekStart, toDate, iso, brl, brl2, pct, num, fmtDate, today } from './util.js';
+import { sum, div, inRange, daysBetween, addDays, weekStart, toDate, iso, brl, brl2, pct, num, fmtDate, today, monthStart, monthEnd } from './util.js';
 
 export const STAGES = [
   { id: 'novo', label: 'Novo contato' },
@@ -85,7 +85,7 @@ export function campaignRows(from, to, f = {}) {
     });
     row.hasStats = hasStats;
     row.tipoResultado = row.tipos ? Array.from(row.tipos).join(' + ') : '';
-    const cl = leads.filter((l) => l.campanhaId === c.id);
+    const cl = leads.filter((l) => l.campanhaId === c.id && (!f.cursoId || !l.cursoId || l.cursoId === f.cursoId));
     row.leads = cl.filter((l) => inRange(l.entrada, from, to)).length;
     const mats = cl.filter((l) => l.etapa === 'matriculado' && inRange(l.dataMatricula, from, to));
     row.matriculas = mats.length;
@@ -143,7 +143,7 @@ export function salesStats(from, to, f = {}) {
     const o = l.origem || 'Outro';
     const x = porOrigem[o] || (porOrigem[o] = { origem: o, leads: 0, matriculas: 0 });
     x.leads++;
-    if (l.etapa === 'matriculado') x.matriculas++;
+    if (l.etapa === 'matriculado' && inRange(l.dataMatricula, from, to)) x.matriculas++;
   });
   const t = today();
   const followVencidos = all.filter((l) => !['matriculado', 'perdido'].includes(l.etapa) && l.proximaData && l.proximaData < t);
@@ -209,6 +209,14 @@ export function overview(from, to, f = {}) {
 }
 
 export function prevPeriod(from, to) {
+  // Mês fechado compara com o mês anterior inteiro (outubro x setembro), não com 31 dias corridos.
+  if (from === monthStart(from) && to === monthEnd(from)) {
+    const p = addDays(from, -1); const ps = monthStart(p);
+    // Mês em andamento: compara até o mesmo dia do mês anterior, para não medir 26 dias contra 30.
+    const t = today();
+    if (t >= from && t <= to) { const d = Math.min(Number(t.slice(8)), Number(p.slice(8))); return { from: ps, to: ps.slice(0, 8) + String(d).padStart(2, '0') }; }
+    return { from: ps, to: p };
+  }
   const n = daysBetween(from, to) + 1;
   return { from: addDays(from, -n), to: addDays(from, -1) };
 }
@@ -394,6 +402,7 @@ export function measureTest(i) {
   const delta = cur !== null && base ? (cur - base) / Math.abs(base) : null;
   const improved = delta === null ? null : ind.dir === 'up' ? delta > 0 : delta < 0;
   const alvo = Number(i.metaMelhoria) || 0;
-  const reached = improved && delta !== null && Math.abs(delta) * 100 >= alvo;
+  // Meta de melhoria 0 (ex.: escalar verba mantendo o CAC) vale quando não piorou.
+  const reached = delta === null ? null : alvo === 0 ? (ind.dir === 'up' ? delta >= 0 : delta <= 0) : improved && Math.abs(delta) * 100 >= alvo;
   return { ind, cur, base, delta, improved, reached, dias: n, baseDe: pa, baseAte: pb, ate: b, restante: i.fimTeste ? daysBetween(t, i.fimTeste) : null };
 }

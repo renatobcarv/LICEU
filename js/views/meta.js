@@ -45,12 +45,14 @@ const visibleCols = () => COLS.filter((c) => colSet === 'todas' || c.group === c
 
 export function render(ctx) {
   const { from, to, f, params } = ctx;
+  // O canal vem do endereço: sair e voltar à tela limpa o filtro, e o Painel nunca fica diferente sem aviso.
+  canal = ['Meta', 'Google', 'Outro'].includes(params.canal) ? params.canal : '';
   if (params.c) tab = 'campanhas';
   const rows = campaignRows(from, to, { ...f, canal });
   const t = mediaTotals(rows);
   const asc = ASC.includes(sortKey);
   rows.sort((a, b) => { const x = a[sortKey], y = b[sortKey]; if (x === null && y === null) return 0; if (x === null) return 1; if (y === null) return -1; return asc ? x - y : y - x; });
-  const sel = params.c ? rows.find((r) => r.id === params.c) || null : null;
+  const sel = params.c ? rows.find((r) => r.id === params.c) || campaignRows(from, to, f).find((r) => r.id === params.c) || null : null;
   const canais = [['', 'Todos'], ['Meta', 'Meta'], ['Google', 'Google'], ['Outro', 'Outros']];
   const tabs = [['campanhas', 'Campanhas'], ['linhas', 'Dados importados'], ['historico', 'Importações']];
 
@@ -64,7 +66,7 @@ export function render(ctx) {
   </div>
 
   <section class="kpis compact" aria-label="Totais de mídia">
-    ${[['Valor gasto', brl2(t.investimento)], ['Resultados', num(t.resultados)], ['Custo por resultado', brl2(t.custoResultado)], ['Alcance', num(t.alcance)], ['Impressões', num(t.impressoes)], ['CPM', brl2(t.cpm)], ['CTR (link)', pct(t.ctr, 2)], ['CAC de mídia', brl2(t.cac)]].map(([l, v]) => `<article class="kpi"><h3>${l}</h3><p class="kpi-v">${v}</p></article>`).join('')}
+    ${[['Valor gasto', brl2(t.investimento)], ['Resultados', num(t.resultados)], ['Custo por resultado', brl2(t.custoResultado)], ['Alcance', num(t.alcance)], ['Impressões', num(t.impressoes)], ['CPM', brl2(t.cpm)], ['CTR (link)', pct(t.ctr, 2)], [canal ? 'CAC de mídia · só ' + canal : 'CAC de mídia', brl2(t.cac)]].map(([l, v]) => `<article class="kpi"><h3>${l}</h3><p class="kpi-v">${v}</p></article>`).join('')}
   </section>
 
   ${partialNotice(from, to, f)}
@@ -216,7 +218,7 @@ function detail(r, t, from, to) {
 }
 
 export function mount(root, ctx) {
-  $$('[data-canal]', root).forEach((b) => b.addEventListener('click', () => { canal = b.dataset.canal; ctx.refresh(); }));
+  $$('[data-canal]', root).forEach((b) => b.addEventListener('click', () => { location.hash = '#meta' + (b.dataset.canal ? '?canal=' + b.dataset.canal : ''); }));
   $('#m-sort', root)?.addEventListener('change', (e) => { sortKey = e.target.value; ctx.refresh(); });
   $('#m-cols', root)?.addEventListener('change', (e) => { colSet = e.target.value; ctx.refresh(); });
   $$('[data-pick]', root).forEach((cb) => cb.addEventListener('change', () => {
@@ -515,11 +517,15 @@ function importDialog(ctx) {
       const imp = store.put('imports', { fonte: d.canal + ' Ads', arquivo: fileName || 'Conteúdo colado', lidas: parsed.rows.length });
       const existing = store.all('adStats');
       let novas = 0, subst = 0;
+      const removed = new Set();
       const recs = rows.map((r) => {
         const camp = findOrCreateCampaign(r.campanha, d.canal, '');
         if (r.veiculacao) store.put('campaigns', { ...store.get('campaigns', camp.id), veiculacao: r.veiculacao, ...(r.tipoResultado === 'Compras' && !camp.objetivo ? { objetivo: 'Vendas (compras)' } : {}) });
         const key = [camp.id, norm(r.conjunto), norm(r.anuncio), r.inicio, r.fim].join('|');
         const old = existing.find((s) => [s.campanhaId, norm(s.conjunto), norm(s.anuncio), s.inicio, s.fim].join('|') === key);
+        // Mesmo anúncio com período que se sobrepõe (ex.: mês inteiro e depois o mesmo mês por dia): a linha antiga sai, senão o gasto conta em dobro.
+        existing.filter((s) => s !== old && !s.manual && s.campanhaId === camp.id && norm(s.conjunto) === norm(r.conjunto) && norm(s.anuncio) === norm(r.anuncio) && s.inicio && s.fim && r.inicio && r.fim && s.inicio <= r.fim && r.inicio <= s.fim && !(s.importId === imp.id))
+          .forEach((s) => { if (!removed.has(s.id)) { removed.add(s.id); store.remove('adStats', s.id); } });
         if (old) subst++; else novas++;
         const { campanha, ...rest } = r;
         // Recomeça do zero em cada reimportação (corrige linhas importadas antes com a leitura antiga).
