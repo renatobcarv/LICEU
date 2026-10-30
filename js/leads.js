@@ -74,6 +74,17 @@ export function productDialog(p, ctx) {
   });
 }
 
+// Origem do clique e campos vindos da planilha do CRM (somente leitura na ficha).
+const RASTREIO_NOMES = { plataforma: 'Plataforma', dataClique: 'Data do clique', conta: 'Conta', contaId: 'ID da conta', campanha: 'Campanha', campanhaExt: 'ID da campanha', conjunto: 'Conjunto/grupo', conjuntoId: 'ID do conjunto', anuncio: 'Anúncio', anuncioId: 'ID do anúncio', clickId: 'ID do clique', utm_source: 'UTM source', utm_medium: 'UTM medium', utm_campaign: 'UTM campaign', utm_content: 'UTM content', utm_term: 'UTM term', conexao: 'Conexão' };
+export function origemHTML(l) {
+  const r = Object.entries(l.rastreio || {}).filter(([, v]) => v);
+  const c = Object.entries(l.custom || {}).filter(([, v]) => v);
+  const crm = [['Negócio', l.negocio], ['Etapa no CRM', l.etapaCRM], ['Situação no CRM', l.situacaoCRM], ['CPF/CNPJ', l.cpf]].filter(([, v]) => v);
+  if (!r.length && !c.length && !crm.length) return '';
+  const dl = (rows) => `<dl class="w5h-view">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
+  return `<details class="more dlg-more"><summary>Origem do clique e dados da planilha</summary><div class="inner">${crm.length ? dl(crm) : ''}${r.length ? '<h3 class="form-sec">Rastreamento</h3>' + dl(r.map(([k, v]) => [RASTREIO_NOMES[k] || k, v])) : ''}${c.length ? '<h3 class="form-sec">Campos personalizados</h3>' + dl(c) : ''}</div></details>`;
+}
+
 // ---------- Movimento ----------
 export function moveLead(l, etapa, extra = {}) {
   const t = today();
@@ -140,7 +151,7 @@ export function matriculaDialog(l, ctx, { onDone } = {}) {
     title: jaMatriculado ? 'Matrícula de ' + l.nome : isNew ? 'Registrar matrícula' : 'Ganho: ' + l.nome, wide: true,
     saveLabel: jaMatriculado ? 'Salvar alterações' : 'Confirmar ganho',
     fields: main,
-    html: `<details class="more dlg-more"${isNew ? ' open' : ''}><summary>Dados do aluno e origem</summary><div class="form-grid">${extra.map(field).join('')}</div></details>${respList()}
+    html: `${origemHTML(l)}<details class="more dlg-more"${isNew ? ' open' : ''}><summary>Dados do aluno e origem</summary><div class="form-grid">${extra.map(field).join('')}</div></details>${respList()}
       ${jaMatriculado ? '<p class="hint">Cancelou? "Desfazer matrícula" devolve o aluno para a última etapa do funil. "Excluir de vez" apaga o registro inteiro.</p>' : ''}
       ${!isNew ? '<div class="row-actions"><button type="button" class="btn sm danger ghost" id="lead-del">Excluir lead de vez</button></div>' : ''}`,
     onOpen: (form) => {
@@ -255,7 +266,7 @@ export function editLead(l, ctx, preset = {}) {
   openDialog({
     title: isNew ? 'Novo lead' : l.nome, wide: true,
     fields,
-    html: respList() + (hist.length ? `<p class="hint">Histórico: ${hist.join(' → ')}</p>` : ''),
+    html: respList() + origemHTML(l) + (hist.length ? `<p class="hint">Histórico: ${hist.join(' → ')}</p>` : ''),
     onOpen: (form) => {
       const g = (n) => $(`[name="${n}"]`, form);
       g('funilId').addEventListener('change', () => {
