@@ -8,6 +8,7 @@ import { initAuth, auth, roleLabel, signOut } from './auth.js';
 import { LOGO_MARK, PRODUCT, applyTheme } from './brand.js';
 import * as painel from './views/painel.js';
 import * as meta from './views/meta.js';
+import * as campanhas from './views/campanhas.js';
 import * as funil from './views/funil.js';
 import * as matriculas from './views/matriculas.js';
 import * as pauta from './views/pauta.js';
@@ -20,6 +21,7 @@ import * as config from './views/config.js';
 const VIEWS = [
   { id: 'painel', label: 'Painel', title: ['Visão', '*geral'], kicker: 'Do anúncio à matrícula', mod: painel, group: 'Acompanhar' },
   { id: 'meta', label: 'Meta Ads', title: ['Meta', '*Ads'], kicker: 'Mídia paga', mod: meta, group: 'Acompanhar' },
+  { id: 'campanhas', label: 'Campanhas', title: ['Planejar', 'campanha'], kicker: 'Do quiz à matrícula', mod: campanhas, group: 'Acompanhar', noPeriod: true },
   { id: 'funil', label: 'Funil', title: ['Funil', '*comercial'], kicker: 'Do WhatsApp à matrícula', mod: funil, group: 'Acompanhar' },
   { id: 'matriculas', label: 'Matrículas', title: ['*Matrículas'], kicker: 'Quem comprou', mod: matriculas, group: 'Acompanhar' },
   { id: 'pauta', label: 'Pauta Viral', title: ['Pauta', '*Viral'], kicker: 'Criação de conteúdo', mod: pauta, group: 'Produzir', noPeriod: true },

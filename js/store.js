@@ -17,6 +17,7 @@ export const COLLECTIONS = [
   'leads',     // contatos do WhatsApp e o funil comercial
   'pipelines', // funis comerciais (nome e etapas de cada um)
   'products',  // produtos vendidos: preenchem a matrícula sozinhos
+  'plans',     // campanhas planejadas no método Ciclo CEC (quiz, 5W3H, meta, acompanhamento)
   'boards',    // quadros em branco de planejamento (notas, seções e cartões vivos)
   'turmas',    // turmas com vagas e meta
   'calendar',  // publicações, gravações, campanhas, tarefas
