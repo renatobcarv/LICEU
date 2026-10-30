@@ -64,6 +64,7 @@ export function render(ctx) {
     <span class="grow"></span>
     <button class="btn sm" data-act="import">${ICON.upload} Importar lista</button>
     <button class="btn sm" data-act="export">${ICON.download} CSV</button>
+    <button class="btn sm danger" data-act="zerar">Zerar</button>
   </div>
   <div id="tab-body">${body(ctx, s, p)}</div>`;
 }
@@ -79,7 +80,7 @@ function body(ctx, s, p) {
 // Filtros comuns: curso do topo, busca, responsável e temperatura.
 function filtered(ctx) {
   const qq = norm(q);
-  return store.all('leads').filter((l) => (!ctx.f.cursoId || l.cursoId === ctx.f.cursoId)
+  return store.all('leads').filter((l) => !l.foraDoFunil && (!ctx.f.cursoId || l.cursoId === ctx.f.cursoId)
     && (!fResp || (fResp === '—' ? !l.responsavel : l.responsavel === fResp))
     && (!fTemp || l.temperatura === fTemp)
     && (!qq || norm([l.nome, l.telefone, l.email, l.cidade, l.notas, l.proximaAcao, ...tagList(l.etiquetas)].join(' ')).includes(qq)));
@@ -377,6 +378,32 @@ function importDialog(ctx, p) {
   $('#li-file', dlg).addEventListener('change', async (e) => { const fl = e.target.files[0]; if (!fl) return; $('#li-name', dlg).textContent = fl.name; $('#li-text', dlg).value = await readFileText(fl); prev(); });
 }
 
+// Começar do zero: apaga os contatos deste funil ou de todos, e se quiser os funis criados.
+function zerarDialog(ctx, p) {
+  const all = store.all('leads');
+  const doFunil = all.filter((l) => leadPipeId(l) === p.id);
+  const { dlg } = openDialog({
+    title: 'Zerar e começar do zero', saveLabel: 'Apagar de vez',
+    fields: [
+      { name: 'escopo', label: 'O que apagar', type: 'select', full: true, options: [['funil', `Contatos do funil "${p.nome}" (${doFunil.length})`], ['todos', `Todos os contatos de todos os funis (${all.length})`]] },
+      { name: 'manterMatriculados', label: 'Manter os matriculados (eles somem do funil, mas a matrícula e o faturamento ficam)', type: 'checkbox', value: true, full: true },
+      { name: 'funis', label: 'Apagar também os funis que criei (o funil principal volta ao padrão)', type: 'checkbox', value: false, full: true },
+      { name: 'confirma', label: 'Para confirmar, digite APAGAR', required: true, full: true },
+    ],
+    html: '<p class="banner warn">Não tem volta. Antes, exporte o CSV do funil ou um backup em Configurações.</p>',
+    onSave: (d) => {
+      if (d.confirma.trim().toUpperCase() !== 'APAGAR') { const e = $('.form-error', dlg); e.textContent = 'Digite APAGAR para confirmar.'; e.hidden = false; return false; }
+      const alvo = (d.escopo === 'todos' ? all : doFunil).filter((l) => !(d.manterMatriculados && l.etapa === 'matriculado'));
+      alvo.forEach((l) => store.remove('leads', l.id));
+      if (d.manterMatriculados) store.putMany('leads', all.filter((l) => l.etapa === 'matriculado' && (d.escopo === 'todos' || leadPipeId(l) === p.id)).map((l) => ({ ...l, foraDoFunil: true })));
+      if (d.funis) { store.all('pipelines').forEach((x) => store.remove('pipelines', x.id)); setPipe('principal'); }
+      if (d.escopo === 'todos') store.removeWhere('imports', (i) => i.tipo === 'leads');
+      toast(alvo.length + ' contatos apagados' + (d.funis ? ' e funis reiniciados' : '') + '. Pode começar do zero.');
+      ctx.refresh();
+    },
+  });
+}
+
 function rerenderBody(root, ctx) {
   const p = pipeline(pipeId);
   const inp = $('#v-q', root);
@@ -501,6 +528,7 @@ export function mount(root, ctx) {
     }
     if (ds.act === 'resp') return respDialog(null, ctx);
     if (ds.act === 'import') return importDialog(ctx, p);
+    if (ds.act === 'zerar') return zerarDialog(ctx, p);
     if (ds.act === 'export') {
       downloadFile('funil-liceu-' + today() + '.csv', toCSV(store.all('leads'), [
         { key: 'nome', label: 'Nome' }, { key: 'telefone', label: 'Telefone' }, { key: 'email', label: 'E-mail' }, { key: 'cidade', label: 'Cidade' },
