@@ -206,7 +206,7 @@ export async function initStore(session) {
   return mode;
 }
 
-// Primeira abertura: carrega os dados reais da planilha de setembro e a configuração inicial.
+// Primeira abertura: só a configuração inicial (respostas prontas e pilares). Nenhum dado de exemplo.
 export async function seedIfEmpty() {
   if (!store.isEmpty()) return false;
   let seed = null;

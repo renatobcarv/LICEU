@@ -38,7 +38,7 @@ export function render(ctx) {
     { label: 'Resultados no Meta', value: num(o.m.resultados), d: delta(o.m.resultados, p.m.resultados, 'up'), src: 'Custo por resultado: ' + brl2(o.m.custoResultado) },
     { label: 'Conversas no funil', value: num(o.leads), d: delta(o.leads, p.leads, 'up'), src: num(o.leadsMidia) + ' vindas de campanha' },
     { label: 'Conversão em matrícula', value: pct(o.convLead), d: delta(o.convLead, p.convLead, 'up'), src: 'Matrículas ÷ conversas' },
-    { label: 'CAC de mídia', value: brl2(o.cac), d: delta(o.cac, p.cac, 'down'), src: 'Investimento ÷ matrículas de campanha' },
+    { label: 'CAC de mídia', value: brl2(o.cac), d: delta(o.cac, p.cac, 'down'), src: 'Investimento ÷ ' + num(o.matriculasMidia) + ' matrículas vindas de anúncio' },
     { label: 'Valor matriculado', value: brl(o.receita), d: delta(o.receita, p.receita, 'up'), src: 'Recebido: ' + brl(sum(mats, recebido)) },
   ];
 

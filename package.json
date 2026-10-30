@@ -2,7 +2,7 @@
   "name": "liceu-intelligence",
   "version": "0.1.0",
   "private": true,
-  "description": "LICEU Intelligence: marketing e matrículas do anúncio à matrícula.",
+  "description": "FLOWCLASS Intelligence: marketing e matrículas do anúncio à matrícula.",
   "type": "module",
   "scripts": {
     "dev": "npx --yes serve@14.2.4 -l 5173 .",

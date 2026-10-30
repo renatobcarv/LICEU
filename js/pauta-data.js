@@ -3,7 +3,7 @@ import { settings } from './metrics.js';
 // Mantido igual ao artefato que já funcionava; só mudou de lugar.
 
 export const BANK = [
-  { cat: 'Motion TecMais', items: [
+  { cat: 'Motion', items: [
     ['Esse erro pode custar uma vida bem na sua frente. (tela: o erro nomeado, ex.: ACHAR QUE ELE TÁ RESPIRANDO)', 'Alerta'],
     ['Você acha que ele tá respirando. Mas o coração dele parou.', 'Opinião contrária'],
     ['Você conhece [primeiros socorros]. Mas provavelmente nunca viu essa parte.', 'Curiosidade'],
@@ -135,8 +135,8 @@ export const CONSCIENCIA = [
   ['Claude avalia', 'Deixar o Claude avaliar (no chat)'],
   ['Nível 1: nem sabe que precisa (eduque, não venda)', 'Nem sabe que precisa'],
   ['Nível 2: sente o problema, não conhece a solução (mostre o caminho, não a marca)', 'Sente o problema'],
-  ['Nível 3: sabe que um curso resolve, não escolheu onde (por que a TecMais)', 'Sabe que curso resolve'],
-  ['Nível 4: já conhece a TecMais, está comparando (prova e objeção)', 'Já conhece a TecMais'],
+  ['Nível 3: sabe que um curso resolve, não escolheu onde (por que a nossa escola)', 'Sabe que curso resolve'],
+  ['Nível 4: já conhece a escola, está comparando (prova e objeção)', 'Já conhece a escola'],
   ['Nível 5: já quer, falta o empurrão (oferta real, urgência real, CTA direto)', 'Já quer, falta o empurrão'],
 ];
 export const OBJECOES = [['', 'Não sei'], ['Preço', 'Preço'], ['Falta de tempo', 'Tempo'], ['Medo de não conseguir acompanhar', 'Medo de não conseguir'], ['Não confia na escola ainda', 'Confiança'], ['Não vê necessidade', 'Não vê necessidade']];
@@ -144,7 +144,7 @@ export const CENARIOS = [['Padaria', 'Padaria'], ['Ônibus / ponto de ônibus', 
 
 export const ROTEIRO = {
   'Reels': 'Roteiro cena a cena, de 20 a 45 segundos. Para cada cena: **00:00–00:03** · Imagem · Fala · Texto na tela. O gancho ocupa só os 3 primeiros segundos. A entrega útil chega antes da metade. Termine com a ação final dita de forma natural, sem cara de anúncio.',
-  'Vídeo motion': 'Roteiro de vídeo motion animado em código (2.5D, bonecos sem rosto, 45 a 70 segundos, 1080x1920, tudo importante na faixa central 4:5). Molde que já funcionou na TecMais: história dramatizada numa situação comum do dia a dia (fila da padaria, ponto de ônibus, casa, trabalho) em que alguém usa o que se aprende no curso e derruba um erro que quase todo mundo comete. Entregue: premissa e o erro derrubado; personagens com silhueta e figurino marcantes, sem rosto, sempre de corpo inteiro; mapa de retenção (segundo e evento); cena a cena com **00:00–00:04** · Cenário · Ação · Narração · Fala de personagem · Texto na tela · Som. Regras: estabeleça lugar e pessoas logo no início com o gancho por cima (vale flash-forward); o gancho pode ser sonoro; a cor esfria na tensão e esquenta na resolução; frase final emocional e pessoal, sem carga horária nem preço; cartão final convidando a seguir @tecmais.valparaisodegoias com a logo (azul #000066 e laranja #F06022). No fim, separe as falas por voz (narrador e cada personagem) prontas para o ElevenLabs.',
+  'Vídeo motion': 'Roteiro de vídeo motion animado em código (2.5D, bonecos sem rosto, 45 a 70 segundos, 1080x1920, tudo importante na faixa central 4:5). Molde que já funcionou: história dramatizada numa situação comum do dia a dia (fila da padaria, ponto de ônibus, casa, trabalho) em que alguém usa o que se aprende no curso e derruba um erro que quase todo mundo comete. Entregue: premissa e o erro derrubado; personagens com silhueta e figurino marcantes, sem rosto, sempre de corpo inteiro; mapa de retenção (segundo e evento); cena a cena com **00:00–00:04** · Cenário · Ação · Narração · Fala de personagem · Texto na tela · Som. Regras: estabeleça lugar e pessoas logo no início com o gancho por cima (vale flash-forward); o gancho pode ser sonoro; a cor esfria na tensão e esquenta na resolução; frase final emocional e pessoal, sem carga horária nem preço; cartão final convidando a seguir {{INSTAGRAM}} com a logo nas cores da marca da escola. No fim, separe as falas por voz (narrador e cada personagem) prontas para o ElevenLabs.',
   'Carrossel': 'Roteiro slide a slide (7 a 10). Slide 1 é o gancho. Slide 2 aumenta a tensão para a pessoa arrastar. Do 3 em diante, uma ideia por slide, até 25 palavras. Último slide: ação final. Diga o visual de cada slide.',
   'Stories': 'Sequência de 4 a 7 telas: o que aparece, texto curto e, em pelo menos 2 telas, uma figurinha de interação (enquete, caixa de pergunta, quiz ou slider) com o texto exato. A última tela leva para o direct ou WhatsApp.',
   'Post estático': 'Arte única: título (até 8 palavras), linha de apoio, elemento visual principal (foto real de preferência) e o motivo concreto para alguém comentar ou salvar.',
@@ -154,7 +154,7 @@ export const RULES = [
   'REGRAS DE ESCRITA HUMANA',
   '- Português do Brasil falado, como alguém da equipe falaria com um aluno. Frases curtas. Detalhe concreto em vez de adjetivo.',
   '- Proibido: "não é X, é Y" e "não é apenas... é..."; revelação com dois-pontos ("A melhor parte: ..."); "Sinceramente?", "Vamos lá", "Spoiler:", "No mundo de hoje", "Chegou a hora de", "Imagine...", "Uma experiência única"; trios de adjetivos; listas de 3 itens que dizem a mesma coisa; fechamento que repete a promessa do começo; travessão como muleta; perguntas retóricas em sequência; descubra, transforme, desbloqueie, jornada, potencialize, incrível, revolucionário; emoji como marcador; exclamação em toda frase; caixa alta sem motivo.',
-  '- Teste do concorrente: se tirar o nome da TecMais e a frase servir para qualquer escola, reescreva com situação, tensão e um fato concreto.',
+  '- Teste do concorrente: se tirar o nome da escola e a frase servir para qualquer escola, reescreva com situação, tensão e um fato concreto.',
   '- Uma única ideia central por peça. Frase que pode sair sem perder o sentido é enchimento: corte.',
   '- CTA é o próximo passo pequeno e natural (comentar uma palavra, responder uma pergunta, pedir as datas). Nunca "Saiba mais" por hábito.',
   '- Urgência só se for real (data de turma, vagas do laboratório). Nunca escassez fabricada.',
@@ -188,8 +188,7 @@ function buildMotion(d) {
   const hooks = fmtHooks(d);
   const cen = d.cenario === 'Claude escolhe' ? 'escolha a situação do dia a dia mais forte para esse curso' : d.cenario;
   return [
-    '/tecmais-reel-motion', '',
-    'BRIEFING DE CRIAÇÃO · Vídeo motion · TecMais Valparaíso de Goiás (@tecmais.valparaisodegoias)', '',
+    'BRIEFING DE CRIAÇÃO · Vídeo motion · {{UNIDADE}}{{INSTAGRAM_P}}', '',
     'Objetivo: ' + d.objetivo,
     'Curso: ' + (d.curso || '(não informado)'),
     'Ideia: ' + (d.ideia || '(não informada)'),
@@ -220,17 +219,18 @@ function buildMotion(d) {
   ].filter((x) => x !== null).join('\n');
 }
 
-// A unidade e o @ vêm das Configurações; o texto-base foi escrito para a unidade de Valparaíso.
+// A unidade e o @ vêm das Configurações.
 export function buildBrief(d) {
   const st = settings();
-  return briefRaw(d).replaceAll('TecMais Valparaíso de Goiás', st.unidade || 'TecMais Valparaíso de Goiás').replaceAll('@tecmais.valparaisodegoias', st.instagram || '@tecmais.valparaisodegoias');
+  const ig = st.instagram || '';
+  return briefRaw(d).replaceAll('{{UNIDADE}}', st.unidade || 'nossa escola').replaceAll('{{INSTAGRAM_P}}', ig ? ' (' + ig + ')' : '').replaceAll('{{INSTAGRAM}}', ig || 'o perfil da escola');
 }
 
 function briefRaw(d) {
   if (d.formato === 'Vídeo motion') return buildMotion(d);
   const hooks = fmtHooks(d);
   return [
-    'BRIEFING DE CRIAÇÃO · TecMais Valparaíso de Goiás (@tecmais.valparaisodegoias)', '',
+    'BRIEFING DE CRIAÇÃO · {{UNIDADE}}{{INSTAGRAM_P}}', '',
     'Formato: ' + d.formato,
     'Objetivo: ' + d.objetivo,
     'Curso/tema: ' + (d.curso || '(não informado)'),

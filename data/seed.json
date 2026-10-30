@@ -2,8 +2,8 @@
  "settings": [
   {
    "id": "main",
-   "unidade": "TEC Mais · Valparaíso de Goiás",
-   "instagram": "@tecmais.valparaisodegoias",
+   "unidade": "",
+   "instagram": "",
    "coordenador": "Coordenação de marketing",
    "metaStoriesDia": 5,
    "ctrMin": 0.8,
@@ -16,14 +16,12 @@
     "Bastidores",
     "Prova social"
    ],
-   "responsaveis": [
-    "Assistente de mídias"
-   ],
+   "responsaveis": [],
    "respostas": [
     {
      "titulo": "Boas-vindas (lead de anúncio)",
      "etapa": "Novo contato",
-     "texto": "Oi, [nome]! Aqui é da TEC Mais Valparaíso. Vi que você se interessou pelo curso de [curso]. Pra eu te passar certinho: você já trabalha na área ou está começando agora?"
+     "texto": "Oi, [nome]! Aqui é da [escola]. Vi que você se interessou pelo curso de [curso]. Pra eu te passar certinho: você já trabalha na área ou está começando agora?"
     },
     {
      "titulo": "Datas e valores",
@@ -41,229 +39,6 @@
      "texto": "Oi, [nome]! Você comentou que o valor pesou da última vez. Abrimos [condição real e verdadeira] para a turma de [data]. Se fizer sentido agora, te mando os detalhes."
     }
    ]
-  }
- ],
- "courses": [
-  {
-   "id": "c_inj",
-   "nome": "Administração de Medicamentos Injetáveis",
-   "preco": null,
-   "ativo": true
-  },
-  {
-   "id": "c_ps",
-   "nome": "Primeiros Socorros",
-   "preco": null,
-   "ativo": true
-  },
-  {
-   "id": "c_aph",
-   "nome": "Atendimento Pré-Hospitalar",
-   "preco": null,
-   "ativo": true
-  },
-  {
-   "id": "c_fer",
-   "nome": "Feridas & Curativos",
-   "preco": null,
-   "ativo": true
-  },
-  {
-   "id": "c_cui",
-   "nome": "Cuidador de Idoso",
-   "preco": null,
-   "ativo": true
-  },
-  {
-   "id": "c_inc",
-   "nome": "Prevenção & Combate a Incêndios",
-   "preco": null,
-   "ativo": true
-  },
-  {
-   "id": "c_enf",
-   "nome": "Técnico em Enfermagem",
-   "preco": null,
-   "ativo": true
-  },
-  {
-   "id": "c_seg",
-   "nome": "Técnico em Segurança do Trabalho",
-   "preco": null,
-   "ativo": true
-  },
-  {
-   "id": "c_adm",
-   "nome": "Técnico em Administração",
-   "preco": null,
-   "ativo": true
-  }
- ],
- "calendar": [
-  {
-   "id": "cal_set_0",
-   "data": "2026-09-02",
-   "tipo": "Publicação",
-   "titulo": "\"Essa galinha tem mais futuro que você\"",
-   "cursoId": "c_inj",
-   "campanhaTexto": "Minicurso de Injetáveis",
-   "formato": "Arte",
-   "pilar": "Cursos e profissões",
-   "objetivo": "Engajar",
-   "cta": "Chame no zap",
-   "status": "Publicado",
-   "origem": "planilha"
-  },
-  {
-   "id": "cal_set_1",
-   "data": "2026-09-03",
-   "tipo": "Publicação",
-   "titulo": "Domine a administração de medicamentos injetáveis",
-   "cursoId": "c_inj",
-   "campanhaTexto": "Minicurso de Injetáveis",
-   "formato": "Carrossel",
-   "pilar": "Captação e vendas",
-   "objetivo": "Atrair",
-   "cta": "Dê o próximo passo na sua formação",
-   "status": "Publicado",
-   "origem": "planilha"
-  },
-  {
-   "id": "cal_set_2",
-   "data": "2026-09-04",
-   "tipo": "Publicação",
-   "titulo": "Teste seus conhecimentos: qual dessas situações está correta?",
-   "cursoId": "c_inj",
-   "campanhaTexto": "Minicurso de Injetáveis",
-   "formato": "Carrossel",
-   "pilar": "Identificação",
-   "objetivo": "Gerar confiança",
-   "cta": "Clique no link",
-   "status": "Publicado",
-   "origem": "planilha"
-  },
-  {
-   "id": "cal_set_3",
-   "data": "2026-09-05",
-   "tipo": "Publicação",
-   "titulo": "\"Conhecimento também faz parte da prática\"",
-   "cursoId": "c_inj",
-   "campanhaTexto": "Minicurso de Injetáveis",
-   "formato": "Arte",
-   "pilar": "Captação e vendas",
-   "objetivo": "Atrair",
-   "cta": "Garanta sua vaga",
-   "status": "Publicado",
-   "origem": "planilha"
-  },
-  {
-   "id": "cal_set_4",
-   "data": "2026-09-07",
-   "tipo": "Publicação",
-   "titulo": "Trend viral do TikTok",
-   "cursoId": "c_inj",
-   "campanhaTexto": "Minicurso de Injetáveis",
-   "formato": "Reels",
-   "pilar": "Relacionamento e comunidade",
-   "objetivo": "Engajar",
-   "cta": "Saiba mais",
-   "status": "Publicado",
-   "origem": "planilha"
-  },
-  {
-   "id": "cal_set_5",
-   "data": "2026-09-08",
-   "tipo": "Publicação",
-   "titulo": "Vídeo \"expectativa x realidade\"",
-   "cursoId": "c_inj",
-   "campanhaTexto": "Minicurso de Injetáveis",
-   "formato": "Reels",
-   "pilar": "Bastidores",
-   "objetivo": "Gerar matrículas",
-   "cta": "",
-   "status": "Ideia",
-   "origem": "planilha"
-  },
-  {
-   "id": "cal_set_evento",
-   "data": "2026-09-19",
-   "tipo": "Evento",
-   "titulo": "Dia do curso rápido de injetáveis",
-   "cursoId": "c_inj",
-   "campanhaTexto": "Evento/Ação local",
-   "formato": "Reels",
-   "pilar": "Bastidores",
-   "objetivo": "Gerar confiança",
-   "cta": "",
-   "status": "Ideia",
-   "origem": "planilha"
-  }
- ],
- "stories": [
-  {
-   "id": "2026-09-25",
-   "blocos": {
-    "bomdia": "Feito",
-    "bastidores": "Pendente",
-    "aula": "Pendente",
-    "interacao": "Pendente",
-    "cta": "Pendente"
-   }
-  }
- ],
- "weekly": [
-  {
-   "id": "2026-08-31",
-   "seguidoresInicio": 76,
-   "seguidoresFim": 144,
-   "reels": 3,
-   "fotos": 7,
-   "depoimentos": 0,
-   "avaliacoesGoogle": 22,
-   "contatos": 65,
-   "matriculas": 0,
-   "melhorConteudo": "Reels de Administração de Medicamentos",
-   "aprendizado": ""
-  }
- ],
- "goals": [
-  {
-   "id": "g_set_seg",
-   "nome": "Chegar a 500 seguidores",
-   "indicador": "manual",
-   "alvo": 500,
-   "atualManual": 144,
-   "inicio": "2026-09-01",
-   "fim": "2026-09-30",
-   "notas": "Meta da planilha de setembro. Atualize o valor atual à mão."
-  },
-  {
-   "id": "g_set_reels",
-   "nome": "12 reels no mês",
-   "indicador": "reels",
-   "alvo": 12,
-   "inicio": "2026-09-01",
-   "fim": "2026-09-30",
-   "notas": "Meta da planilha de setembro."
-  },
-  {
-   "id": "g_set_dep",
-   "nome": "5 depoimentos gravados",
-   "indicador": "depoimentos",
-   "alvo": 5,
-   "inicio": "2026-09-01",
-   "fim": "2026-09-30",
-   "notas": "Meta da planilha de setembro."
-  },
-  {
-   "id": "g_set_google",
-   "nome": "Avaliações no Google",
-   "indicador": "manual",
-   "alvo": 5,
-   "atualManual": null,
-   "inicio": "2026-09-01",
-   "fim": "2026-09-30",
-   "notas": "Meta da planilha: 5. A planilha registrava 22 avaliações (total do perfil)."
   }
  ]
 }

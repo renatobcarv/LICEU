@@ -1,60 +1,61 @@
-/* LICEU Intelligence · design system "Gateway"
-   Estrutura baseada no modelo "Gateway System" (painel de pagamentos): camadas neutras sem sombra,
-   uma cor de marca só onde há ação ou dinheiro, pílulas para ações e filtros, abas sublinhadas,
-   sidebar em card e um card mestre por página. A marca é o ouro do LICEU.
+/* FLOWCLASS Intelligence · design system
+   Estrutura do modelo "Gateway System" com a identidade FLOWCLASS (Tech Premium): grafite sustenta a
+   marca, carbono nas superfícies, verde-lima só como assinatura (ação, item ativo, dado que importa).
+   Camadas sem sombra, pílulas para ações e filtros, abas sublinhadas, card mestre por página.
    Regras completas e como usar em telas novas: docs/DESIGN.md. */
 
 :root {
   /* ---- camadas (do fundo para cima) ---- */
-  --background: #0d0f12;   /* atrás de tudo */
-  --card: #1a1d24;         /* sidebar, card mestre, diálogos */
-  --surface: #21252e;      /* inputs e painéis dentro do card */
-  --muted: #272c37;        /* hover, fundo neutro de badge */
-  --disabled: #262b35;
-  --border: #333947;       /* borda de 1px: a hierarquia é feita por luz e borda, nunca por sombra */
+  --background: #101214;   /* Graphite Black: fundo e identidade */
+  --card: #1a1d20;         /* sidebar, card mestre, diálogos (entre grafite e carbono) */
+  --surface: #252a2e;      /* Carbon Gray: inputs, painéis, cards internos */
+  --muted: #2e3439;        /* hover, fundo neutro de badge */
+  --disabled: #2a2f33;
+  --border: #353c41;       /* borda de 1px: a hierarquia é feita por luz e borda, nunca por sombra */
 
   /* ---- texto ---- */
-  --foreground: #f4f5f7;
-  --heading: #f1ece2;
+  --foreground: #ffffff;   /* Pure White */
+  --heading: #f3f6ef;
   --heading-strong: #ffffff;
-  --muted-foreground-strong: #c7ced9;
-  --muted-foreground: #a3acba;
-  --subtle-foreground: #8b95a6;
-  --disabled-foreground: #5c6678;
+  --muted-foreground-strong: #c9d0d4;
+  --muted-foreground: #a7b0b5;  /* Steel Gray */
+  --subtle-foreground: #8f989e;
+  --disabled-foreground: #5f686e;
 
-  /* ---- marca: ouro LICEU. Só em CTA, item ativo, valor de dinheiro e gráfico ---- */
-  --primary: #e3b35f;
-  --primary-foreground: #241a06;
-  --primary-strong: #d39c3c;
-  --primary-stronger: #f0c677;
-  --brand-deep: #f0c677;
+  /* ---- marca: Flow Lime. Assinatura, nunca fundo predominante ---- */
+  --primary: #c4f15a;
+  --primary-foreground: #101214;
+  --primary-strong: #b3e341;
+  --primary-stronger: #d6f78a;
+  --brand-deep: #d6f78a;
+  --soft-lime: #eaf4d5;    /* Soft Lime: fundos suaves e selecionados (tema claro) */
 
   /* ---- estados ---- */
-  --delta-positive: #7bd44a;
-  --success: #5fd38a;
-  --success-subtle: #17301a;
-  --success-subtle-foreground: #b8f08f;
+  --delta-positive: #c4f15a;
+  --success: #6fe0a0;
+  --success-subtle: #1b2e22;
+  --success-subtle-foreground: #a8f0c5;
   --destructive: #ff6b5e;
-  --destructive-subtle: #2a1214;
-  --destructive-subtle-foreground: #ff8a8e;
-  --warning: #ff9157;
-  --warning-subtle: #3b2d0c;
-  --warning-foreground: #fde68a;
-  --info-subtle: #22262f;
-  --info-foreground: #c7ced9;
+  --destructive-subtle: #2c1416;
+  --destructive-subtle-foreground: #ff9a92;
+  --warning: #ffb547;
+  --warning-subtle: #33280f;
+  --warning-foreground: #ffd88a;
+  --info-subtle: #252a2e;
+  --info-foreground: #c9d0d4;
 
   /* ---- gráficos ---- */
-  --chart-1: #e3b35f;
-  --chart-2: #ff7a3d;
-  --chart-3: #5fd38a;
-  --chart-4: #8b95a6;
-  --chart-grid: #262b35;
-  --chart-axis: #a3acba;
+  --chart-1: #c4f15a;
+  --chart-2: #7fb7ff;
+  --chart-3: #6fe0a0;
+  --chart-4: #a7b0b5;
+  --chart-grid: #2a2f33;
+  --chart-axis: #a7b0b5;
 
   /* ---- tipografia: uma família só, geométrica ---- */
   --font-sans: "Fustat", "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-mark: "Cinzel", "Trajan Pro", Georgia, serif; /* só o logotipo */
+  --font-mark: var(--font-sans);
 
   /* ---- espaço (base 4) e raio (segue o tamanho) ---- */
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px;
@@ -80,13 +81,13 @@
 
 /* Tema claro: pronto, só troca de tokens (ative com data-theme="light" no <html>). */
 :root[data-theme="light"] {
-  --background: #f5f7fa; --card: #ffffff; --surface: #f8fafc; --muted: #f1f5f9; --disabled: #e2e8f0; --border: #e2e8f0;
-  --foreground: #18181b; --heading: #3a2a0c; --heading-strong: #0f172b; --muted-foreground-strong: #45556c; --muted-foreground: #5f7089; --subtle-foreground: #7a8aa3; --disabled-foreground: #90a1b9;
-  --primary: #e3b35f; --primary-foreground: #241a06; --primary-strong: #d39c3c; --primary-stronger: #8a5a10; --brand-deep: #7a4f0b;
-  --delta-positive: #2ea603; --success: #2ea603; --success-subtle: #e6f9da; --success-subtle-foreground: #1f4a10;
-  --destructive: #e7000b; --destructive-subtle: #fef2f2; --destructive-subtle-foreground: #9f0712;
-  --warning: #c2410c; --warning-subtle: #fef9c2; --warning-foreground: #894b00; --info-subtle: #f1f5f9; --info-foreground: #45556c;
-  --chart-grid: #e2e7f1; --chart-axis: #62748e; --chart-4: #90a1b9;
+  --background: #f4f6f2; --card: #ffffff; --surface: #f7f9f4; --muted: #eaf4d5; --disabled: #e3e7e9; --border: #dfe4e6;
+  --foreground: #101214; --heading: #101214; --heading-strong: #101214; --muted-foreground-strong: #3d464b; --muted-foreground: #5b656b; --subtle-foreground: #737d83; --disabled-foreground: #a7b0b5;
+  --primary: #c4f15a; --primary-foreground: #101214; --primary-strong: #b3e341; --primary-stronger: #4f7a00; --brand-deep: #3f6400;
+  --delta-positive: #3f8a00; --success: #2e9a4f; --success-subtle: #e3f6e9; --success-subtle-foreground: #1d5e31;
+  --destructive: #d92d20; --destructive-subtle: #fdeceb; --destructive-subtle-foreground: #9b1c12;
+  --warning: #c26b00; --warning-subtle: #fff4dc; --warning-foreground: #7a4500; --info-subtle: #eef1f2; --info-foreground: #3d464b;
+  --chart-1: #8ec21f; --chart-2: #3d7fd6; --chart-grid: #e3e7e9; --chart-axis: #5b656b;
   color-scheme: light;
 }
 
@@ -132,10 +133,11 @@ svg { flex: none; }
 /* Sidebar: um card colado à esquerda, raio 32 do lado de dentro */
 .side { position: sticky; top: var(--space-3); margin: var(--space-3) 0 var(--space-3) var(--space-3); height: calc(100vh - 24px); background: var(--card); color: var(--foreground); display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-6) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); border-radius: var(--radius-2xl); overflow-y: auto; z-index: 30; }
 .brand { display: flex; align-items: center; gap: var(--space-3); color: var(--primary); text-decoration: none; padding: 0 var(--space-3); }
-.brand .logo-mark { width: 30px; height: 35px; }
+.brand .logo-full { display: block; width: 168px; height: auto; }
+.logo-full { display: block; height: auto; }
 .brand-text { display: flex; flex-direction: column; line-height: 1; }
 .wordmark { font: 600 19px var(--font-mark); letter-spacing: .26em; }
-.brand-sub { font: 600 10px var(--font-sans); letter-spacing: .28em; text-transform: uppercase; color: var(--subtle-foreground); margin-top: 6px; }
+.brand-sub { font: 600 10px var(--font-sans); letter-spacing: .42em; text-transform: uppercase; color: var(--muted-foreground); margin-top: 8px; }
 .nav { display: flex; flex-direction: column; gap: var(--space-1); }
 .nav-group { font: 600 12px/18px var(--font-sans); color: var(--subtle-foreground); margin: var(--space-4) var(--space-3) var(--space-1); }
 .nav a { display: flex; align-items: center; gap: var(--space-3); height: 44px; padding: 0 var(--space-3); border-radius: var(--radius-md); color: var(--muted-foreground); text-decoration: none; font: 600 14px/20px var(--font-sans); transition: background-color var(--t-fast), color var(--t-fast); }
@@ -294,7 +296,7 @@ a.card:hover, .cards > .card:hover, .pq:hover { border-color: var(--muted-foregr
 
 /* Estado vazio: fala do ganho e repete a ação principal */
 .empty { background: var(--surface); border-radius: var(--radius-xl); padding: var(--space-8) var(--space-6); text-align: center; display: flex; flex-direction: column; gap: var(--space-2); align-items: center; color: var(--muted-foreground); }
-.empty::before { content: ""; width: 56px; height: 56px; border-radius: var(--radius-xl); background: var(--success-subtle) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%23e3b35f' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='3' width='14' height='18' rx='2'/%3E%3Cpath d='M9 8h6M9 12h6M9 16h3'/%3E%3C/svg%3E") center no-repeat; margin-bottom: var(--space-2); }
+.empty::before { content: ""; width: 56px; height: 56px; border-radius: var(--radius-xl); background: var(--success-subtle) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%23c4f15a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='3' width='14' height='18' rx='2'/%3E%3Cpath d='M9 8h6M9 12h6M9 16h3'/%3E%3C/svg%3E") center no-repeat; margin-bottom: var(--space-2); }
 .empty h3 { font: 700 20px/28px var(--font-sans); color: var(--heading-strong); }
 .empty p { max-width: 56ch; font-size: 14px; }
 .empty-sm { color: var(--muted-foreground); font-size: 14px; }
@@ -675,7 +677,7 @@ pre.brief { margin: var(--space-3) var(--space-4) 0; padding: var(--space-4); ba
 .qb-view:focus-visible { border-color: var(--primary); }
 .qb-view.panning { cursor: grabbing; }
 .qb-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
-.c-neutro { --qc: #333947; --qk: #f4f5f7; } .c-ouro { --qc: #e3b35f; --qk: #241a06; } .c-laranja { --qc: #ff7a3d; --qk: #1f0c03; } .c-verde { --qc: #5fd38a; --qk: #06180c; } .c-vermelho { --qc: #ff6b5e; --qk: #210604; }
+.c-neutro { --qc: #353c41; --qk: #ffffff; } .c-ouro { --qc: #c4f15a; --qk: #101214; } .c-laranja { --qc: #7fb7ff; --qk: #0a1626; } .c-verde { --qc: #5fd38a; --qk: #06180c; } .c-vermelho { --qc: #ff6b5e; --qk: #210604; }
 .qi { position: absolute; border-radius: var(--radius-xl); cursor: default; user-select: none; }
 .qi.sel { outline: 2px solid var(--primary); outline-offset: 3px; }
 .qi-nota { background: var(--qc); color: var(--qk); padding: var(--space-4); overflow: hidden; }
@@ -704,7 +706,8 @@ pre.brief { margin: var(--space-3) var(--space-4) 0; padding: var(--space-4); ba
 #auth[hidden] { display: none !important; }
 .auth-card { width: min(440px, 100%); border-radius: var(--radius-2xl); padding: var(--space-8); display: flex; flex-direction: column; gap: var(--space-4); background: var(--card); }
 .auth-logo { display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--primary); }
-.auth-logo .logo-mark { width: 54px; height: 62px; }
+.auth-logo .logo-full { width: 240px; }
+.auth-logo .brand-sub { margin-top: 0; }
 .auth-logo .wordmark { font-size: 28px; letter-spacing: .3em; margin-right: -.3em; }
 .auth-eyebrow { text-align: center; font: 600 11px var(--font-sans); letter-spacing: .38em; text-transform: uppercase; color: var(--subtle-foreground); margin-top: -8px; }
 .auth-card h1 { font-size: 26px; line-height: 34px; text-align: center; color: var(--heading-strong); }
@@ -805,3 +808,64 @@ pre.brief { margin: var(--space-3) var(--space-4) 0; padding: var(--space-4); ba
 .pc-row { display: flex; justify-content: space-between; gap: var(--space-2); font-size: 13px; color: var(--muted-foreground); }
 .pc-row b { font-size: 13px; }
 .opt-card { border-color: color-mix(in srgb, var(--destructive) 45%, var(--border)); }
+
+/* ===================== mais vida: o lima conduz o olho ===================== */
+/* Botão secundário: fundo carbono e contorno lima suave; no hover, ganha lima */
+.btn { background: var(--surface); border-color: color-mix(in srgb, var(--primary) 26%, var(--border)); }
+.btn:hover { background: color-mix(in srgb, var(--primary) 14%, var(--surface)); border-color: color-mix(in srgb, var(--primary) 60%, transparent); color: var(--heading-strong); }
+.btn svg { color: var(--primary); }
+.btn.primary svg { color: currentColor; }
+.btn.primary:hover { color: var(--primary-foreground); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--brand-deep); }
+.btn.ghost:hover { background: color-mix(in srgb, var(--primary) 10%, transparent); }
+.btn.danger, .btn.ghost.danger, .btn.danger.ghost { background: transparent; }
+.btn.win { background: color-mix(in srgb, var(--success) 10%, transparent); }
+.icon-btn { background: var(--surface); border-color: color-mix(in srgb, var(--primary) 22%, var(--border)); color: var(--primary); }
+.icon-btn:hover { background: color-mix(in srgb, var(--primary) 16%, var(--surface)); }
+/* Menu: ícones em lima, item ativo sólido */
+.nav a .ni { color: var(--primary); }
+.nav a:hover { background: color-mix(in srgb, var(--primary) 9%, transparent); }
+.nav a[aria-current="page"] .ni { color: var(--primary-foreground); }
+.nav-group { color: color-mix(in srgb, var(--primary) 70%, var(--muted-foreground)); letter-spacing: .04em; }
+/* Abas e filtros: ativo bem visível */
+.tab[aria-selected="true"] { color: var(--primary); }
+.chip, .seg-b, .pipe-tab, .chip-radio span, .step-pill { background: var(--surface); }
+.chip[aria-pressed="true"], .seg-b[aria-pressed="true"], .pipe-tab[aria-selected="true"], .chip-radio input:checked + span { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); font-weight: 600; }
+.pipe-tab[aria-selected="true"] small { color: var(--primary-foreground); opacity: .7; }
+.step-pill.on { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+.step-pill.on span { background: var(--primary-foreground); color: var(--primary); }
+/* Indicadores e títulos com sinal de cor */
+.kpi h3::before, .eyebrow::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); margin-right: 8px; vertical-align: 2px; }
+.kpi:nth-child(4n + 2) h3::before { background: var(--chart-2); }
+.kpi:nth-child(4n + 3) h3::before { background: var(--success); }
+.kpi:nth-child(4n + 4) h3::before { background: var(--warning); }
+.kpi:hover, .card.pick:hover, .est:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+.eyebrow { color: var(--brand-deep); }
+.kicker { color: var(--brand-deep); }
+.kicker::after { color: var(--muted-foreground); }
+.card-head h2 { color: var(--heading-strong); }
+.badge { background: color-mix(in srgb, var(--primary) 12%, var(--surface)); color: var(--brand-deep); }
+.badge.good, .badge.bad, .badge.warn, .badge.info { background-blend-mode: normal; }
+.count { color: var(--brand-deep); }
+.col header h3::before { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent); }
+.lead:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+.store-status { background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); }
+.meter span, .inline-bar span { background: var(--primary); }
+.field input:focus, .field select:focus, .field textarea:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent); }
+.kv-row { display: grid; grid-template-columns: 1fr 2fr auto; gap: 6px; align-items: center; }
+.ac-row { display: grid; grid-template-columns: 2fr 160px 1fr auto; gap: 6px; align-items: center; }
+.md-row, .md-head { display: grid; grid-template-columns: 1.3fr 1.3fr 90px 80px auto; gap: 6px; align-items: center; }
+.md-head { font: 600 12px var(--font-sans); color: var(--muted-foreground); padding: 0 2px; }
+.kv-row input, .ac-row input, .md-row input, .md-row select { width: 100%; min-height: 40px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); padding: 6px 10px; color: var(--foreground); }
+.kv-row input:focus, .ac-row input:focus, .md-row input:focus, .md-row select:focus { outline: none; border-color: var(--primary); }
+@media (max-width: 640px) { .kv-row, .ac-row, .md-row { grid-template-columns: 1fr 1fr; } .md-head { display: none; } }
+.card.add-pick, .est.add-est { border-style: dashed; border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); background: color-mix(in srgb, var(--primary) 5%, transparent); }
+.card.add-pick b, .est.add-est b { color: var(--primary); display: inline-flex; gap: 6px; align-items: center; }
+.est.add-est .est-k svg { width: 16px; height: 16px; color: var(--primary); }
+.todo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.todo li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-3); border-radius: var(--radius-lg); background: var(--surface); }
+.todo li span { display: flex; flex-direction: column; }
+.todo li small { color: var(--muted-foreground); font-size: 12px; }
+.todo li.done b { text-decoration: line-through; color: var(--muted-foreground); }
+.base-card { background: color-mix(in srgb, var(--primary) 6%, transparent); border-color: color-mix(in srgb, var(--primary) 30%, var(--border)); }
+.base-card h3 { color: var(--heading-strong); }

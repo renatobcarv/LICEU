@@ -1,4 +1,4 @@
-// Projeto Supabase do LICEU Intelligence.
+// Projeto Supabase do FLOWCLASS Intelligence.
 // A chave "publishable" é pública por design (vai para o navegador de qualquer forma);
 // quem protege os dados são as regras RLS de supabase/schema.sql.
 // Nunca coloque aqui a chave secreta (sb_secret_...) nem a service_role.

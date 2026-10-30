@@ -16,8 +16,8 @@ export const LOSS_REASONS = ['Preço', 'Sem retorno', 'Horário ou turno', 'Dist
 export const ORIGENS = ['Meta Ads', 'Instagram orgânico', 'Indicação', 'Google', 'Passante / balcão', 'Site', 'Outro'];
 
 export const settings = () => ({
-  unidade: 'TEC Mais · Valparaíso de Goiás',
-  instagram: '@tecmais.valparaisodegoias',
+  unidade: '',
+  instagram: '',
   coordenador: 'Coordenação de marketing',
   metaStoriesDia: 5,
   ctrMin: 0.8,
@@ -215,12 +215,17 @@ export function overview(from, to, f = {}) {
   const s = salesStats(from, to, f);
   const c = contentStats(from, to, f);
   const leadsMidia = sum(rows, (r) => r.leads);
+  const matsOrigem = store.all('leads').filter((l) => l.etapa === 'matriculado' && inRange(l.dataMatricula, from, to) && (!f.cursoId || l.cursoId === f.cursoId) && (l.campanhaId || ['Meta Ads', 'Google'].includes(l.origem))).length;
+  const matsMidia = Math.max(sum(rows, (r) => r.matriculas), matsOrigem + sum(rows, (r) => r.matriculasExtra || 0));
   return {
     rows, m, s, c,
     investimento: m.investimento, conversas: m.conversas || m.leadsMeta, leads: s.leads, matriculas: s.matriculas, receita: s.receita,
     custoConversa: m.custoConversa,
     cpl: div(m.investimento, leadsMidia),
-    cac: sum(rows, (r) => r.matriculas) && m.investimento ? m.investimento / sum(rows, (r) => r.matriculas) : null,
+    // CAC de mídia: matrículas ligadas à campanha OU com origem de anúncio (o que for maior). Contar só as
+    // ligadas inflava o CAC quando a equipe não marcava a campanha em cada lead.
+    cac: matsMidia && m.investimento ? m.investimento / matsMidia : null,
+    matriculasMidia: matsMidia,
     cacGeral: s.matriculas ? m.investimento / s.matriculas : null,
     roas: div(s.receita, m.investimento),
     convLead: s.convLead,

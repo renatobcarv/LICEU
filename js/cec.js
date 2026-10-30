@@ -7,12 +7,17 @@ import { store } from './store.js';
 import { addDays, daysBetween, today, sum, div, inRange, norm } from './util.js';
 import { campaignRows } from './metrics.js';
 
-// ---------- benchmarks de referência (caso real: Injetáveis, out/2026). Dados próprios têm prioridade. ----------
-export const BENCH = { custoConversa: 3.0, convMatricula: 0.12, convPagamento: 0.69, cpm: 11.4, ctr: 0.0086, freqMax: 3 };
+// ---------- base de referência ----------
+// Não há benchmark público confiável de custo por conversa nem de conversão em matrícula para cursos livres
+// no Brasil: o próprio mercado recomenda medir a conta. A base padrão é um ciclo real (Meta Ads → WhatsApp,
+// curso presencial, 29/09 a 28/10/2026): R$ 800,72 gastos, 240 conversas (R$ 2,94 cada), 26 vendas.
+// Ordem de prioridade: base calibrada pela escola > dados da escola (90 dias) > este ciclo real.
+export const CICLO_REF = { nome: 'Ciclo real · Meta Ads → WhatsApp · 29/09 a 28/10/2026', gasto: 800.72, conversas: 240, matriculas: 26 };
+export const BENCH = { custoConversa: 2.94, convMatricula: 26 / 240, convPagamento: 0.69, cpm: 11.1, ctr: 0.0086, freqMax: 3 };
 export const META_PADRAO = { custoConversa: 3.5, convMatricula: 0.10, convPagamento: 0.65 };
 export const CENARIOS = {
   conservador: { label: 'Conservador', custoConversa: 5.0, convMatricula: 0.08, convPagamento: 0.60 },
-  esperado: { label: 'Esperado', custoConversa: 3.0, convMatricula: 0.12, convPagamento: 0.69 },
+  esperado: { label: 'Esperado', custoConversa: 2.94, convMatricula: 0.108, convPagamento: 0.69 },
   otimista: { label: 'Otimista', custoConversa: 2.8, convMatricula: 0.15, convPagamento: 0.75 },
 };
 export const CONVERSAS_POR_ATENDENTE = 35;
@@ -64,7 +69,9 @@ export const ESTRATEGIAS = [
   { id: 'E17', nome: 'Campanha sazonal', fases: ['F1', 'F2', 'F3', 'F4'], quando: 'Data com demanda natural', como: 'Início do ano, Dia do Enfermeiro (12/05), férias, fim de ano', verba: 'Variável', metrica: 'Pico de conversas' },
   { id: 'E18', nome: 'Reativação de contatos antigos', fases: ['F2', 'F3', 'F4'], quando: 'Lista grande de contatos que nunca compraram', como: 'Subir a lista como público, oferta nova a cada trimestre', verba: 'R$ 5 a 10/dia', metrica: 'Pagantes reativados' },
 ];
-export const estrategia = (id) => ESTRATEGIAS.find((e) => e.id === id);
+// Estratégias e modelos da escola somam-se aos do método (Campanhas › Personalizar).
+export const allEstrategias = () => [...ESTRATEGIAS, ...(store.settings().cecEstrategias || []).map((e) => ({ ...e, custom: true, fases: e.fases?.length ? e.fases : ['F1', 'F2', 'F3', 'F4'] }))];
+export const estrategia = (id) => allEstrategias().find((e) => e.id === id);
 
 // Modelos de campanha já validados que o planejador sabe montar.
 export const MODELOS = [
@@ -75,7 +82,10 @@ export const MODELOS = [
   { id: 'recuperacao', nome: 'Recuperação de leads parados', est: 'E05', resumo: 'Anúncio para quem já conversou e não pagou, com o prazo da turma. Verba baixa, retorno alto.', etapas: ['CEC3'], minDias: 5 },
   { id: 'b2b', nome: 'B2B para empresas', est: 'E15', resumo: 'Proposta para RH, gerentes e síndicos. Para APH, NR-23 e primeiros socorros.', etapas: ['CEC3'], minDias: 10 },
 ];
-export const modelo = (id) => MODELOS.find((m) => m.id === id) || MODELOS[0];
+export const allModelos = () => [...MODELOS, ...(store.settings().cecModelos || []).map((m) => ({ ...m, custom: true }))];
+export const modelo = (id) => allModelos().find((m) => m.id === id) || MODELOS[0];
+// Nomes das etapas criadas pela escola (ex.: "Remarketing", "Live de vendas").
+const etapasCustom = () => Object.fromEntries((store.settings().cecModelos || []).flatMap((m) => (m.etapasDef || []).map((e) => [e.id, e])));
 
 // Sinais → estratégias (no máximo 2 por vez).
 export const SINAIS = [
@@ -97,21 +107,34 @@ export function realRates(cursoId = '') {
   const conv = sum(rows, (r) => r.conversas || r.leadsMeta || r.resultados);
   const leads = store.all('leads').filter((l) => (!cursoId || l.cursoId === cursoId));
   const mats = leads.filter((l) => l.etapa === 'matriculado' && inRange(l.dataMatricula, from, t));
-  const matsCamp = sum(rows, (r) => r.matriculas);
+  // Matrícula vinda de anúncio: ligada à campanha OU com origem "Meta Ads"/"Google". Contar só as ligadas
+  // subestimava a conversão (ex.: 2 ligadas de 26 vendas → pedia 10× mais verba).
+  const doAnuncio = mats.filter((l) => l.campanhaId || ['Meta Ads', 'Google'].includes(l.origem)).length;
+  const matsCamp = Math.max(sum(rows, (r) => r.matriculas), doAnuncio + sum(rows, (r) => r.matriculasExtra || 0));
   const pagos = mats.filter((l) => l.statusPagamento !== 'Pendente');
   const freq = div(sum(rows, (r) => r.impressoes), sum(rows, (r) => r.alcance));
   return {
     custoConversa: conv >= 30 ? inv / conv : null,
-    convMatricula: conv >= 30 && matsCamp ? matsCamp / conv : null,
+    convMatricula: conv >= 30 && matsCamp / conv >= 0.02 ? matsCamp / conv : null,
     convPagamento: mats.length >= 5 ? pagos.length / mats.length : null,
     freq, investimento: inv, conversas: conv, matriculas: matsCamp, pagantes: pagos.length, amostra: conv,
   };
 }
 // Taxas usadas no plano: as da escola quando há amostra, senão as de referência.
+// Base calibrada pela escola (Campanhas › Base de cálculo): um ciclo real com gasto, conversas e matrículas.
+export function baseCalibrada() {
+  const b = store.settings().cecBase;
+  if (!b || !(b.gasto > 0) || !(b.conversas > 0) || !(b.matriculas > 0)) return null;
+  return { custoConversa: b.gasto / b.conversas, convMatricula: b.matriculas / b.conversas, convPagamento: b.pagantes ? b.pagantes / b.matriculas : null, nome: b.nome || 'Ciclo calibrado' };
+}
 export function planRates(cursoId = '', override = {}) {
   const r = realRates(cursoId);
-  const pick = (k) => (override[k] ? Number(override[k]) : r[k] ?? BENCH[k]);
-  return { custoConversa: pick('custoConversa'), convMatricula: pick('convMatricula'), convPagamento: pick('convPagamento'), fonte: r.custoConversa ? 'dados da escola (90 dias)' : 'referência do método', real: r };
+  const cal = baseCalibrada();
+  const base = cal || BENCH;
+  const pick = (k) => (override[k] ? Number(override[k]) : (cal?.[k] ?? r[k] ?? BENCH[k]));
+  const fonte = cal ? 'sua base calibrada (' + cal.nome + ')' : r.custoConversa && r.convMatricula ? 'dados da escola (90 dias)' : 'ciclo real de referência: R$ 800,72 → 240 conversas → 26 vendas';
+  void base;
+  return { custoConversa: pick('custoConversa'), convMatricula: pick('convMatricula'), convPagamento: pick('convPagamento'), fonte, real: r };
 }
 
 // Diagnóstico da fase da operação a partir do histórico.
@@ -174,8 +197,9 @@ export function schedule(turma, modeloId) {
   const fim = addDays(turma, -2);
   const clampStart = (d) => (d < t ? t : d);
   const etapas = m.etapas.map((e) => {
-    const longo = e === 'CEC1' || e === 'CEC2' || e === 'QUIZ';
-    let inicio = clampStart(addDays(turma, longo ? -18 : -12));
+    const cust = etapasCustom()[e];
+    const longo = cust ? (cust.antecedencia || 12) > 12 : e === 'CEC1' || e === 'CEC2' || e === 'QUIZ';
+    let inicio = clampStart(addDays(turma, cust ? -(cust.antecedencia || 12) : longo ? -18 : -12));
     if (m.id === 'direto' || m.id === 'recuperacao' || m.id === 'b2b') inicio = clampStart(addDays(turma, -Math.min(12, Math.max(dias - 2, 2))));
     return { etapa: e, inicio, fim, dias: Math.max(1, daysBetween(inicio, fim) + 1) };
   });
@@ -186,18 +210,20 @@ export function schedule(turma, modeloId) {
 // Divide a verba entre as etapas do modelo.
 export function split(verba, modeloId) {
   const m = modelo(modeloId);
+  if (m.divisao) { const tot = m.etapas.reduce((a, e) => a + (Number(m.divisao[e]) || 0), 0) || 1; const out = {}; let acc = 0; m.etapas.forEach((e, i) => { out[e] = i === m.etapas.length - 1 ? verba - acc : Math.round((verba * (Number(m.divisao[e]) || 0)) / tot); acc += out[e]; }); return out; }
   if (m.etapas.length === 1) return { [m.etapas[0]]: verba };
   if (m.id === 'quiz') return { QUIZ: Math.round(verba * 0.4), CEC3: verba - Math.round(verba * 0.4) };
   if (m.id === 'lancamento') return { CEC1: Math.round(verba * 0.3), CEC3: verba - Math.round(verba * 0.3) };
   return { CEC1: Math.round(verba * DIVISAO.CEC1), CEC2: Math.round(verba * DIVISAO.CEC2), CEC3: verba - 2 * Math.round(verba * DIVISAO.CEC1) };
 }
 
-export const etapaNome = (e) => (e === 'QUIZ' ? 'Quiz de qualificação' : 'CEC' + e.slice(3) + ' ' + (ETAPAS.find((x) => x.id === e)?.nome || ''));
+export const etapaNome = (e) => etapasCustom()[e]?.nome || (e === 'QUIZ' ? 'Quiz de qualificação' : 'CEC' + e.slice(3) + ' ' + (ETAPAS.find((x) => x.id === e)?.nome || ''));
 const tag = (s) => '[' + norm(s).toUpperCase().replace(/[^A-Z0-9 +-]/g, '').replace(/\s+/g, ' ').trim() + ']';
 const MES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
 // Padrão de nomes do Gerenciador: [ESCOLA] [CURSO] [CEC1-CONHECER] [MÊSANO] [WHATSAPP]
 export function campaignNameFor(escola, curso, etapa, turma) {
-  const e = etapa === 'QUIZ' ? 'QUIZ' : etapa + '-' + (ETAPAS.find((x) => x.id === etapa)?.nome || '');
+  const cust = etapasCustom()[etapa];
+  const e = cust ? cust.nome : etapa === 'QUIZ' ? 'QUIZ' : etapa + '-' + (ETAPAS.find((x) => x.id === etapa)?.nome || '');
   const d = new Date(turma + 'T12:00');
   return [tag(escola), tag(curso), tag(e), '[' + MES[d.getMonth()] + String(d.getFullYear()).slice(2) + ']', '[WHATSAPP]'].join(' ');
 }
