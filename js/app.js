@@ -115,7 +115,8 @@ function render() {
   // os eventos da tela anterior não se acumulam (senão um clique dispararia duas vezes).
   const old = $('#main');
   const main = old.cloneNode(false);
-  old.replaceWith(main);
+  // Tirar o <main> da página pode disparar o blur de um campo, que redesenha antes de nós: nesse caso já está feito.
+  try { old.replaceWith(main); } catch (e) { return; }
   if (entering) { window.scrollTo(0, 0); lastView = view.id; }
   try {
     main.innerHTML = view.mod.render(c);
