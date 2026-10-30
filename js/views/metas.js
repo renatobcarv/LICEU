@@ -3,7 +3,7 @@
 
 import { store } from '../store.js';
 import { esc, $, $$, today, monthStart, monthEnd, fmtDate, num, brl2, addDays, daysBetween } from '../util.js';
-import { INDICATORS, goalProgress, courseName, campaignName, campaignRows, STAGES, STAGE_IDX, TEST_INDICATORS, TEST_IND, measureTest } from '../metrics.js';
+import { INDICATORS, IND, GRUPOS_META, goalProgress, courseName, campaignName, campaignRows, STAGES, STAGE_IDX, TEST_INDICATORS, TEST_IND, measureTest } from '../metrics.js';
 import { openDialog, toast, meter, badge, ICON, empty } from '../ui.js';
 import { ice } from './painel.js';
 import { pipelines, leadPipeId, leadCol } from '../leads.js';
@@ -46,45 +46,110 @@ export function render(ctx) {
 }
 
 // ---------- metas ----------
+// Cada tipo de meta tem formulário, conta e card próprios (ver INDICATORS em metrics.js).
+const TIPO_ICON = {
+  contagem: '<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>', taxa: '<circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/><path d="M19 5 5 19"/>',
+  custo: '<path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>', orcamento: '<rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20M16 15h2"/>',
+  crescimento: '<path d="m3 17 6-6 4 4 8-8M14 7h7v7"/>', manual: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+};
+const TIPO_COR = { contagem: 'var(--primary)', taxa: 'var(--chart-2)', custo: 'var(--warning)', orcamento: 'var(--warning)', crescimento: 'var(--success)', manual: 'var(--muted-foreground)' };
+const icon = (tipo) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${TIPO_ICON[tipo] || TIPO_ICON.manual}</svg>`;
+
+function goalCard({ g, p }) {
+  const ind = p.ind;
+  const cor = TIPO_COR[p.tipo];
+  const head = `<header class="card-head"><div class="goal-h"><span class="goal-ic" style="--gc:${cor}">${icon(p.tipo)}</span><div><p class="eyebrow">${esc(ind.label)}${g.cursoId ? ' · ' + esc(courseName(g.cursoId)) : ''}</p><h3>${esc(g.nome)}</h3></div></div><div class="row-actions">${['manual', 'crescimento'].includes(p.tipo) ? `<button class="btn sm" data-gupd="${esc(g.id)}">Atualizar</button>` : ''}<button class="btn sm ghost" data-goal="${esc(g.id)}">Editar</button></div></header>`;
+  const v = (x) => (x === null || x === undefined ? '—' : ind.fmt(x));
+  let corpo = '';
+  if (p.tipo === 'contagem' || p.tipo === 'manual') {
+    corpo = `<p class="big">${v(p.atual)} <small>de ${v(p.alvo)} ${esc(ind.unidade || '')}</small></p>${meter(p.progresso, p.status)}<div class="goal-ritmo"><span class="gr-now" style="left:${Math.min(100, p.tempo * 100)}%" title="Hoje: ${Math.round(p.tempo * 100)}% do prazo"></span></div>`;
+  } else if (p.tipo === 'taxa') {
+    corpo = `<div class="goal-split"><div><p class="muted">Agora</p><p class="big">${v(p.atual)}</p></div><div><p class="muted">Mínimo</p><p class="big muted-big">${v(p.alvo)}</p></div></div>${meter(p.progresso, p.status)}`;
+  } else if (p.tipo === 'custo') {
+    corpo = `<div class="goal-split"><div><p class="muted">Custo atual</p><p class="big">${v(p.atual)}</p></div><div><p class="muted">Limite</p><p class="big muted-big">${v(p.alvo)}</p></div></div>${meter(p.progresso, p.status)}`;
+  } else if (p.tipo === 'orcamento') {
+    corpo = `<p class="big">${v(p.atual)} <small>gastos de ${v(p.alvo)}</small></p>${meter(p.progresso, p.status)}<div class="goal-ritmo"><span class="gr-now" style="left:${Math.min(100, p.tempo * 100)}%" title="Tempo passado"></span></div>`;
+  } else if (p.tipo === 'crescimento') {
+    corpo = `<div class="goal-steps"><div><p class="muted">Início</p><b>${v(p.base)}</b></div><span>→</span><div><p class="muted">Agora</p><b class="hl-num">${v(p.atual)}</b></div><span>→</span><div><p class="muted">Meta</p><b>${v(p.alvo)}</b></div></div>${meter(p.progresso, p.status)}`;
+  }
+  const hist = (g.historico || []).slice(-3).reverse();
+  return `<article class="card goal goal-${p.tipo}" style="--gc:${cor}">${head}${corpo}
+    <p class="goal-status ${p.status}">${esc(p.texto)}</p>${p.detalhe ? `<p class="hint">${esc(p.detalhe)}</p>` : ''}
+    <p class="hint">${fmtDate(g.inicio)} a ${fmtDate(g.fim)} · ${p.restantes ? p.restantes + ' dias restantes' : 'prazo encerrado'}${['manual', 'crescimento'].includes(p.tipo) ? ' · valor informado à mão' : ' · calculado sozinho'}</p>
+    ${hist.length ? `<p class="hint">Últimas atualizações: ${hist.map((h) => fmtDate(h.data) + ' ' + esc(ind.fmt(Number(h.valor)))).join(' · ')}</p>` : ''}
+    ${g.notas ? `<p class="small goal-notas">${esc(g.notas)}</p>` : ''}
+  </article>`;
+}
+
 function goals() {
   const t = today();
   const list = store.all('goals').map((g) => ({ g, p: goalProgress(g) }));
-  const ativas = list.filter(({ g }) => g.fim >= t).sort((a, b) => a.g.fim.localeCompare(b.g.fim));
+  if (!list.length) return empty('Defina o que você quer alcançar', 'Escolha o tipo de meta (matrículas, conversão, custo por aluno, orçamento, seguidores…). Cada uma tem o seu jeito de medir e o progresso é calculado sozinho.');
+  const ativas = list.filter(({ g }) => g.fim >= t);
   const passadas = list.filter(({ g }) => g.fim < t).sort((a, b) => b.g.fim.localeCompare(a.g.fim));
-  if (!list.length) return empty('Nenhuma meta cadastrada', 'Cadastre metas de matrículas, custo por resultado, publicações ou seguidores. O progresso é calculado sozinho a partir dos dados.');
-  const card = ({ g, p }) => `<article class="card goal">
-    <header class="card-head"><div><p class="eyebrow">${esc(p.ind.label)}${g.cursoId ? ' · ' + esc(courseName(g.cursoId)) : ''}</p><h3>${esc(g.nome)}</h3></div><button class="btn sm" data-goal="${esc(g.id)}">Editar</button></header>
-    <p class="big">${esc(p.ind.fmt(p.atual))} <small>${p.ind.dir === 'down' ? 'limite' : 'de'} ${esc(p.ind.fmt(p.alvo))}</small></p>
-    ${meter(p.progresso, p.status)}
-    <p class="goal-status ${p.status}">${esc(p.texto)}</p>
-    <p class="hint">${fmtDate(g.inicio)} a ${fmtDate(g.fim)} · ${Math.round(p.tempo * 100)}% do prazo passou${g.indicador === 'manual' ? ' · atualizado à mão' : ' · calculado automaticamente'}</p>
-    ${g.notas ? `<p class="small">${esc(g.notas)}</p>` : ''}
-  </article>`;
-  return `<div class="cards">${ativas.map(card).join('') || '<p class="empty-sm">Nenhuma meta em andamento.</p>'}</div>
-  ${passadas.length ? `<details class="more"><summary>Metas encerradas (${passadas.length})</summary><div class="cards">${passadas.map(card).join('')}</div></details>` : ''}`;
+  const ok = ativas.filter(({ p }) => p.status === 'ok').length, warn = ativas.filter(({ p }) => p.status === 'warn').length, bad = ativas.filter(({ p }) => p.status === 'bad').length;
+  return `<section class="kpis compact"><article class="kpi"><h3>Metas ativas</h3><p class="kpi-v">${ativas.length}</p></article><article class="kpi"><h3>No ritmo</h3><p class="kpi-v good">${ok}</p></article><article class="kpi"><h3>Atenção</h3><p class="kpi-v warn">${warn}</p></article><article class="kpi"><h3>Fora da meta</h3><p class="kpi-v bad">${bad}</p></article></section>
+  ${GRUPOS_META.map(([gid, nome]) => { const its = ativas.filter(({ p }) => p.ind.grupo === gid).sort((a, b) => a.g.fim.localeCompare(b.g.fim)); return its.length ? `<h2 class="sec-title">${esc(nome)}</h2><div class="cards">${its.map(goalCard).join('')}</div>` : ''; }).join('') || '<p class="empty-sm">Nenhuma meta em andamento.</p>'}
+  ${passadas.length ? `<details class="more"><summary>Metas encerradas (${passadas.length})</summary><div class="cards">${passadas.map(goalCard).join('')}</div></details>` : ''}`;
 }
 
-function goalDialog(g, ctx) {
+// Passo 1: escolher o tipo de meta.
+function goalPicker(ctx) {
+  const { dlg } = openDialog({
+    title: 'Que meta você quer criar?', wide: true,
+    html: GRUPOS_META.map(([gid, nome, desc]) => `<h3 class="form-sec">${esc(nome)} <small class="muted">${esc(desc)}</small></h3><div class="goal-pick">${INDICATORS.filter((i) => i.grupo === gid).map((i) => `<button type="button" class="goal-opt" data-pickind="${i.id}" style="--gc:${TIPO_COR[i.tipo]}"><span class="goal-ic">${icon(i.tipo)}</span><span><b>${esc(i.label)}</b><small>${esc({ contagem: 'Somar no período, com ritmo', taxa: 'Percentual mínimo', custo: 'Limite máximo de custo', orcamento: 'Teto de gasto', crescimento: 'De um número até outro', manual: 'Você atualiza à mão' }[i.tipo])}</small></span></button>`).join('')}</div>`).join(''),
+  });
+  dlg.querySelectorAll('[data-pickind]').forEach((b) => b.addEventListener('click', () => { dlg.close(); goalDialog(null, ctx, b.dataset.pickind); }));
+}
+
+// Passo 2: formulário do tipo escolhido.
+function goalDialog(g, ctx, indId) {
   const t = today();
   const isNew = !g;
-  g = g || { indicador: 'matriculas', inicio: monthStart(t), fim: monthEnd(t) };
-  const { dlg } = openDialog({
-    title: isNew ? 'Nova meta' : 'Editar meta',
-    fields: [
-      { name: 'nome', label: 'Nome da meta', value: g.nome, required: true, full: true, placeholder: 'ex.: 15 matrículas em Enfermagem em novembro' },
-      { name: 'indicador', label: 'Indicador', type: 'select', options: INDICATORS.map((i) => [i.id, i.label]), value: g.indicador },
-      { name: 'alvo', label: 'Valor alvo', type: 'number', value: g.alvo, required: true, hint: 'Para conversão, use fração: 0,15 = 15%.' },
-      { name: 'inicio', label: 'De', type: 'date', value: g.inicio, required: true },
-      { name: 'fim', label: 'Até', type: 'date', value: g.fim, required: true },
-      { name: 'cursoId', label: 'Só deste curso (opcional)', type: 'select', options: [['', 'Todos os cursos'], ...store.all('courses').map((c) => [c.id, c.nome])], value: g.cursoId },
-      { name: 'atualManual', label: 'Valor atual (só para "Outro")', type: 'number', value: g.atualManual },
-      { name: 'notas', label: 'Como vamos chegar lá', type: 'textarea', value: g.notas, full: true },
-    ],
-    onSave: (d) => { if (d.inicio > d.fim) { toast('A data inicial é depois da final.', 'bad'); return false; } store.put('goals', { ...g, ...d }); toast('Meta salva.'); ctx.refresh(); },
+  g = g || { indicador: indId || 'matriculas', inicio: monthStart(t), fim: monthEnd(t) };
+  const ind = IND[g.indicador] || IND.manual;
+  const tipo = ind.tipo;
+  const alvoVal = ind.pctInput && g.alvo != null && g.alvo !== '' ? Math.round(Number(g.alvo) * 1000) / 10 : g.alvo;
+  const mesNome = new Date(g.inicio + 'T12:00').toLocaleDateString('pt-BR', { month: 'long' });
+  const fields = [
+    { name: 'alvo', label: ind.pergunta, type: 'number', value: alvoVal, required: true, hint: tipo === 'taxa' ? 'Em porcentagem. Ex.: 15 para 15%.' : tipo === 'custo' ? 'Acima disso a meta acende o alerta.' : tipo === 'orcamento' ? 'O card compara o gasto com o tempo que passou.' : '' },
+    ...(tipo === 'crescimento' ? [{ name: 'base', label: 'Quantos tinha no início', type: 'number', value: g.base, required: true }, { name: 'atualManual', label: 'Quantos tem hoje', type: 'number', value: (g.historico || []).slice(-1)[0]?.valor ?? g.atualManual }] : []),
+    ...(tipo === 'manual' ? [{ name: 'unidade', label: 'Unidade (opcional)', value: g.unidade, placeholder: 'ex.: parcerias, visitas, inscrições' }, { name: 'atualManual', label: 'Valor atual', type: 'number', value: (g.historico || []).slice(-1)[0]?.valor ?? g.atualManual }] : []),
+    { name: 'inicio', label: 'De', type: 'date', value: g.inicio, required: true },
+    { name: 'fim', label: 'Até', type: 'date', value: g.fim, required: true },
+    ...(['comercial', 'midia', 'conteudo'].includes(ind.grupo) ? [{ name: 'cursoId', label: 'Só deste curso (opcional)', type: 'select', options: [['', 'Todos os cursos'], ...store.all('courses').map((c) => [c.id, c.nome])], value: g.cursoId }] : []),
+    { name: 'nome', label: 'Nome da meta', value: g.nome, full: true, placeholder: 'Deixe em branco para criar sozinho' },
+    { name: 'notas', label: 'Como vamos chegar lá', type: 'textarea', value: g.notas, full: true, placeholder: 'Plano, responsável, o que muda se não bater…' },
+  ];
+  openDialog({
+    title: (isNew ? 'Nova meta · ' : 'Editar meta · ') + ind.label,
+    fields,
+    html: `<p class="hint">${esc({ contagem: 'Soma tudo que acontecer no período e mostra se está no ritmo para chegar lá.', taxa: 'Compara o percentual do período com o mínimo que você definir.', custo: 'Quanto menor, melhor: avisa quando passar do limite.', orcamento: 'Mostra quanto do teto já foi gasto em relação ao tempo que passou.', crescimento: 'Mede o caminho do número inicial até a meta. Atualize o valor de hoje sempre que olhar o perfil.', manual: 'Para qualquer número que o sistema não mede sozinho. Atualize quando quiser; o histórico fica guardado.' }[tipo])}</p>`,
+    onSave: (d) => {
+      if (d.inicio > d.fim) { toast('A data inicial é depois da final.', 'bad'); return false; }
+      if (!(d.alvo > 0)) { toast('Informe um alvo maior que zero.', 'bad'); return false; }
+      if (tipo === 'crescimento' && d.base != null && d.alvo <= d.base) { toast('A meta precisa ser maior que o número inicial.', 'bad'); return false; }
+      const alvo = ind.pctInput ? d.alvo / 100 : d.alvo;
+      const dup = store.all('goals').find((x) => x.id !== g.id && x.indicador === g.indicador && (x.cursoId || '') === (d.cursoId || '') && x.inicio <= d.fim && x.fim >= d.inicio && g.indicador !== 'manual');
+      if (dup && isNew) { toast('Já existe uma meta de ' + ind.label.toLowerCase() + ' nesse período ("' + dup.nome + '"). Abri ela para você editar.', 'warn'); setTimeout(() => goalDialog(dup, ctx), 0); return; }
+      const auto = { contagem: `${num(d.alvo)} ${ind.unidade} em ${mesNome}`, taxa: `${String(d.alvo).replace('.', ',')}% de ${ind.label.toLowerCase()}`, custo: `${ind.label} até ${brl2(d.alvo)}`, orcamento: `Orçamento de ${brl2(d.alvo)} em ${mesNome}`, crescimento: `Chegar a ${num(d.alvo)} ${ind.unidade}`, manual: `${num(d.alvo)} ${d.unidade || ''}`.trim() }[tipo];
+      const nome = d.nome || (auto + (d.cursoId ? ' · ' + courseName(d.cursoId) : ''));
+      const rec = { ...g, ...d, alvo, nome };
+      if ((tipo === 'crescimento' || tipo === 'manual') && d.atualManual !== null && d.atualManual !== undefined && d.atualManual !== '' && Number(d.atualManual) !== Number((g.historico || []).slice(-1)[0]?.valor)) rec.historico = [...(g.historico || []), { data: today(), valor: Number(d.atualManual) }];
+      store.put('goals', rec); toast('Meta salva.'); ctx.refresh();
+    },
     onDelete: isNew ? null : () => { store.remove('goals', g.id); ctx.refresh(); },
   });
-  const sync = () => { $('#f_atualManual', dlg).closest('.field').hidden = $('#f_indicador', dlg).value !== 'manual'; };
-  $('#f_indicador', dlg).addEventListener('change', sync); sync();
+}
+
+// Atualização rápida do valor (seguidores, avaliações, metas manuais).
+function goalUpdate(g, ctx) {
+  const ind = IND[g.indicador] || IND.manual;
+  openDialog({
+    title: 'Atualizar: ' + g.nome, saveLabel: 'Salvar valor',
+    fields: [{ name: 'valor', label: ind.tipo === 'crescimento' ? `Quantos ${ind.unidade} tem hoje?` : 'Valor atual', type: 'number', required: true, value: (g.historico || []).slice(-1)[0]?.valor ?? '' }, { name: 'data', label: 'Data', type: 'date', value: today() }],
+    onSave: (d) => { store.put('goals', { ...g, historico: [...(g.historico || []), { data: d.data || today(), valor: d.valor }] }); toast('Valor atualizado.'); ctx.refresh(); },
+  });
 }
 
 // ---------- funis em Kanban ----------
@@ -294,10 +359,11 @@ export function mount(root, ctx) {
     if (!b) return;
     const ds = b.dataset;
     if (ds.mtab) { tab = ds.mtab; if (ctx.params.tab) history.replaceState(null, '', '#metas'); ctx.params.tab = ''; ctx.refresh(); return; }
-    if (ds.mact === 'goal') return goalDialog(null, ctx);
+    if (ds.mact === 'goal') return goalPicker(ctx);
     if (ds.mact === 'funnel') return funnelDialog(null, ctx);
     if (ds.mact === 'idea') return ideaDialog(null, ctx);
     if (ds.goal) return goalDialog(store.get('goals', ds.goal), ctx);
+    if (ds.gupd) return goalUpdate(store.get('goals', ds.gupd), ctx);
     if (ds.fn) return funnelDialog(store.get('funnels', ds.fn), ctx);
     if (ds.tpl) { const tp = TEMPLATES[ds.tpl]; return funnelDialog({ ...tp, status: 'Rascunho', etapas: tp.etapas.map((x) => ({ ...x })) }, ctx); }
     if (ds.idea) return ideaDialog(store.get('ideas', ds.idea), ctx);

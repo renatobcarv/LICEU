@@ -266,22 +266,36 @@ export function weeklySeries(from, to, f = {}) {
 }
 
 // ---------- Metas ----------
+// Cada indicador tem um TIPO, que decide o formulário, a conta de progresso e o desenho do card:
+//  contagem  → soma no período; cobra ritmo proporcional ao tempo (matrículas, leads, posts…)
+//  taxa      → percentual; compara com o alvo, sem ritmo diário (conversão)
+//  custo     → limite máximo; quanto menor, melhor (CAC, custo por lead/conversa)
+//  orcamento → teto de gasto; compara o consumido com o tempo que passou
+//  crescimento → de uma base até um alvo (seguidores), com valor atual informado
+//  manual    → valor atualizado à mão, com histórico
+export const GRUPOS_META = [
+  ['comercial', 'Comercial', 'Matrículas, leads, receita e conversão'],
+  ['midia', 'Mídia paga', 'Custo e orçamento dos anúncios'],
+  ['conteudo', 'Conteúdo', 'Publicações, reels, stories, depoimentos'],
+  ['audiencia', 'Audiência e reputação', 'Seguidores e avaliações'],
+  ['outro', 'Outro', 'Qualquer número que você acompanha à mão'],
+];
 export const INDICATORS = [
-  { id: 'matriculas', label: 'Matrículas', dir: 'up', fmt: num, calc: (a, b, f) => salesStats(a, b, f).matriculas },
-  { id: 'leads', label: 'Leads no WhatsApp', dir: 'up', fmt: num, calc: (a, b, f) => salesStats(a, b, f).leads },
-  { id: 'receita', label: 'Receita de matrículas', dir: 'up', fmt: brl, calc: (a, b, f) => salesStats(a, b, f).receita },
-  { id: 'convLead', label: 'Conversão lead → matrícula', dir: 'up', fmt: pct, pctInput: true, calc: (a, b, f) => salesStats(a, b, f).convLead },
-  { id: 'cac', label: 'CAC de mídia (máximo)', dir: 'down', fmt: brl2, calc: (a, b, f) => overview(a, b, f).cac },
-  { id: 'cpl', label: 'Custo por lead (máximo)', dir: 'down', fmt: brl2, calc: (a, b, f) => overview(a, b, f).cpl },
-  { id: 'custoConversa', label: 'Custo por conversa (máximo)', dir: 'down', fmt: brl2, calc: (a, b, f) => overview(a, b, f).custoConversa },
-  { id: 'investimento', label: 'Investimento em mídia (teto)', dir: 'down', fmt: brl, calc: (a, b, f) => overview(a, b, f).investimento },
-  { id: 'publicacoes', label: 'Publicações no feed', dir: 'up', fmt: num, calc: (a, b, f) => contentStats(a, b, f).publicados },
-  { id: 'reels', label: 'Reels publicados', dir: 'up', fmt: num, calc: (a, b, f) => contentStats(a, b, f).reels },
-  { id: 'stories', label: 'Dias com stories completos', dir: 'up', fmt: num, calc: (a, b, f) => contentStats(a, b, f).diasCompletos },
-  { id: 'seguidores', label: 'Novos seguidores', dir: 'up', fmt: num, calc: (a, b) => weeklyField(a, b, (w) => (w.seguidoresFim != null && w.seguidoresInicio != null ? w.seguidoresFim - w.seguidoresInicio : null)) },
-  { id: 'depoimentos', label: 'Depoimentos gravados', dir: 'up', fmt: num, calc: (a, b) => weeklyField(a, b, (w) => w.depoimentos) },
-  { id: 'avaliacoes', label: 'Avaliações no Google', dir: 'up', fmt: num, calc: (a, b) => weeklyField(a, b, (w) => w.avaliacoesGoogle) },
-  { id: 'manual', label: 'Outro (valor atualizado à mão)', dir: 'up', fmt: num, calc: () => null },
+  { id: 'matriculas', label: 'Matrículas', grupo: 'comercial', tipo: 'contagem', dir: 'up', fmt: num, unidade: 'matrículas', pergunta: 'Quantas matrículas?', calc: (a, b, f) => salesStats(a, b, f).matriculas },
+  { id: 'leads', label: 'Leads no WhatsApp', grupo: 'comercial', tipo: 'contagem', dir: 'up', fmt: num, unidade: 'leads', pergunta: 'Quantos leads novos?', calc: (a, b, f) => salesStats(a, b, f).leads },
+  { id: 'receita', label: 'Receita de matrículas', grupo: 'comercial', tipo: 'contagem', dir: 'up', fmt: brl, unidade: 'R$', pergunta: 'Quanto em matrículas (R$)?', calc: (a, b, f) => salesStats(a, b, f).receita },
+  { id: 'convLead', label: 'Conversão lead → matrícula', grupo: 'comercial', tipo: 'taxa', dir: 'up', fmt: pct, pctInput: true, unidade: '%', pergunta: 'Qual a conversão mínima (%)?', base: (a, b, f) => { const s = salesStats(a, b, f); return s.matriculas + ' matrículas de ' + s.leads + ' leads'; }, calc: (a, b, f) => salesStats(a, b, f).convLead },
+  { id: 'cac', label: 'Custo por matrícula (CAC)', grupo: 'midia', tipo: 'custo', dir: 'down', fmt: brl2, unidade: 'R$', pergunta: 'Pagar no máximo quanto por matrícula (R$)?', base: (a, b, f) => { const o = overview(a, b, f); return brl(o.investimento) + ' ÷ ' + num(o.matriculasMidia) + ' matrículas de anúncio'; }, calc: (a, b, f) => overview(a, b, f).cac },
+  { id: 'cpl', label: 'Custo por lead', grupo: 'midia', tipo: 'custo', dir: 'down', fmt: brl2, unidade: 'R$', pergunta: 'Pagar no máximo quanto por lead (R$)?', calc: (a, b, f) => overview(a, b, f).cpl },
+  { id: 'custoConversa', label: 'Custo por conversa', grupo: 'midia', tipo: 'custo', dir: 'down', fmt: brl2, unidade: 'R$', pergunta: 'Pagar no máximo quanto por conversa (R$)?', calc: (a, b, f) => overview(a, b, f).custoConversa },
+  { id: 'investimento', label: 'Orçamento de mídia', grupo: 'midia', tipo: 'orcamento', dir: 'down', fmt: brl, unidade: 'R$', pergunta: 'Qual o teto de gasto (R$)?', calc: (a, b, f) => overview(a, b, f).investimento },
+  { id: 'publicacoes', label: 'Publicações no feed', grupo: 'conteudo', tipo: 'contagem', dir: 'up', fmt: num, unidade: 'posts', pergunta: 'Quantas publicações?', calc: (a, b, f) => contentStats(a, b, f).publicados },
+  { id: 'reels', label: 'Reels publicados', grupo: 'conteudo', tipo: 'contagem', dir: 'up', fmt: num, unidade: 'reels', pergunta: 'Quantos reels?', calc: (a, b, f) => contentStats(a, b, f).reels },
+  { id: 'stories', label: 'Dias com stories completos', grupo: 'conteudo', tipo: 'contagem', dir: 'up', fmt: num, unidade: 'dias', pergunta: 'Quantos dias com stories completos?', calc: (a, b, f) => contentStats(a, b, f).diasCompletos },
+  { id: 'depoimentos', label: 'Depoimentos gravados', grupo: 'conteudo', tipo: 'contagem', dir: 'up', fmt: num, unidade: 'depoimentos', pergunta: 'Quantos depoimentos?', calc: (a, b) => weeklyField(a, b, (w) => w.depoimentos) },
+  { id: 'seguidores', label: 'Seguidores no Instagram', grupo: 'audiencia', tipo: 'crescimento', dir: 'up', fmt: num, unidade: 'seguidores', pergunta: 'Chegar a quantos seguidores?', calc: (a, b) => weeklyField(a, b, (w) => (w.seguidoresFim != null && w.seguidoresInicio != null ? w.seguidoresFim - w.seguidoresInicio : null)) },
+  { id: 'avaliacoes', label: 'Avaliações no Google', grupo: 'audiencia', tipo: 'crescimento', dir: 'up', fmt: num, unidade: 'avaliações', pergunta: 'Chegar a quantas avaliações?', calc: (a, b) => weeklyField(a, b, (w) => w.avaliacoesGoogle) },
+  { id: 'manual', label: 'Outro número', grupo: 'outro', tipo: 'manual', dir: 'up', fmt: num, unidade: '', pergunta: 'Qual o alvo?', calc: () => null },
 ];
 export const IND = Object.fromEntries(INDICATORS.map((i) => [i.id, i]));
 
@@ -290,33 +304,68 @@ function weeklyField(a, b, get) {
   return vals.length ? sum(vals) : null;
 }
 
+// Último valor informado à mão (histórico da meta).
+const ultimo = (g) => { const h = (g.historico || []).filter((x) => x.valor !== '' && x.valor != null).sort((a, b) => (a.data || '').localeCompare(b.data || '')); return h.length ? Number(h[h.length - 1].valor) : g.atualManual === '' || g.atualManual == null ? null : Number(g.atualManual); };
+
 export function goalProgress(g) {
   const ind = IND[g.indicador] || IND.manual;
+  const tipo = ind.tipo || 'contagem';
   const f = { cursoId: g.cursoId || '' };
   const t = today();
   const end = g.fim < t ? g.fim : t;
-  let atual = g.indicador === 'manual' ? (g.atualManual === '' || g.atualManual == null ? null : Number(g.atualManual)) : ind.calc(g.inicio, end < g.inicio ? g.inicio : end, f);
-  const alvo = Number(g.alvo);
+  const ate = end < g.inicio ? g.inicio : end;
   const total = daysBetween(g.inicio, g.fim) + 1;
   const passados = t < g.inicio ? 0 : Math.min(total, daysBetween(g.inicio, t) + 1);
+  const restantes = Math.max(0, total - passados);
   const tempo = total ? passados / total : 1;
-  let progresso = null, status = 'sem-dado', texto = 'Sem dado no período';
-  if (atual !== null && alvo) {
-    if (ind.dir === 'up') {
+  const alvo = Number(g.alvo);
+  const antes = t < g.inicio, encerrada = t > g.fim;
+  let atual = null, progresso = null, status = 'sem-dado', texto = 'Sem dado no período ainda', detalhe = '', base = null;
+  if (tipo === 'manual') atual = ultimo(g);
+  else if (tipo === 'crescimento') {
+    base = g.base === '' || g.base == null ? null : Number(g.base);
+    const informado = ultimo(g);
+    const ganhoSemanal = ind.calc(g.inicio, ate, f);
+    atual = informado ?? (base !== null && ganhoSemanal !== null ? base + ganhoSemanal : null);
+  } else atual = antes ? null : ind.calc(g.inicio, ate, f);
+  if (antes) { status = 'neutral'; texto = 'Começa em ' + fmtDate(g.inicio); }
+  if (atual !== null && alvo && !antes) {
+    if (tipo === 'contagem' || tipo === 'manual') {
       progresso = atual / alvo;
       const esperado = alvo * tempo;
+      const falta = Math.max(0, alvo - atual);
       if (atual >= alvo) { status = 'ok'; texto = 'Meta atingida'; }
-      else if (t > g.fim) { status = 'bad'; texto = 'Encerrada abaixo da meta'; }
-      else if (t < g.inicio) { status = 'neutral'; texto = 'Começa em ' + fmtDate(g.inicio); }
+      else if (encerrada) { status = 'bad'; texto = 'Encerrou abaixo da meta'; }
       else if (atual >= esperado * 0.9) { status = 'ok'; texto = 'No ritmo'; }
-      else { status = 'warn'; texto = 'Abaixo do ritmo: esperado ' + ind.fmt(ind.pctInput ? esperado : Math.round(esperado)) + ' até hoje'; }
-    } else {
+      else { status = 'warn'; texto = 'Abaixo do ritmo: o esperado até hoje era ' + ind.fmt(Math.round(esperado)); }
+      if (falta && !encerrada && restantes) detalhe = 'Faltam ' + ind.fmt(falta) + ' em ' + restantes + (restantes > 1 ? ' dias' : ' dia') + ' · ' + (restantes < 7 ? ind.fmt(Math.ceil(falta / restantes)) + ' por dia' : ind.fmt(Math.ceil(falta / (restantes / 7))) + ' por semana');
+    } else if (tipo === 'taxa') {
+      progresso = atual / alvo;
+      status = atual >= alvo ? 'ok' : atual >= alvo * 0.8 ? 'warn' : 'bad';
+      texto = atual >= alvo ? 'Acima do mínimo' : 'Abaixo do mínimo de ' + ind.fmt(alvo);
+      detalhe = ind.base ? ind.base(g.inicio, ate, f) : '';
+    } else if (tipo === 'custo') {
       progresso = atual <= alvo ? 1 : alvo / atual;
-      if (atual <= alvo) { status = 'ok'; texto = 'Dentro do limite'; }
-      else { status = t > g.fim ? 'bad' : 'warn'; texto = 'Acima do limite em ' + pct(atual / alvo - 1, 0); }
+      status = atual <= alvo ? 'ok' : atual <= alvo * 1.15 ? 'warn' : 'bad';
+      texto = atual <= alvo ? 'Dentro do limite · folga de ' + ind.fmt(alvo - atual) : 'Acima do limite em ' + pct(atual / alvo - 1, 0);
+      detalhe = ind.base ? ind.base(g.inicio, ate, f) : '';
+    } else if (tipo === 'orcamento') {
+      progresso = atual / alvo;
+      const ritmo = alvo * tempo;
+      status = atual > alvo ? 'bad' : atual > ritmo * 1.15 ? 'warn' : 'ok';
+      texto = atual > alvo ? 'Passou do teto em ' + ind.fmt(atual - alvo) : atual > ritmo * 1.15 ? 'Gastando rápido: o ritmo previsto era ' + ind.fmt(ritmo) : 'Dentro do orçamento';
+      detalhe = 'Sobram ' + ind.fmt(Math.max(0, alvo - atual)) + (restantes ? ' para ' + restantes + ' dias · ' + ind.fmt(Math.max(0, alvo - atual) / restantes) + ' por dia' : '');
+    } else if (tipo === 'crescimento') {
+      const ini = base ?? 0;
+      progresso = alvo > ini ? (atual - ini) / (alvo - ini) : null;
+      const esperado = ini + (alvo - ini) * tempo;
+      status = atual >= alvo ? 'ok' : encerrada ? 'bad' : atual >= esperado * 0.98 ? 'ok' : 'warn';
+      texto = atual >= alvo ? 'Meta atingida' : (atual - ini >= 0 ? '+' : '') + num(atual - ini) + ' desde o início';
+      const falta = Math.max(0, alvo - atual);
+      detalhe = falta && restantes ? 'Faltam ' + num(falta) + ' · ' + (restantes < 7 ? num(Math.ceil(falta / restantes)) + ' por dia' : num(Math.ceil(falta / (restantes / 7))) + ' por semana') : '';
     }
-  }
-  return { ind, atual, alvo, progresso, status, texto, tempo };
+  } else if (!antes && (tipo === 'manual' || tipo === 'crescimento')) texto = 'Informe o valor atual';
+  return { ind, tipo, atual, alvo, base, progresso, status, texto, detalhe, tempo, restantes, passados, total };
 }
 
 // ---------- Diagnóstico ----------

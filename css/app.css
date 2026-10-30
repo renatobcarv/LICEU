@@ -897,3 +897,28 @@ pre.brief { margin: var(--space-3) var(--space-4) 0; padding: var(--space-4); ba
 .kit-t:focus { outline: none; border-color: var(--primary); }
 .kit-side { position: sticky; top: 100px; gap: var(--space-2); }
 .btn.block { width: 100%; }
+
+/* ===================== metas por tipo ===================== */
+.card.goal { border-top: 3px solid var(--gc); }
+.goal-h { display: flex; gap: var(--space-3); align-items: flex-start; }
+.goal-ic { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-lg); background: color-mix(in srgb, var(--gc) 16%, transparent); color: var(--gc); }
+.goal-h h3 { color: var(--heading-strong); }
+.goal-ritmo { position: relative; height: 10px; margin-top: -6px; }
+.gr-now { position: absolute; top: 0; width: 2px; height: 10px; background: var(--heading-strong); opacity: .7; transform: translateX(-1px); }
+.goal-split { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.goal-split .big { font-size: 32px; }
+.muted-big { color: var(--muted-foreground) !important; }
+.goal-steps { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.goal-steps > div { display: flex; flex-direction: column; }
+.goal-steps b { font: 700 22px var(--font-sans); color: var(--heading-strong); }
+.goal-steps .hl-num { color: var(--gc); font-size: 30px; }
+.goal-steps > span { color: var(--subtle-foreground); }
+.goal-notas { padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--surface); }
+.goal-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-2); margin-bottom: var(--space-2); }
+.goal-opt { display: flex; gap: var(--space-3); align-items: center; text-align: left; padding: var(--space-3); border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--surface); color: var(--foreground); cursor: pointer; transition: border-color var(--t-fast), background-color var(--t-fast); }
+.goal-opt:hover { border-color: var(--gc); background: color-mix(in srgb, var(--gc) 8%, var(--surface)); }
+.goal-opt .goal-ic { background: color-mix(in srgb, var(--gc) 16%, transparent); color: var(--gc); }
+.goal-opt b { display: block; color: var(--heading-strong); }
+.goal-opt small { color: var(--muted-foreground); font-size: 12.5px; }
+.form-sec small { font-weight: 400; }
+.kpi-v.good { color: var(--success); } .kpi-v.warn { color: var(--warning); } .kpi-v.bad { color: var(--destructive); }
