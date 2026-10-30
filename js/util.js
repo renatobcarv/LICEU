@@ -105,7 +105,8 @@ export function parseCSV(text) {
   if (!out.length) return { headers: [], rows: [] };
   const headers = out[0].map((h) => h.trim());
   const rows = out.slice(1).map((r) => Object.fromEntries(headers.map((h, i) => [h, (r[i] ?? '').trim()])));
-  return { headers, rows };
+  // raw: todas as linhas como listas, para planilhas com colunas de nome repetido.
+  return { headers, rows, raw: out.map((r) => r.map((c) => String(c ?? '').trim())) };
 }
 
 export const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
@@ -119,3 +120,6 @@ export const onlyDigits = (s) => String(s || '').replace(/\D/g, '');
 // Chave para achar telefone repetido: sem +55 e sem o 9 extra do celular, então
 // (61) 9 9999-0000 e (61) 9999-0000 contam como o mesmo número.
 export const phoneKey = (s) => { let d = onlyDigits(s); if (d.length > 11 && d.startsWith('55')) d = d.slice(2); if (d.length === 11 && d[2] === '9') d = d.slice(0, 2) + d.slice(3); return d; };
+
+// Lê um arquivo como bytes (para planilhas Excel).
+export const readFileAsArrayBuffer = (file) => new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => bad(r.error); r.readAsArrayBuffer(file); });

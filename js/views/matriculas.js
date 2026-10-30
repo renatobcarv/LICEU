@@ -6,6 +6,7 @@ import { esc, $, brl, num, pct, fmtDate, today, daysBetween, norm, toCSV, inRang
 import { courseName, campaignName, goalProgress, extraMatriculas } from '../metrics.js';
 import { openDialog, toast, ICON, meter, empty, downloadFile, badge } from '../ui.js';
 import { matriculaDialog, recebido, courseOpts, PAG_STATUS } from '../leads.js';
+import { importDialog as importNegocios } from '../importNegocios.js';
 import { listHTML as turmasList, editorOpen, editorHTML, editorMount, editing, editingId, pageHTML, pageMount } from '../turmas.js';
 
 let tab = 'lista';
@@ -46,6 +47,7 @@ export function render(ctx) {
   <div class="toolbar">
     <div class="tabs" role="tablist">${tabs.map(([id, l]) => `<button type="button" role="tab" class="tab" data-tab="${id}" aria-selected="${tab === id}">${l}</button>`).join('')}</div>
     <span class="grow"></span>
+    <button class="btn sm" data-act="importar">${ICON.upload} Importar planilha</button>
     <button class="btn sm" data-act="export">${ICON.download} CSV</button>
   </div>
   ${tab === 'lista' ? list(per) : tab === 'cursos' ? byCourse(per) : turmasList()}`;
@@ -89,10 +91,11 @@ export function mount(root, ctx) {
     if (ds.st !== undefined) { fStatus = ds.st; return ctx.refresh(); }
     if (ds.edit) return matriculaDialog(store.get('leads', ds.edit), ctx);
     if (ds.act === 'new') return matriculaDialog(null, ctx);
+    if (ds.act === 'importar') return importNegocios(ctx);
     if (ds.act === 'turma') { editorOpen(null); location.hash = '#matriculas?turmaEdit=nova'; return; }
     if (ds.act === 'export') {
       const rows = store.all('leads').filter(isMat).filter((l) => inRange(l.dataMatricula, ctx.from, ctx.to));
-      downloadFile('matriculas-' + ctx.from + '-a-' + ctx.to + '.csv', toCSV(rows, [{ key: 'nome', label: 'Aluno' }, { key: 'telefone', label: 'Telefone' }, { label: 'Curso', get: (l) => courseName(l.cursoId) }, { label: 'Turma', get: (l) => store.get('turmas', l.turmaId)?.nome || '' }, { key: 'dataMatricula', label: 'Data' }, { label: 'Valor', get: (l) => String(l.valor ?? '').replace('.', ',') }, { key: 'formaPagamento', label: 'Forma de pagamento' }, { key: 'parcelas', label: 'Parcelas' }, { label: 'Pagamento', get: (l) => l.statusPagamento || 'Pago' }, { label: 'Recebido', get: (l) => String(recebido(l)).replace('.', ',') }, { key: 'origem', label: 'Origem' }, { label: 'Campanha', get: (l) => (l.campanhaId ? campaignName(l.campanhaId) : '') }]), 'text/csv');
+      downloadFile('matriculas-' + ctx.from + '-a-' + ctx.to + '.csv', toCSV(rows, [{ key: 'nome', label: 'Aluno' }, { key: 'telefone', label: 'Telefone' }, { key: 'email', label: 'E-mail' }, { key: 'cpf', label: 'CPF/CNPJ' }, { label: 'Curso', get: (l) => courseName(l.cursoId) }, { label: 'Turma', get: (l) => store.get('turmas', l.turmaId)?.nome || '' }, { key: 'dataMatricula', label: 'Data' }, { label: 'Valor', get: (l) => String(l.valor ?? '').replace('.', ',') }, { key: 'formaPagamento', label: 'Forma de pagamento' }, { key: 'parcelas', label: 'Parcelas' }, { label: 'Pagamento', get: (l) => l.statusPagamento || 'Pago' }, { label: 'Recebido', get: (l) => String(recebido(l)).replace('.', ',') }, { key: 'origem', label: 'Origem' }, { label: 'Campanha', get: (l) => (l.campanhaId ? campaignName(l.campanhaId) : '') }, { key: 'anuncio', label: 'Anúncio' }, { label: 'UTM source', get: (l) => l.rastreio?.utm_source || '' }, { label: 'UTM campaign', get: (l) => l.rastreio?.utm_campaign || '' }, { label: 'ID do clique', get: (l) => l.rastreio?.clickId || '' }, { key: 'responsavel', label: 'Responsável' }]), 'text/csv');
     }
   });
 }
