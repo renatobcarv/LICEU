@@ -76,7 +76,7 @@ function goalCard({ g, p }) {
   return `<article class="card goal goal-${p.tipo}" style="--gc:${cor}">${head}${corpo}
     <p class="goal-status ${p.status}">${esc(p.texto)}</p>${p.detalhe ? `<p class="hint">${esc(p.detalhe)}</p>` : ''}
     <p class="hint">${fmtDate(g.inicio)} a ${fmtDate(g.fim)} · ${p.restantes ? p.restantes + ' dias restantes' : 'prazo encerrado'}${['manual', 'crescimento'].includes(p.tipo) ? ' · valor informado à mão' : ' · calculado sozinho'}</p>
-    ${hist.length ? `<p class="hint">Últimas atualizações: ${hist.map((h) => fmtDate(h.data) + ' ' + esc(ind.fmt(Number(h.valor)))).join(' · ')}</p>` : ''}
+    ${hist.length ? `<p class="hint">Últimas atualizações: ${hist.map((h) => fmtDate(h.data) + ' ' + esc(ind.fmt(Number(h.valor))) + (h.delta ? ` (${h.delta > 0 ? '+' : '−'}${num(Math.abs(h.delta))})` : '')).join(' · ')}</p>` : ''}
     ${g.notas ? `<p class="small goal-notas">${esc(g.notas)}</p>` : ''}
   </article>`;
 }
@@ -142,14 +142,38 @@ function goalDialog(g, ctx, indId) {
   });
 }
 
-// Atualização rápida do valor (seguidores, avaliações, metas manuais).
+// Atualização rápida do valor (seguidores, avaliações, metas manuais): somar o que ganhou ou informar o total.
 function goalUpdate(g, ctx) {
   const ind = IND[g.indicador] || IND.manual;
-  openDialog({
-    title: 'Atualizar: ' + g.nome, saveLabel: 'Salvar valor',
-    fields: [{ name: 'valor', label: ind.tipo === 'crescimento' ? `Quantos ${ind.unidade} tem hoje?` : 'Valor atual', type: 'number', required: true, value: (g.historico || []).slice(-1)[0]?.valor ?? '' }, { name: 'data', label: 'Data', type: 'date', value: today() }],
-    onSave: (d) => { store.put('goals', { ...g, historico: [...(g.historico || []), { data: d.data || today(), valor: d.valor }] }); toast('Valor atualizado.'); ctx.refresh(); },
+  const p = goalProgress(g);
+  const atual = p.atual ?? (g.base !== '' && g.base != null ? Number(g.base) : 0);
+  const un = ind.unidade || g.unidade || '';
+  const { dlg } = openDialog({
+    title: 'Atualizar: ' + g.nome, saveLabel: 'Salvar',
+    fields: [
+      { name: 'modo', label: 'Como você quer informar', type: 'select', options: [['somar', 'Ganhei mais'], ['tirar', 'Perdi'], ['total', 'Tenho agora (total)']], value: 'somar', full: true },
+      { name: 'valor', label: 'Quantos', type: 'number', required: true, placeholder: 'ex.: 100' },
+      { name: 'data', label: 'Data', type: 'date', value: today() },
+    ],
+    html: `<p class="note">Hoje está em <b>${num(atual)}</b> ${esc(un)}. <span id="gu-prev"></span></p>`,
+    onOpen: (form) => {
+      const prev = () => {
+        const v = Number($('[name="valor"]', form).value) || 0; const m = $('[name="modo"]', form).value;
+        const novo = m === 'somar' ? atual + v : m === 'tirar' ? atual - v : v;
+        $('#gu-prev', form).textContent = v ? 'Vai ficar em ' + num(novo) + (g.alvo ? ' de ' + num(g.alvo) + '.' : '.') : '';
+      };
+      form.addEventListener('input', prev); form.addEventListener('change', prev);
+      $('[name="valor"]', form).focus();
+    },
+    onSave: (d) => {
+      const novo = d.modo === 'somar' ? atual + d.valor : d.modo === 'tirar' ? atual - d.valor : d.valor;
+      if (novo < 0) { toast('O total não pode ficar negativo.', 'bad'); return false; }
+      store.put('goals', { ...g, historico: [...(g.historico || []), { data: d.data || today(), valor: novo, delta: d.modo === 'total' ? novo - atual : d.modo === 'somar' ? d.valor : -d.valor }] });
+      toast((d.modo === 'total' ? 'Total atualizado: ' : (d.modo === 'somar' ? '+' : '−') + num(d.valor) + ' · agora ') + num(novo) + ' ' + un + '.');
+      ctx.refresh();
+    },
   });
+  void dlg;
 }
 
 // ---------- funis em Kanban ----------
