@@ -248,6 +248,7 @@ export const ICON = {
   up: svg('<path d="M12 19V5M5 12l7-7 7 7"/>'),
   left: svg('<path d="m15 18-6-6 6-6"/>'),
   right: svg('<path d="m9 18 6-6-6-6"/>'),
+  campanhas: svg('<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a3 3 0 0 1 0 6M18 6a7 7 0 0 1 0 12"/>'),
   quadro: svg('<rect x="3" y="3" width="18" height="18" rx="3"/><rect x="6.5" y="6.5" width="5" height="5" rx="1"/><path d="M14 8h4M14 12h4M7 15.5h11"/>'),
   menu: svg('<path d="M3 6h18M3 12h18M3 18h18"/>'),
   upload: svg('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>'),
