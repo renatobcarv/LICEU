@@ -6,6 +6,7 @@ import { esc, $, brl, num, pct, fmtDate, today, daysBetween, norm, toCSV, inRang
 import { courseName, campaignName, goalProgress, extraMatriculas } from '../metrics.js';
 import { openDialog, toast, ICON, meter, empty, downloadFile, badge } from '../ui.js';
 import { matriculaDialog, recebido, courseOpts, PAG_STATUS } from '../leads.js';
+import { listHTML as turmasList, editorOpen, editorHTML, editorMount, editing, editingId, pageHTML, pageMount } from '../turmas.js';
 
 let tab = 'lista';
 let q = '';
@@ -15,6 +16,9 @@ const isMat = (l) => l.etapa === 'matriculado';
 
 export function render(ctx) {
   const { from, to, f } = ctx;
+  // Ficha da turma: editor e página própria.
+  if (ctx.params.turmaEdit) { const want = ctx.params.turmaEdit; if (!editing() || (want === 'nova' ? !!editingId() : editingId() !== want)) editorOpen(ctx.params.turmaEdit === 'nova' ? null : store.get('turmas', ctx.params.turmaEdit)); return editorHTML(); }
+  if (ctx.params.turma) { const tm = store.get('turmas', ctx.params.turma); if (tm) return pageHTML(tm); }
   const all = store.all('leads').filter((l) => isMat(l) && (!f.cursoId || l.cursoId === f.cursoId));
   const per = all.filter((l) => inRange(l.dataMatricula, from, to));
   const ex = extraMatriculas(from, to, f);
@@ -44,7 +48,7 @@ export function render(ctx) {
     <span class="grow"></span>
     <button class="btn sm" data-act="export">${ICON.download} CSV</button>
   </div>
-  ${tab === 'lista' ? list(per) : tab === 'cursos' ? byCourse(per) : turmas()}`;
+  ${tab === 'lista' ? list(per) : tab === 'cursos' ? byCourse(per) : turmasList()}`;
 }
 
 function list(per) {
@@ -71,39 +75,10 @@ function byCourse(per) {
   return `<section class="card"><div class="table-wrap"><table class="tbl"><thead><tr><th>Curso</th><th>Matrículas</th><th class="r">Valor</th><th class="r">Recebido</th><th class="r">Ticket médio</th><th class="r">Vieram de campanha</th></tr></thead><tbody>${rows.map(([k, v]) => `<tr><td>${esc(courseName(k))}</td><td><div class="inline-bar"><span style="width:${(v.n / max) * 100}%"></span><b>${v.n}</b></div></td><td class="r">${brl(v.valor)}</td><td class="r">${brl(v.rec)}</td><td class="r">${brl(v.valor / v.n)}</td><td class="r">${pct(v.campanha / v.n, 0)}</td></tr>`).join('')}</tbody></table></div></section>`;
 }
 
-function turmas() {
-  const list = store.all('turmas').sort((a, b) => (a.inicio || '').localeCompare(b.inicio || ''));
-  const t = today();
-  return `<div class="row-actions"><button class="btn" data-act="turma">${ICON.plus} Nova turma</button></div>
-  ${list.length ? `<div class="cards">${list.map((tm) => {
-    const mats = store.all('leads').filter((l) => l.turmaId === tm.id && isMat(l)).length;
-    const interessados = store.all('leads').filter((l) => l.turmaId === tm.id && !['matriculado', 'perdido'].includes(l.etapa)).length;
-    const p = tm.meta ? mats / tm.meta : null;
-    const dias = tm.inicio ? daysBetween(t, tm.inicio) : null;
-    const st = p !== null && p >= 1 ? 'ok' : dias !== null && dias < 7 && p < 0.7 ? 'bad' : dias !== null && dias < 15 && p < 0.5 ? 'warn' : 'neutral';
-    return `<article class="card turma"><header class="card-head"><div><p class="eyebrow">${esc(courseName(tm.cursoId))}</p><h3>${esc(tm.nome)}</h3></div><button class="btn sm" data-turma="${esc(tm.id)}">Editar</button></header>
-      <p class="big">${mats} <small>de ${num(tm.meta)} na meta · ${num(tm.vagas)} vagas</small></p>${meter(p, st)}
-      <dl class="stats"><div><dt>Início</dt><dd>${fmtDate(tm.inicio)}${dias !== null ? ` <small>${dias >= 0 ? 'em ' + dias + ' dias' : 'começou'}</small>` : ''}</dd></div><div><dt>Interessados no funil</dt><dd>${interessados}</dd></div><div><dt>Ocupação</dt><dd>${pct(tm.vagas ? mats / tm.vagas : null, 0)}</dd></div></dl>
-    </article>`;
-  }).join('')}</div>` : empty('Nenhuma turma cadastrada', 'Cadastre as turmas abertas com vagas e meta. Ao registrar a matrícula, escolha a turma e a ocupação atualiza sozinha.')}`;
-}
-
-function turmaDialog(tm, ctx) {
-  openDialog({
-    title: tm ? 'Editar turma' : 'Nova turma',
-    fields: [
-      { name: 'nome', label: 'Nome da turma', value: tm?.nome, required: true, placeholder: 'ex.: Técnico em Enfermagem · T12' },
-      { name: 'cursoId', label: 'Curso', type: 'select', options: courseOpts(), value: tm?.cursoId, required: true },
-      { name: 'inicio', label: 'Início', type: 'date', value: tm?.inicio },
-      { name: 'vagas', label: 'Vagas', type: 'number', value: tm?.vagas },
-      { name: 'meta', label: 'Meta de matrículas', type: 'number', value: tm?.meta },
-    ],
-    onSave: (d) => { store.put('turmas', { ...(tm || {}), ...d }); toast('Turma salva.'); ctx.refresh(); },
-    onDelete: tm ? () => { store.remove('turmas', tm.id); ctx.refresh(); } : null,
-  });
-}
 
 export function mount(root, ctx) {
+  if (ctx.params.turmaEdit) return editorMount(root, ctx);
+  if (ctx.params.turma && store.get('turmas', ctx.params.turma)) return pageMount(root, ctx, store.get('turmas', ctx.params.turma));
   $('#m-q', root)?.addEventListener('change', (e) => { q = e.target.value; ctx.refresh(); });
   $('#m-q', root)?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { q = e.target.value; ctx.refresh(); } });
   root.addEventListener('click', (e) => {
@@ -113,9 +88,8 @@ export function mount(root, ctx) {
     if (ds.tab) { tab = ds.tab; return ctx.refresh(); }
     if (ds.st !== undefined) { fStatus = ds.st; return ctx.refresh(); }
     if (ds.edit) return matriculaDialog(store.get('leads', ds.edit), ctx);
-    if (ds.turma) return turmaDialog(store.get('turmas', ds.turma), ctx);
     if (ds.act === 'new') return matriculaDialog(null, ctx);
-    if (ds.act === 'turma') return turmaDialog(null, ctx);
+    if (ds.act === 'turma') { editorOpen(null); location.hash = '#matriculas?turmaEdit=nova'; return; }
     if (ds.act === 'export') {
       const rows = store.all('leads').filter(isMat).filter((l) => inRange(l.dataMatricula, ctx.from, ctx.to));
       downloadFile('matriculas-' + ctx.from + '-a-' + ctx.to + '.csv', toCSV(rows, [{ key: 'nome', label: 'Aluno' }, { key: 'telefone', label: 'Telefone' }, { label: 'Curso', get: (l) => courseName(l.cursoId) }, { label: 'Turma', get: (l) => store.get('turmas', l.turmaId)?.nome || '' }, { key: 'dataMatricula', label: 'Data' }, { label: 'Valor', get: (l) => String(l.valor ?? '').replace('.', ',') }, { key: 'formaPagamento', label: 'Forma de pagamento' }, { key: 'parcelas', label: 'Parcelas' }, { label: 'Pagamento', get: (l) => l.statusPagamento || 'Pago' }, { label: 'Recebido', get: (l) => String(recebido(l)).replace('.', ',') }, { key: 'origem', label: 'Origem' }, { label: 'Campanha', get: (l) => (l.campanhaId ? campaignName(l.campanhaId) : '') }]), 'text/csv');

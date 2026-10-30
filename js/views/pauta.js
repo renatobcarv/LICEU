@@ -3,20 +3,21 @@
 
 import { store } from '../store.js';
 import { esc, $, $$, norm, today, addDays, fmtDate, pct, num } from '../util.js';
-import { HOOKS, BANK, FORMATOS, OBJETIVOS, CONSCIENCIA, OBJECOES, CENARIOS, buildBrief } from '../pauta-data.js';
+import { HOOKS, BANK, FORMATOS, OBJETIVOS, CONSCIENCIA, OBJECOES, buildBrief } from '../pauta-data.js';
+import { buildKit, kitText, AMBIENTES, QUEM, TONS } from '../pauta-gen.js';
 import { salesStats, contentStats, settings } from '../metrics.js';
 import { openDialog, toast, copyText, ICON, badge, confirmButton, dayPicker } from '../ui.js';
 
 export const autoRefresh = false; // não redesenha no meio da digitação
 
 const DRAFT_KEY = 'liceu.intelligence.pauta.draft';
-const BLANK = { formato: 'Reels', objetivo: OBJETIVOS[0][0], consciencia: 'Claude avalia', objecao: '', cenario: 'Claude escolhe', validado: 'Ainda não', curso: '', ideia: '', erro: '', protagonista: '', publico: '', entrega: '', prova: '', refs: '', cta: '', restricoes: '', voz: '', anuncio: false, picked: [], usarDados: true };
+const BLANK = { qstep: 0, v: 0, kitEdits: {}, ambiente: 'lab', ambienteLivre: '', quem: 'professor', tom: 'Direto', duracao: 30, palavra: '', formato: 'Reels', objetivo: OBJETIVOS[0][0], consciencia: CONSCIENCIA[2][0], objecao: '', cenario: 'Claude escolhe', validado: 'Ainda não', curso: '', ideia: '', erro: '', protagonista: '', publico: '', entrega: '', prova: '', refs: '', cta: '', restricoes: '', voz: '', anuncio: false, picked: [], usarDados: true };
 let draft = loadDraft();
 let tab = 'nova';
 let cat = 'Todos';
 let hq = '';
 
-function loadDraft() { try { return { ...BLANK, ...(JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null') || {}) }; } catch (e) { return { ...BLANK }; } }
+function loadDraft() { try { return { ...structuredClone(BLANK), ...(JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null') || {}) }; } catch (e) { return { ...structuredClone(BLANK) }; } }
 function saveDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (e) { /* opcional */ } }
 
 const courseByName = (name) => { const n = norm(name); return store.all('courses').find((c) => norm(c.nome) === n) || store.all('courses').find((c) => n && norm(c.nome).includes(n)); };
@@ -46,12 +47,12 @@ export function render(ctx) {
   const p = ctx.params;
   // Atalhos vindos de outros módulos (diagnóstico, campanha, calendário).
   if (p.curso !== undefined || p.anuncio || p.objecao || p.de || p.id) {
-    draft = { ...BLANK };
+    draft = { ...structuredClone(BLANK) };
     if (p.curso) draft.curso = store.get('courses', p.curso)?.nome || '';
     if (p.anuncio) { draft.anuncio = true; draft.objetivo = 'Conversas no WhatsApp'; }
     if (p.objecao) { const hit = OBJECOES.find(([v]) => norm(v).includes(norm(p.objecao)) || norm(p.objecao).includes(norm(v || '#'))); draft.objecao = hit ? hit[0] : ''; draft.ideia = 'Conteúdo que responde a objeção "' + p.objecao + '" antes da conversa no WhatsApp.'; }
     if (p.de) { const it = store.get('calendar', p.de); if (it) { draft.curso = store.get('courses', it.cursoId)?.nome || ''; draft.formato = FORMATOS.includes(it.formato) ? it.formato : 'Reels'; draft.ideia = 'Variação de um conteúdo que funcionou: "' + (it.titulo || '') + '". Mesmo assunto, gancho diferente.'; } }
-    if (p.id) { const pt = store.get('pautas', p.id); if (pt) draft = { ...BLANK, ...pt.form, _id: pt.id }; }
+    if (p.id) { const pt = store.get('pautas', p.id); if (pt) draft = { ...structuredClone(BLANK), ...pt.form, _id: pt.id, qstep: 'kit' }; }
     saveDraft(); tab = 'nova';
     history.replaceState(null, '', '#pauta');
   }
@@ -64,54 +65,62 @@ export function render(ctx) {
   ${tab === 'banco' ? bank(pautas) : form()}`;
 }
 
-function form() {
+// ---------- quiz ----------
+const QSTEPS = ['Formato', 'Objetivo', 'Curso e ideia', 'Público', 'Ambiente', 'Quem e tom', 'Ganchos', 'Finalizar'];
+const chipsSet = (name, opts) => `<div class="chips">${opts.map(([v, l]) => `<button type="button" class="chip" data-pset="${name}" data-val="${esc(v)}" aria-pressed="${String(draft[name]) === String(v)}">${esc(l)}</button>`).join('')}</div>`;
+const inp = (name, label, ph = '', type = 'text') => `<div class="field"><label for="pq-${name}">${label}</label><input id="pq-${name}" data-pd="${name}" type="${type}" value="${esc(draft[name] ?? '')}" placeholder="${esc(ph)}"></div>`;
+const area = (name, label, ph = '', rows = 3) => `<div class="field"><label for="pq-${name}">${label}</label><textarea id="pq-${name}" data-pd="${name}" rows="${rows}" placeholder="${esc(ph)}">${esc(draft[name] ?? '')}</textarea></div>`;
+
+function quizStep() {
+  const i = draft.qstep || 0;
   const courses = store.all('courses').filter((c) => c.ativo !== false);
-  return `
-  <p class="lead-text">Monte o briefing em poucos cliques e cole no chat do Claude. Ele cria os ganchos finais, o roteiro e a legenda. Depois salve a pauta e mande para o calendário.</p>
-  <div class="pauta">
-    <form id="pf" class="pauta-form" autocomplete="off">
-      <fieldset><legend><span class="n">01</span>Formato</legend>${radios('formato', FORMATOS.map((f) => [f, f]))}</fieldset>
-      <fieldset><legend><span class="n">02</span>O que esse post precisa gerar</legend>${radios('objetivo', OBJETIVOS)}</fieldset>
-      <fieldset><legend><span class="n">02b</span>Em que ponto a pessoa está</legend><p class="hint">Muda o tom inteiro. Quem nem sabe que precisa não pode receber "últimas vagas".</p>${radios('consciencia', CONSCIENCIA)}</fieldset>
-      <fieldset><label class="lbl" for="p-curso"><span class="n">03</span>Curso ou tema</label><input type="text" id="p-curso" name="curso" list="p-cursos" value="${esc(draft.curso)}" placeholder="Ex.: Primeiros Socorros"><datalist id="p-cursos">${courses.map((c) => `<option value="${esc(c.nome)}">`).join('')}</datalist></fieldset>
-      <fieldset><label class="lbl" for="p-ideia"><span class="n">04</span>A ideia, do seu jeito</label><p class="hint">Pode ser crua. Ex.: "mostrar o erro que todo mundo comete quando alguém desmaia".</p><textarea id="p-ideia" name="ideia" rows="3">${esc(draft.ideia)}</textarea></fieldset>
-      <fieldset id="motionBox" class="motion"${draft.formato === 'Vídeo motion' ? '' : ' hidden'}>
-        <legend><span class="n">M</span>Detalhes do vídeo motion</legend>
-        <p class="hint">O briefing pede uma história do dia a dia em que o curso decide o final, sem terror nem milagre.</p>
-        <span class="sublbl">Onde a história acontece</span>${radios('cenario', CENARIOS)}
-        <label class="sublbl" for="p-erro">O erro que a história derruba</label><input type="text" id="p-erro" name="erro" value="${esc(draft.erro)}" placeholder="Ex.: achar que a pessoa caída tá respirando">
-        <label class="sublbl" for="p-prot">Protagonista (opcional)</label><input type="text" id="p-prot" name="protagonista" value="${esc(draft.protagonista)}" placeholder="Ex.: motorista de app, boné e relógio verde">
-        <span class="sublbl">A professora já validou a parte técnica?</span>${radios('validado', [['Ainda não', 'Ainda não'], ['Sim', 'Sim']])}
-      </fieldset>
-      <fieldset><legend><span class="n">05</span>Ganchos que mais combinam (até 3)</legend><p class="hint">Toque para marcar. Os colchetes o Claude adapta ao tema. Se não marcar nenhum, ele escolhe.</p>
-        <div class="picked" id="picked"></div>
-        <div class="bank">
-          <div class="bank-top"><input type="search" id="p-q" placeholder="Buscar gancho por palavra" aria-label="Buscar gancho" value="${esc(hq)}">
-          <div class="chips scroll-x" id="p-tabs" role="toolbar" aria-label="Categorias de gancho">${['Todos', ...BANK.map((g) => g.cat)].map((c) => `<button type="button" class="chip" data-cat="${esc(c)}" aria-pressed="${c === cat}">${esc(c)}</button>`).join('')}</div></div>
-          <ul class="hooks" id="hooks"></ul>
-        </div>
-      </fieldset>
-      <details class="more"${draft.publico || draft.prova || draft.cta ? ' open' : ''}><summary>Mais detalhes (opcional, deixa o briefing melhor)</summary><div class="inner">
-        <fieldset><legend>O que mais trava a decisão</legend>${radios('objecao', OBJECOES)}</fieldset>
-        <label class="toggle"><input type="checkbox" name="anuncio"${draft.anuncio ? ' checked' : ''}> Esse post também vai virar anúncio pago</label>
-        <label class="toggle"><input type="checkbox" name="usarDados"${draft.usarDados ? ' checked' : ''}> Incluir dados reais do painel (leads, perdas, melhores conteúdos)</label>
-        ${[['publico', 'Para quem', 'Ex.: estudantes de enfermagem do Entorno do DF'], ['entrega', 'O que a pessoa leva de graça', 'Ex.: checklist enviado por DM para quem comentar'], ['prova', 'O que temos de real para mostrar', 'Ex.: vídeos da aula prática, depoimento de aluna']].map(([n, l, ph]) => `<fieldset><label class="lbl" for="p-${n}">${l}</label><input type="text" id="p-${n}" name="${n}" value="${esc(draft[n])}" placeholder="${esc(ph)}"></fieldset>`).join('')}
-        <fieldset><label class="lbl" for="p-refs">Referências</label><textarea id="p-refs" name="refs" rows="2" placeholder="Links de posts ou criadores e o que você gostou neles">${esc(draft.refs)}</textarea></fieldset>
-        <div class="row2"><fieldset><label class="lbl" for="p-cta">Ação final</label><input type="text" id="p-cta" name="cta" value="${esc(draft.cta)}" placeholder="Ex.: comentar CHECKLIST"></fieldset><fieldset><label class="lbl" for="p-restr">Não pode</label><input type="text" id="p-restr" name="restricoes" value="${esc(draft.restricoes)}" placeholder="Ex.: rosto da professora, preço"></fieldset></div>
-        <fieldset><label class="lbl" for="p-voz">Amostras da nossa voz</label><textarea id="p-voz" name="voz" rows="3" placeholder="Cole 1 a 3 legendas de vocês que funcionaram">${esc(draft.voz)}</textarea></fieldset>
-      </div></details>
-    </form>
-    <section class="monitor" aria-label="Briefing">
-      <div class="mon-head"><span><span class="rec-dot" aria-hidden="true"></span> BRIEFING</span><span id="p-count"></span></div>
-      <ul class="check" id="p-check"></ul>
-      <pre class="brief" id="p-brief"></pre>
-      <div class="mon-foot">
-        <button type="button" class="btn primary" data-pact="agendar">${ICON.calendario} Salvar e escolher o dia</button>
-        <div class="row2"><button type="button" class="btn" data-pact="copy">${ICON.copy} Copiar briefing</button><button type="button" class="btn ghost" data-pact="clear">Nova pauta</button></div>
-      </div>
-    </section>
+  const Q = [
+    ['Qual formato?', 'Cada formato tem um molde de roteiro diferente.', chipsSet('formato', FORMATOS.map((f) => [f, f]))],
+    ['O que esse post precisa gerar?', 'Define a ação final e a legenda.', chipsSet('objetivo', OBJETIVOS)],
+    ['Sobre qual curso e qual é a ideia?', 'A ideia pode ser crua. Ex.: "mostrar o erro que todo mundo comete quando alguém desmaia".',
+      `<div class="field"><label for="pq-curso">Curso ou tema</label><input id="pq-curso" data-pd="curso" list="p-cursos" value="${esc(draft.curso)}" placeholder="Ex.: Primeiros Socorros"><datalist id="p-cursos">${courses.map((c) => `<option value="${esc(c.nome)}">`).join('')}</datalist></div>
+       <div class="chips">${courses.slice(0, 8).map((c) => `<button type="button" class="chip" data-pset="curso" data-val="${esc(c.nome)}" aria-pressed="${draft.curso === c.nome}">${esc(c.nome)}</button>`).join('')}</div>
+       ${area('ideia', 'A ideia, do seu jeito', 'Uma frase já basta. Pode separar em pontos com ponto final.')}
+       ${inp('erro', 'O erro ou mito que o post derruba (opcional)', 'Ex.: achar que a pessoa caída tá respirando')}`],
+    ['Em que ponto a pessoa está?', 'Muda o tom inteiro. Quem nem sabe que precisa não pode receber "últimas vagas".', `${chipsSet('consciencia', CONSCIENCIA.filter(([v]) => v !== 'Claude avalia'))}<h3 class="sub-h">O que mais trava a decisão</h3>${chipsSet('objecao', OBJECOES)}`],
+    ['Onde vai ser gravado?', 'O ambiente vira a direção de luz, objetos, som e o prompt de imagem.', `<div class="cards amb">${AMBIENTES.map((a) => `<button type="button" class="card pick${draft.ambiente === a.id ? ' on' : ''}" data-pset="ambiente" data-val="${a.id}" aria-pressed="${draft.ambiente === a.id}"><b>${esc(a.nome)}</b><span class="muted">${esc(a.pt)}</span></button>`).join('')}</div>${inp('ambienteLivre', 'Ou descreva o seu lugar', 'Ex.: recepção da escola com o painel da marca ao fundo')}`],
+    ['Quem aparece e qual o tom?', 'Define quem fala, o enquadramento e a trilha.', `${chipsSet('quem', QUEM)}<h3 class="sub-h">Tom</h3>${chipsSet('tom', TONS.map((t) => [t, t]))}${['Reels', 'Vídeo motion'].includes(draft.formato) ? `<h3 class="sub-h">Duração</h3>${chipsSet('duracao', [[15, '15 s'], [30, '30 s'], [45, '45 s'], [60, '60 s']])}` : ''}${draft.formato === 'Vídeo motion' ? inp('protagonista', 'Protagonista (opcional)', 'Ex.: motorista de app, boné e relógio verde') : ''}`],
+    ['Quer partir de algum gancho do banco?', 'Opcional. Marque até 3: eles entram nas opções de gancho do kit.', `<div class="picked" id="picked"></div><div class="bank"><div class="bank-top"><input type="search" id="p-q" placeholder="Buscar gancho por palavra" aria-label="Buscar gancho" value="${esc(hq)}"><div class="chips scroll-x" id="p-tabs">${['Todos', ...BANK.map((g) => g.cat)].map((c) => `<button type="button" class="chip" data-cat="${esc(c)}" aria-pressed="${c === cat}">${esc(c)}</button>`).join('')}</div></div><ul class="hooks" id="hooks"></ul></div>`],
+    ['Últimos detalhes', 'Tudo opcional. Quanto mais real, melhor o kit.', `<div class="form-grid">${inp('palavra', 'Palavra-chave para comentar', 'Ex.: GUIA')}${inp('prova', 'O que temos de real para mostrar', 'Ex.: vídeo da aula prática, depoimento da Ana')}${inp('publico', 'Para quem', 'Ex.: quem já atua em farmácia')}${inp('restricoes', 'Não pode', 'Ex.: mostrar rosto da professora, preço')}</div>
+      <label class="toggle"><input type="checkbox" data-pck="anuncio"${draft.anuncio ? ' checked' : ''}> Esse post também vai virar anúncio pago</label>`],
+  ];
+  const [q, help, body] = Q[i];
+  return `<div class="quiz">
+    <nav class="steps-nav" aria-label="Etapas">${QSTEPS.map((t, k) => `<button type="button" class="step-pill${k === i ? ' on' : ''}${k < i ? ' done' : ''}" data-qgo="${k}"><span>${k + 1}</span>${esc(t)}</button>`).join('')}</nav>
+    <h2>${esc(q)}</h2><p class="muted">${esc(help)}</p>
+    <div class="quiz-a">${body}</div>
+    <div class="row-actions"><button type="button" class="btn" data-qnav="prev"${i ? '' : ' disabled'}>Voltar</button><span class="grow"></span>${i < QSTEPS.length - 1 ? `<button type="button" class="btn ghost" data-qnav="kit">Pular e gerar</button><button type="button" class="btn primary" data-qnav="next">Próxima ${ICON.arrow}</button>` : `<button type="button" class="btn primary" data-qnav="kit">Gerar kit</button>`}</div>
   </div>`;
 }
+
+// ---------- kit ----------
+function kitBlocks() { return buildKit(draft).map((b) => ({ ...b, texto: draft.kitEdits?.[b.id] ?? b.texto })); }
+function kitView() {
+  const blocos = kitBlocks();
+  return `<div class="kit">
+    <div class="kit-main">
+      <header class="kit-head"><div><p class="eyebrow">${esc(draft.formato)} · ${esc(draft.objetivo.split(' (')[0])}${draft.curso ? ' · ' + esc(draft.curso) : ''}</p><h2>${esc(titleOf(draft))}</h2><p class="muted">Edite à vontade: o texto fica salvo. "Outra versão" troca ganchos, roteiro e legenda.</p></div></header>
+      ${blocos.map((b) => `<section class="card kit-b"><header class="card-head"><h3>${esc(b.titulo)}</h3><div class="row-actions">${draft.kitEdits?.[b.id] !== undefined ? `<button type="button" class="btn sm ghost" data-kreset="${b.id}">Desfazer edição</button>` : ''}<button type="button" class="btn sm" data-kcopy="${b.id}">${ICON.copy} Copiar</button></div></header><textarea class="kit-t" data-kedit="${b.id}" rows="${Math.min(22, Math.max(4, b.texto.split('\n').length + 1))}">${esc(b.texto)}</textarea></section>`).join('')}
+      <details class="more"><summary>Briefing para o Claude (para ir além no chat)</summary><div class="inner"><pre class="brief" id="p-brief">${esc(brief())}</pre><button type="button" class="btn sm" data-pact="copy">${ICON.copy} Copiar briefing</button></div></details>
+    </div>
+    <aside class="kit-side card">
+      <button type="button" class="btn primary block" data-pact="agendar">${ICON.calendario} Salvar e escolher o dia</button>
+      <button type="button" class="btn block" data-pact="copyall">${ICON.copy} Copiar tudo</button>
+      <button type="button" class="btn block" data-pact="again">Outra versão</button>
+      <button type="button" class="btn block" data-pact="save">Salvar no banco</button>
+      <button type="button" class="btn ghost block" data-qgo="0">Editar respostas</button>
+      <button type="button" class="btn ghost block" data-pact="clear">Nova pauta</button>
+      <p class="hint">Revise a parte técnica com o(a) professor(a) antes de postar. Números e depoimentos: só reais.</p>
+    </aside>
+  </div>`;
+}
+
+function form() { return draft.qstep === 'kit' ? kitView() : quizStep(); }
 
 const STATUS = ['Ideia', 'Briefing pronto', 'Roteiro aprovado', 'Gravado', 'Publicado', 'Descartada'];
 function bank(list) {
@@ -127,26 +136,17 @@ function bank(list) {
 function renderHooks(root) {
   const q = norm(hq);
   const ul = $('#hooks', root);
+  if (!ul) return;
   const list = HOOKS.filter((h) => (cat === 'Todos' || h.cat === cat) && (!q || norm(h.text + ' ' + h.cat + ' ' + h.mech).includes(q)));
   ul.innerHTML = list.length ? list.map((h) => { const on = draft.picked.includes(h.id); return `<li><button type="button" data-hook="${h.id}" aria-pressed="${on}"><span class="box" aria-hidden="true">${on ? '✓' : ''}</span><span class="t"><span>${esc(h.text)}</span><span class="tag">${esc(h.cat + (h.mech ? ' · ' + h.mech : ''))}</span></span></button></li>`; }).join('') : '<li class="hint pad">Nenhum gancho com essa palavra.</li>';
   $('#picked', root).innerHTML = draft.picked.length ? draft.picked.map((id) => `<div class="p"><span>${esc(HOOKS[id].text)}</span><button type="button" class="btn sm" data-unhook="${id}" aria-label="Tirar gancho">Tirar</button></div>`).join('') : '<div class="none">Nenhum gancho marcado ainda.</div>';
 }
 
-function update(root) {
-  $('#motionBox', root).hidden = draft.formato !== 'Vídeo motion';
-  $('#p-brief', root).textContent = brief();
-  const items = [['Formato e objetivo', !!(draft.formato && draft.objetivo)], ['Curso ou tema', !!draft.curso], ['Ideia', !!draft.ideia], ...(draft.formato === 'Vídeo motion' ? [['Erro que a história derruba', !!draft.erro]] : []), ['Ganchos marcados (' + draft.picked.length + '/3)', draft.picked.length > 0]];
-  $('#p-check', root).innerHTML = items.map(([t, ok]) => `<li class="${ok ? 'ok' : ''}">${esc(t)}</li>`).join('');
-  const extras = ['publico', 'entrega', 'prova', 'refs', 'cta', 'restricoes', 'voz'].filter((k) => draft[k]).length;
-  $('#p-count', root).textContent = extras ? extras + ' detalhe' + (extras > 1 ? 's' : '') + ' extra' + (extras > 1 ? 's' : '') : '';
+function readQuiz(root) {
+  $$('[data-pd]', root).forEach((el) => { draft[el.dataset.pd] = el.value; });
+  $$('[data-pck]', root).forEach((el) => { draft[el.dataset.pck] = el.checked; });
+  $$('[data-kedit]', root).forEach((el) => { const gen = buildKit(draft).find((b) => b.id === el.dataset.kedit)?.texto; if (el.value !== gen) draft.kitEdits = { ...draft.kitEdits, [el.dataset.kedit]: el.value }; });
   saveDraft();
-}
-
-function readForm(root) {
-  const f = $('#pf', root);
-  $$('input[type=radio]:checked', f).forEach((r) => (draft[r.name] = r.value));
-  $$('input[type=text],textarea', f).forEach((el) => (draft[el.name] = el.value.trim()));
-  $$('input[type=checkbox]', f).forEach((el) => (draft[el.name] = el.checked));
 }
 
 // Toda pauta salva vai para o calendário: escolhe o dia num mini calendário, com o formato já definido.
@@ -188,7 +188,7 @@ function titleOf(d) { return (d.ideia || d.curso || 'Pauta sem título').split(/
 function savePauta(extra = {}) {
   const old = draft._id ? store.get('pautas', draft._id) : null;
   const { _id, ...form } = draft;
-  const p = store.put('pautas', { ...(old || {}), titulo: titleOf(draft), form, brief: brief(), status: old?.status || 'Briefing pronto', ...extra });
+  const p = store.put('pautas', { ...(old || {}), titulo: titleOf(draft), form, brief: brief(), kit: kitText(kitBlocks()), status: old?.status || 'Briefing pronto', ...extra });
   draft._id = p.id; saveDraft();
   return p;
 }
@@ -198,34 +198,42 @@ export function mount(root, ctx) {
     const b = e.target.closest('button');
     if (!b) return;
     const ds = b.dataset;
+    if (tab === 'nova') readQuiz(root);
     if (ds.ptab) { tab = ds.ptab; ctx.refresh(); return; }
-    if (ds.popen) { const p = store.get('pautas', ds.popen); draft = { ...BLANK, ...p.form, _id: p.id }; saveDraft(); tab = 'nova'; ctx.refresh(); return; }
+    if (ds.popen) { const p = store.get('pautas', ds.popen); draft = { ...structuredClone(BLANK), ...p.form, _id: p.id, qstep: 'kit' }; saveDraft(); tab = 'nova'; ctx.refresh(); return; }
     if (ds.pdel) { if (!confirmButton(b, 'Confirmar')) return; store.remove('pautas', ds.pdel); ctx.refresh(); return; }
+    if (ds.pset) { draft[ds.pset] = ds.pset === 'duracao' ? Number(ds.val) : ds.val; if (ds.pset === 'ambiente') draft.ambienteLivre = ''; saveDraft(); ctx.refresh(); return; }
+    if (ds.qgo !== undefined) { draft.qstep = Number(ds.qgo); saveDraft(); ctx.refresh(); return; }
+    if (ds.qnav) {
+      const i = draft.qstep === 'kit' ? 0 : draft.qstep || 0;
+      if (ds.qnav === 'prev') draft.qstep = Math.max(0, i - 1);
+      if (ds.qnav === 'next') draft.qstep = i + 1;
+      if (ds.qnav === 'kit') { if (!draft.curso && !draft.ideia) { toast('Diga pelo menos o curso ou a ideia (passo 3).', 'warn'); draft.qstep = 2; } else draft.qstep = 'kit'; }
+      saveDraft(); ctx.refresh(); window.scrollTo(0, 0); return;
+    }
     if (ds.cat) { cat = ds.cat; $$('[data-cat]', root).forEach((x) => x.setAttribute('aria-pressed', String(x === b))); renderHooks(root); return; }
     if (ds.hook !== undefined || ds.unhook !== undefined) {
       const id = Number(ds.hook ?? ds.unhook);
       const i = draft.picked.indexOf(id);
       if (i >= 0) draft.picked.splice(i, 1);
       else { if (draft.picked.length >= 3) { toast('Já tem 3 ganchos marcados. Tire um para trocar.', 'warn'); return; } draft.picked.push(id); }
-      renderHooks(root); update(root); return;
+      saveDraft(); renderHooks(root); return;
     }
-    if (ds.pact === 'copy') { if (!draft.curso && !draft.ideia) { toast('Escreva pelo menos o curso ou a ideia.', 'warn'); $('#p-ideia', root).focus(); return; } copyText(brief(), $('#p-brief', root)); if (draft._id) store.put('pautas', { ...store.get('pautas', draft._id), brief: brief() }); return; }
-    if (ds.pact === 'save') { if (!draft.curso && !draft.ideia) { toast('Escreva pelo menos o curso ou a ideia.', 'warn'); return; } savePauta(); toast('Pauta salva no banco.'); return; }
-    if (ds.pact === 'clear') { draft = { ...BLANK }; saveDraft(); ctx.refresh(); toast('Pauta nova. Pode começar.'); return; }
-    if (ds.pact === 'agendar') {
-      if (!draft.curso && !draft.ideia) { toast('Escreva pelo menos o curso ou a ideia.', 'warn'); $('#p-ideia', root).focus(); return; }
-      scheduleDialog(ctx);
-    }
+    if (ds.kcopy) { const ta = $(`[data-kedit="${ds.kcopy}"]`, root); return copyText(ta.value, ta); }
+    if (ds.kreset) { const k = { ...draft.kitEdits }; delete k[ds.kreset]; draft.kitEdits = k; saveDraft(); ctx.refresh(); return; }
+    if (ds.pact === 'copyall') return copyText(kitText(kitBlocks()), $('.kit-main', root));
+    if (ds.pact === 'again') { draft.v = (Number(draft.v) || 0) + 1; draft.kitEdits = {}; saveDraft(); ctx.refresh(); toast('Nova versão gerada.'); return; }
+    if (ds.pact === 'copy') { copyText(brief(), $('#p-brief', root)); return; }
+    if (ds.pact === 'save') { savePauta(); toast('Pauta salva no banco.'); return; }
+    if (ds.pact === 'clear') { draft = { ...structuredClone(BLANK), picked: [] }; saveDraft(); ctx.refresh(); toast('Pauta nova. Pode começar.'); return; }
+    if (ds.pact === 'agendar') scheduleDialog(ctx);
   });
+  root.addEventListener('input', (e) => { if (e.target.matches('[data-pd],[data-kedit]')) readQuiz(root); });
   root.addEventListener('change', (e) => {
     if (e.target.dataset.pstatus) { const p = store.get('pautas', e.target.dataset.pstatus); store.put('pautas', { ...p, status: e.target.value }); toast('Status atualizado.'); }
+    if (e.target.matches('[data-pck]')) readQuiz(root);
   });
-  const f = $('#pf', root);
-  if (!f) return;
-  f.addEventListener('input', () => { readForm(root); update(root); });
-  f.addEventListener('change', () => { readForm(root); update(root); });
-  f.addEventListener('submit', (e) => e.preventDefault());
-  $('#p-q', root).addEventListener('input', (e) => { hq = e.target.value; renderHooks(root); });
-  renderHooks(root); update(root);
+  $('#p-q', root)?.addEventListener('input', (e) => { hq = e.target.value; renderHooks(root); });
+  renderHooks(root);
   void badge; void num;
 }

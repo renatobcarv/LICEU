@@ -869,3 +869,31 @@ pre.brief { margin: var(--space-3) var(--space-4) 0; padding: var(--space-4); ba
 .todo li.done b { text-decoration: line-through; color: var(--muted-foreground); }
 .base-card { background: color-mix(in srgb, var(--primary) 6%, transparent); border-color: color-mix(in srgb, var(--primary) 30%, var(--border)); }
 .base-card h3 { color: var(--heading-strong); }
+
+/* ===================== turmas ===================== */
+.turma-id { border-color: color-mix(in srgb, var(--tc) 40%, var(--border)); background: linear-gradient(135deg, color-mix(in srgb, var(--tc) 9%, transparent), transparent 55%); }
+.turma-banner { display: flex; align-items: flex-start; gap: var(--space-4); }
+.turma-dot { flex: none; width: 44px; height: 44px; border-radius: var(--radius-xl); background: var(--tc); box-shadow: inset 0 0 0 6px color-mix(in srgb, #000 18%, transparent); }
+.turma-banner h2 { font-size: 24px; line-height: 32px; color: var(--heading-strong); }
+.turma-tema { font-weight: 600; color: var(--tc); }
+.tcolors { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.tcolor { width: 34px; height: 34px; border-radius: 50%; background: var(--tc); border: 3px solid transparent; cursor: pointer; }
+.tcolor.on { border-color: var(--heading-strong); }
+.turma-card { text-decoration: none; color: inherit; border-top: 3px solid var(--tc); }
+.turma-card:hover { border-color: color-mix(in srgb, var(--tc) 60%, var(--border)); }
+.msg-box { width: 100%; min-height: 260px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); color: var(--foreground); padding: var(--space-3); font: 14px/1.5 var(--font-sans); resize: vertical; }
+.msg-box:focus { outline: none; border-color: var(--primary); }
+.todo li .row-actions { flex-wrap: nowrap; }
+
+/* ===================== pauta viral (quiz + kit) ===================== */
+.cards.amb { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.kit { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: var(--space-4); align-items: start; }
+@media (max-width: 1000px) { .kit { grid-template-columns: minmax(0, 1fr); } .kit-side { order: -1; } }
+.kit-main { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.kit-head h2 { font-size: 24px; line-height: 32px; color: var(--heading-strong); }
+.kit-b { gap: var(--space-3); }
+.kit-b h3 { color: var(--heading-strong); }
+.kit-t { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); color: var(--foreground); padding: var(--space-3); font: 14px/1.6 var(--font-sans); resize: vertical; white-space: pre-wrap; }
+.kit-t:focus { outline: none; border-color: var(--primary); }
+.kit-side { position: sticky; top: 100px; gap: var(--space-2); }
+.btn.block { width: 100%; }

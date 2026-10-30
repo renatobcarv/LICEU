@@ -397,6 +397,16 @@ function editPlan(p, ctx) {
   });
 }
 
+// Começa um plano já preenchido com os dados de uma turma (atalho da página da turma).
+export function startFromTurma(tm) {
+  draft = { ...blank(), cursoId: tm.cursoId || '', turma: tm.inicio || blank().turma, vagas: Number(tm.vagas) || '', metaMatriculas: Number(tm.meta) || Number(tm.vagas) || 30,
+    preco: tm.preco || '', precoPromo: tm.precoPromo || '', prazoPromo: tm.prazoPromo || '', cidade: tm.cidade || blank().cidade, atendentes: 1, responsavel: tm.responsavel || '',
+    extras: [{ k: 'Turma', v: tm.nome }, ...(tm.inclui ? [{ k: 'O que inclui', v: tm.inclui.split('\n').filter(Boolean).join(', ') }] : [])], turmaId: tm.id };
+  step = 0; qi = 1;
+  saveDraft();
+  location.hash = '#campanhas?novo=1';
+}
+
 // ---------- tela ----------
 export function render(ctx) {
   const prm = ctx.params;
