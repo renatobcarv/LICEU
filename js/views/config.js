@@ -55,9 +55,8 @@ export function render() {
     <div class="row-actions">
       <button class="btn" data-cfg="export">${ICON.download} Exportar backup (JSON)</button>
       ${isAdmin ? `<label class="btn" for="cfg-import">${ICON.upload} Restaurar backup</label><input type="file" id="cfg-import" accept=".json,application/json" class="sr">` : ''}
-      ${hasDemo ? '<button class="btn" data-cfg="demo-off">Remover dados de exemplo</button>' : '<button class="btn ghost" data-cfg="demo-on">Carregar dados de exemplo</button>'}
+      ${hasDemo ? '<button class="btn" data-cfg="demo-off">Remover dados de exemplo antigos</button>' : ''}
     </div>
-    <p class="hint">Dados de exemplo ficam marcados e saem todos de uma vez, sem tocar nos seus registros.</p>
   </section>
 
   <section class="card">
@@ -140,51 +139,13 @@ function courseDialog(c, ctx) {
   });
 }
 
-// Dados de exemplo: 60 dias de campanhas e leads, todos marcados com demo:true.
-function loadDemo() {
-  const t = today();
-  const courses = store.all('courses');
-  const pickC = (n) => courses.find((c) => c.nome.toLowerCase().includes(n))?.id || courses[0]?.id || '';
-  const camps = [
-    { id: uid('dm_'), nome: '[Exemplo] Injetáveis · Mensagens', canal: 'Meta', objetivo: 'Mensagens no WhatsApp', cursoId: pickC('inje'), status: 'Ativa', demo: true, k: 1 },
-    { id: uid('dm_'), nome: '[Exemplo] Enfermagem · Mensagens', canal: 'Meta', objetivo: 'Mensagens no WhatsApp', cursoId: pickC('enferm'), status: 'Ativa', demo: true, k: 1.3 },
-    { id: uid('dm_'), nome: '[Exemplo] Primeiros Socorros · Cadastro', canal: 'Meta', objetivo: 'Cadastro (formulário)', cursoId: pickC('socorr'), status: 'Ativa', demo: true, k: .8 },
-  ];
-  store.putMany('campaigns', camps.map(({ k, ...c }) => c));
-  const stats = []; const leads = [];
-  const nomes = ['Ana', 'Bruno', 'Carla', 'Diego', 'Elaine', 'Fábio', 'Gabriela', 'Hugo', 'Isabela', 'João', 'Karen', 'Lucas', 'Mariana', 'Nathan', 'Olívia', 'Paulo', 'Raquel', 'Sabrina', 'Thiago', 'Yasmin'];
-  let n = 0;
-  for (let w = 8; w >= 0; w--) {
-    const ini = addDays(weekStart(t), -7 * w), fim = addDays(ini, 6) > t ? t : addDays(ini, 6);
-    camps.forEach((c, ci) => {
-      const inv = Math.round((180 + 40 * ((w + ci) % 3)) * c.k);
-      const conv = Math.round(inv / (6 + ci * 2.5));
-      stats.push({ campanhaId: c.id, anuncio: ci === 2 ? 'Formulário checklist' : (w % 2 ? 'Reels erro comum' : 'Foto real da aula'), inicio: ini, fim, investimento: inv, impressoes: inv * 95, alcance: inv * 52, cliques: Math.round(inv * (ci === 2 ? .6 : 1.4)), conversas: ci === 2 ? 0 : conv, leadsMeta: ci === 2 ? conv : 0, origem: 'demo', demo: true });
-      const nl = Math.round(conv * .7);
-      for (let i = 0; i < nl; i++) {
-        n++;
-        const ent = addDays(ini, i % 7) > t ? t : addDays(ini, i % 7);
-        const r = (n * 37) % 100;
-        const max = r < 30 ? 0 : r < 55 ? 1 : r < 72 ? 2 : r < 84 ? 3 : 4;
-        const lost = max < 4 && w > 1 && r % 3 === 0;
-        const etapa = lost ? 'perdido' : STAGES[max].id;
-        leads.push({ nome: '[Exemplo] ' + nomes[n % nomes.length] + ' ' + n, telefone: '6199' + String(1000000 + n * 7919).slice(0, 7), cursoId: c.cursoId, origem: 'Meta Ads', campanhaId: c.id, anuncio: stats[stats.length - 1].anuncio, entrada: ent, primeiraResposta: 3 + (n % 40), etapa, etapaMax: max, motivoPerda: lost ? ['Preço', 'Sem retorno', 'Horário ou turno', 'Preço'][n % 4] : '', dataPerda: lost ? addDays(ent, 3) : '', dataMatricula: etapa === 'matriculado' ? addDays(ent, 2) > t ? t : addDays(ent, 2) : '', valor: etapa === 'matriculado' ? store.get('courses', c.cursoId)?.preco || 300 : null, proximaData: !lost && max < 4 && max > 0 ? addDays(t, (n % 5) - 2) : '', proximaAcao: !lost && max > 0 && max < 4 ? 'Enviar datas da próxima turma' : '', demo: true });
-      }
-    });
-  }
-  store.putMany('adStats', stats);
-  store.putMany('leads', leads);
-  store.putMany('turmas', [{ nome: '[Exemplo] Técnico em Enfermagem · próxima turma', cursoId: pickC('enferm'), inicio: addDays(t, 20), vagas: 30, meta: 15, demo: true }]);
-  store.putMany('goals', [{ nome: '[Exemplo] 25 matrículas no mês', indicador: 'matriculas', alvo: 25, inicio: monthStart(t), fim: addDays(monthStart(addDays(monthStart(t), 32)), -1), demo: true }]);
-}
-
 export function mount(root, ctx) {
   if (store.mode === 'supabase') loadMembers(root);
   $('#cfg-import', root)?.addEventListener('change', async (e) => {
     const f = e.target.files[0]; if (!f) return;
     try {
       const data = JSON.parse(await readFileText(f));
-      if (!data || !COLLECTIONS.some((c) => Array.isArray(data[c]))) throw new Error('Arquivo não parece um backup do LICEU Intelligence.');
+      if (!data || !COLLECTIONS.some((c) => Array.isArray(data[c]))) throw new Error('Arquivo não parece um backup do FLOWCLASS Intelligence.');
       openDialog({ title: 'Restaurar backup?', saveLabel: 'Substituir tudo', html: `<p>O backup tem ${COLLECTIONS.map((c) => (data[c]?.length || 0)).reduce((a, b) => a + b, 0)} registros. Os dados atuais da unidade serão substituídos por ele.</p>`, onSave: () => { store.replaceAll(data); toast('Backup restaurado.'); ctx.refresh(); } });
     } catch (er) { toast(er.message, 'bad'); }
     e.target.value = '';
@@ -201,8 +162,7 @@ export function mount(root, ctx) {
     const a = ds.cfg;
     if (a === 'unit') unitDialog(ctx);
     if (a === 'course') courseDialog(null, ctx);
-    if (a === 'export') downloadFile('liceu-backup-' + today() + '.json', JSON.stringify({ app: 'LICEU Intelligence', exportedAt: new Date().toISOString(), ...dump() }, null, 1), 'application/json');
-    if (a === 'demo-on') { loadDemo(); toast('Dados de exemplo carregados. Remova antes de usar os números.'); ctx.refresh(); }
+    if (a === 'export') downloadFile('flowclass-backup-' + today() + '.json', JSON.stringify({ app: 'FLOWCLASS Intelligence', exportedAt: new Date().toISOString(), ...dump() }, null, 1), 'application/json');
     if (a === 'demo-off') { COLLECTIONS.forEach((c) => store.removeWhere(c, (r) => r.demo)); toast('Dados de exemplo removidos.'); ctx.refresh(); }
     if (a === 'anon') {
       if (!confirmButton(b, 'Confirmar anonimização')) return;

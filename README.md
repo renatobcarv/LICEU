@@ -1,8 +1,8 @@
-# LICEU Intelligence
+# FLOWCLASS Intelligence
 
 **Marketing e matrículas em um só lugar: do anúncio à matrícula.**
 
-O LICEU Intelligence junta, numa única plataforma, o que antes vivia espalhado entre o Gerenciador de Anúncios, o WhatsApp, uma planilha de calendário e o gerador de pautas. A coordenação de marketing vê o que funciona, o que precisa melhorar e o que fazer primeiro, com base nos números reais da unidade.
+O FLOWCLASS Intelligence junta, numa única plataforma, o que antes vivia espalhado entre o Gerenciador de Anúncios, o WhatsApp, uma planilha de calendário e o gerador de pautas. A coordenação de marketing vê o que funciona, o que precisa melhorar e o que fazer primeiro, com base nos números reais da unidade.
 
 ![Status](https://img.shields.io/badge/status-MVP%20funcional-B07A2A)
 ![Licença](https://img.shields.io/badge/licença-proprietária-2B0706)

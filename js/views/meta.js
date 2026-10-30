@@ -7,7 +7,7 @@
 
 import { store } from '../store.js';
 import { esc, $, $$, brl, brl2, num, pct, num1, parseCSV, parseNum, parseDate, norm, toCSV, fmtDate, fmtRange, uid, today, inRange, div } from '../util.js';
-import { campaignRows, mediaTotals, courseName, diagnostics, NIVEL, METRIC_KEYS, share } from '../metrics.js';
+import { overview, campaignRows, mediaTotals, courseName, diagnostics, NIVEL, METRIC_KEYS, share } from '../metrics.js';
 import { openDialog, toast, badge, ICON, readFileText, downloadFile, empty, confirmButton } from '../ui.js';
 
 let canal = '';
@@ -66,7 +66,7 @@ export function render(ctx) {
   </div>
 
   <section class="kpis compact" aria-label="Totais de mídia">
-    ${[['Valor gasto', brl2(t.investimento)], ['Resultados', num(t.resultados)], ['Custo por resultado', brl2(t.custoResultado)], ['Alcance', num(t.alcance)], ['Impressões', num(t.impressoes)], ['CPM', brl2(t.cpm)], ['CTR (link)', pct(t.ctr, 2)], [canal ? 'CAC de mídia · só ' + canal : 'CAC de mídia', brl2(t.cac)]].map(([l, v]) => `<article class="kpi"><h3>${l}</h3><p class="kpi-v">${v}</p></article>`).join('')}
+    ${[['Valor gasto', brl2(t.investimento)], ['Resultados', num(t.resultados)], ['Custo por resultado', brl2(t.custoResultado)], ['Alcance', num(t.alcance)], ['Impressões', num(t.impressoes)], ['CPM', brl2(t.cpm)], ['CTR (link)', pct(t.ctr, 2)], [canal ? 'CAC de mídia · só ' + canal : 'CAC de mídia', brl2(canal ? t.cac : overview(from, to, f).cac)]].map(([l, v]) => `<article class="kpi"><h3>${l}</h3><p class="kpi-v">${v}</p></article>`).join('')}
   </section>
 
   ${partialNotice(from, to, f)}
@@ -313,7 +313,7 @@ function editCampaign(c, ctx) {
       { name: 'orcamentoDia', label: 'Orçamento por dia (R$)', type: 'number', value: c?.orcamentoDia },
       { name: 'veiculacao', label: 'Veiculação', type: 'select', options: ['', ...VEIC_LABELS], value: c?.veiculacao || '' },
       { name: 'status', label: 'Situação no painel', type: 'select', options: ['Ativa', 'Pausada', 'Encerrada'], value: c?.status || 'Ativa' },
-      { name: 'publico', label: 'Público', value: c?.publico, placeholder: 'ex.: mulheres 25-45, 15 km de Valparaíso' },
+      { name: 'publico', label: 'Público', value: c?.publico, placeholder: 'ex.: mulheres 25-45, 15 km da escola' },
       { name: 'oferta', label: 'Oferta', value: c?.oferta, placeholder: 'ex.: matrícula grátis até sexta', full: true },
       sec('Metas da campanha'),
       { name: 'metaMatriculas', label: 'Meta de matrículas', type: 'number', value: c?.metaMatriculas },

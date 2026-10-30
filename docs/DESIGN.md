@@ -1,12 +1,12 @@
-# Design do LICEU Intelligence
+# Design do FLOWCLASS Intelligence
 
-O app segue a estrutura do modelo **Gateway System**, um design system de painel de pagamentos, com a identidade do LICEU: ouro como cor de marca, fonte Fustat e o logotipo da coluna. Tudo está em `css/app.css`. Este guia é a regra para qualquer tela ou componente novo.
+O app segue a estrutura do modelo **Gateway System**, um design system de painel de pagamentos, com a identidade **FLOWCLASS** (Tech Premium): grafite profundo, branco e verde-lima. O grafite sustenta a identidade; o lima chama atenção para o que importa e nunca é fundo predominante. Logotipo em `assets/flowclass-logo.png` (símbolo: `assets/flowclass-mark.png`). Tudo está em `css/app.css`. Este guia é a regra para qualquer tela ou componente novo.
 
 Referência visual: https://claude.ai/artifact/8EZK22DY94scZVebE8dTmk
 
 ## Princípios
 
-1. **Ouro é ação e dinheiro.** `--primary` aparece só no botão principal, no item ativo do menu, em valores de dinheiro em destaque e nos gráficos. Se tudo é dourado, nada se destaca.
+1. **Lima é assinatura.** `--primary` (Flow Lime) aparece só no botão principal, no item ativo do menu, em dados que importam e nos gráficos. Se tudo é lima, nada se destaca.
 2. **Hierarquia por luz, nunca por sombra.** As camadas são `--background` → `--card` → `--surface` → `--muted`, com borda de 1px (`--border`). Não existe `box-shadow` no sistema.
 3. **Uma ação principal por tela** (`.btn.primary`), no topo à direita do conteúdo. As outras ações usam `.btn` (contorno) ou `.btn.ghost`.
 4. **O raio segue o tamanho:**
@@ -28,7 +28,7 @@ Referência visual: https://claude.ai/artifact/8EZK22DY94scZVebE8dTmk
 Sidebar (card, raio 32, 264px)   │  Breadcrumb (kicker /) e título 24/600 · filtros de período e curso
   Logo                           │  ┌ Card mestre <main> (card, raio 32, padding 24) ─────────────┐
   Grupos do menu                 │  │ [abas sublinhadas ou filtros em pílula]      [ação primária] │
-  Item ativo = bloco ouro sólido │  │ KPIs                                                        │
+  Item ativo = bloco lima sólido │  │ KPIs                                                        │
   Unidade · status               │  │ Cards internos (borda 1px, raio 16) · tabelas · estado vazio │
                                  │  └─────────────────────────────────────────────────────────────┘
 ```
@@ -39,22 +39,22 @@ Cada view devolve só o conteúdo do card mestre. A casca (`index.html` e `js/ap
 
 | Token | Valor | Uso |
 | --- | --- | --- |
-| `--background` | #0d0f12 | Fundo da aplicação; colunas do Kanban |
-| `--card` | #1a1d24 | Sidebar, card mestre, diálogos, cartões de lead |
-| `--surface` | #21252e | Inputs, painéis internos, estado vazio |
-| `--muted` | #272c37 | Hover, badge neutro, trilho de barras. **É fundo, não texto** |
-| `--border` | #333947 | Toda borda (1px) |
-| `--foreground` | #f4f5f7 | Texto principal |
-| `--heading` / `--heading-strong` | #f1ece2 / #fff | Títulos / valores e aba ativa |
-| `--muted-foreground` | #a3acba | Rótulos, menu inativo, texto de apoio |
-| `--subtle-foreground` | #8b95a6 | Metadados, placeholders |
-| `--primary` | #e3b35f | Marca: CTA, item ativo, gráficos |
-| `--primary-foreground` | #241a06 | Texto sobre o ouro |
-| `--brand-deep` | #f0c677 | Links, filtro ativo, acento secundário |
-| `--success` / `--delta-positive` | #5fd38a / #7bd44a | Ganho, meta atingida, variação boa |
+| `--background` | #101214 Graphite Black | Fundo da aplicação e identidade; colunas do Kanban |
+| `--card` | #1a1d20 | Sidebar, card mestre, diálogos |
+| `--surface` | #252a2e Carbon Gray | Inputs, painéis internos, estado vazio |
+| `--muted` | #2e3439 | Hover, badge neutro, trilho de barras. **É fundo, não texto** |
+| `--border` | #353c41 | Toda borda (1px) |
+| `--foreground` / `--heading-strong` | #ffffff Pure White | Texto principal, valores, aba ativa |
+| `--muted-foreground` | #a7b0b5 Steel Gray | Rótulos, menu inativo, texto de apoio |
+| `--subtle-foreground` | #8f989e | Metadados, placeholders |
+| `--primary` | #c4f15a Flow Lime | Assinatura: CTA, item ativo, gráficos |
+| `--primary-foreground` | #101214 | Texto sobre o lima |
+| `--brand-deep` | #d6f78a | Links, filtro ativo |
+| `--soft-lime` | #eaf4d5 Soft Lime | Fundos suaves e selecionados (tema claro) |
+| `--success` / `--delta-positive` | #6fe0a0 / #c4f15a | Ganho, meta atingida, variação boa |
 | `--destructive` | #ff6b5e | Erro, perda, variação ruim |
-| `--*-subtle` + `--*-foreground` | | Fundo e texto de badges e avisos (success, warning, destructive, info) |
-| `--chart-1..4` | ouro, laranja, verde, cinza | Séries de gráfico, nessa ordem |
+| `--*-subtle` + `--*-foreground` | | Fundo e texto de badges e avisos |
+| `--chart-1..4` | lima, azul, verde, aço | Séries de gráfico, nessa ordem |
 
 A escala de espaço é `--space-1/2/3/4/6/8` (4 a 32px). A de raio é `--radius-sm/md/lg/xl/2xl/pill`. As transições são `--t-fast` (150ms, abas e bordas) e `--t-base` (300ms, botões), e só mudam cor e borda: nada de deslizar, quicar ou girar.
 
@@ -62,7 +62,7 @@ O tema claro já existe só como troca de tokens (`<html data-theme="light">`). 
 
 ## Tipografia
 
-Uma família só: **Fustat** (Google Fonts). Cinzel fica só no logotipo e Geist Mono só no briefing da Pauta.
+Uma família só: **Fustat** (Google Fonts). O logotipo é imagem; Geist Mono só no briefing da Pauta.
 
 | Estilo | Tamanho/linha | Peso |
 | --- | --- | --- |
@@ -81,8 +81,8 @@ Não use `font-variant-numeric: tabular-nums`: na Fustat esse recurso também al
 | --- | --- | --- |
 | Botão | `.btn`, `.btn.primary`, `.btn.sm`, `.btn.ghost`, `.btn.danger`, `.btn.win` | Pílula de 48px (36 no `.sm`). Só um `.primary` por tela |
 | Botão de ícone | `.icon-btn`, `.icon-btn.sm` | Redondo, com borda |
-| Abas | `.tabs` > `.tab[aria-selected]` | Sublinhadas; a ativa tem sublinhado ouro de 2px |
-| Filtro | `.chip`, `.seg-b`, `.pipe-tab`, `.chip-radio` | Pílula de 38px; a ativa usa ouro a 12% e texto `--brand-deep` |
+| Abas | `.tabs` > `.tab[aria-selected]` | Sublinhadas; a ativa tem sublinhado lima de 2px |
+| Filtro | `.chip`, `.seg-b`, `.pipe-tab`, `.chip-radio` | Pílula de 38px; a ativa usa lima a 12% e texto `--brand-deep` |
 | Badge | `.badge` + `.good` `.bad` `.warn` `.info` | Mini pílula semântica |
 | Card | `.card` + `.card-head` | Borda de 1px, raio 16, sem fundo próprio |
 | KPI | `.kpis` > `.kpi` > `h3` + `.kpi-v` + `.kpi-d` | `.kpis.compact` para fileiras de 4 a 8 |
@@ -103,7 +103,7 @@ São de linha, com 18px e traço de 1,6, na cor do texto (estilo Lucide), e fica
 
 ## Checklist de tela nova
 
-- [ ] Só um `.btn.primary`, e o ouro aparece só em ação, valor ou gráfico.
+- [ ] Só um `.btn.primary`, e o lima aparece só em ação, dado importante ou gráfico.
 - [ ] Nenhum `box-shadow` e nenhuma cor literal: só tokens.
 - [ ] Texto com contraste de pelo menos 4,5:1 (`--subtle-foreground` é o mínimo para texto).
 - [ ] Estado vazio que orienta, nunca "0/0" ou "—" sozinho.

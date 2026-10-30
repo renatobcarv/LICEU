@@ -105,7 +105,7 @@ function render() {
     h.innerHTML = titleHTML(view.title || [view.label]);
     h.setAttribute('aria-label', view.label);
     h.classList.remove('enter-title'); void h.offsetWidth; h.classList.add('enter-title');
-    $('#view-kicker').textContent = view.kicker || 'LICEU Intelligence';
+    $('#view-kicker').textContent = view.kicker || 'FLOWCLASS Intelligence';
   }
   document.title = view.label + ' · ' + PRODUCT;
   $('#filters').hidden = !!view.noPeriod;
@@ -141,7 +141,7 @@ function renderFilters() {
 
 function renderStatus() {
   const s = settings();
-  $('#unit-name').textContent = store.mode === 'supabase' ? auth.org?.nome || s.unidade : s.unidade;
+  $('#unit-name').textContent = (store.mode === 'supabase' ? auth.org?.nome || s.unidade : s.unidade) || 'Sua escola';
   const el = $('#store-status');
   const MSG = {
     supabase: ['Dados na nuvem da unidade', 'Salvos no Supabase. Toda a equipe vê as mesmas informações em tempo real.'],
@@ -161,7 +161,7 @@ function renderStatus() {
 function shell() {
   const groups = [...new Set(VIEWS.map((v) => v.group))];
   $('#nav').innerHTML = groups.map((g) => `<p class="nav-group">${esc(g)}</p>` + VIEWS.filter((v) => v.group === g).map((v) => `<a href="#${v.id}" data-view="${v.id}"><span class="ni">${ICON[v.id]}</span><span>${esc(v.label)}</span></a>`).join('')).join('');
-  $('#brand').innerHTML = LOGO_MARK + '<span class="brand-text"><span class="wordmark">LICEU</span><span class="brand-sub">Intelligence</span></span>';
+  $('#brand').innerHTML = '<span class="brand-text">' + LOGO_MARK + '<span class="brand-sub">Intelligence</span></span>';
   $('#menu-btn').innerHTML = ICON.menu;
   $('#menu-btn').addEventListener('click', () => $('#app').classList.toggle('nav-open'));
   $('#scrim').addEventListener('click', () => $('#app').classList.remove('nav-open'));
@@ -195,7 +195,7 @@ async function boot() {
   if (canWrite) ['i_preco', 'i_bot', 'i_form'].forEach((id) => { const i = store.get('ideas', id); if (i && i.status === 'Ideia' && !i.resultado && !i.indicador) store.remove('ideas', id); });
   const seeded = canWrite ? await seedIfEmpty() : false;
   render();
-  if (seeded) toast('Unidade pronta. Carregamos os cursos e o calendário de setembro da planilha.');
+  if (seeded) toast('Tudo pronto. Comece cadastrando seus cursos em Configurações.');
   if (session && auth.member?.role === 'leitura') toast('Você tem acesso só de leitura.', 'warn');
 }
 

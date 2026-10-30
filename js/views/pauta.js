@@ -77,7 +77,7 @@ function form() {
       <fieldset><label class="lbl" for="p-ideia"><span class="n">04</span>A ideia, do seu jeito</label><p class="hint">Pode ser crua. Ex.: "mostrar o erro que todo mundo comete quando alguém desmaia".</p><textarea id="p-ideia" name="ideia" rows="3">${esc(draft.ideia)}</textarea></fieldset>
       <fieldset id="motionBox" class="motion"${draft.formato === 'Vídeo motion' ? '' : ' hidden'}>
         <legend><span class="n">M</span>Detalhes do vídeo motion</legend>
-        <p class="hint">O briefing chama a skill /tecmais-reel-motion: história do dia a dia em que o curso decide o final, sem terror nem milagre.</p>
+        <p class="hint">O briefing pede uma história do dia a dia em que o curso decide o final, sem terror nem milagre.</p>
         <span class="sublbl">Onde a história acontece</span>${radios('cenario', CENARIOS)}
         <label class="sublbl" for="p-erro">O erro que a história derruba</label><input type="text" id="p-erro" name="erro" value="${esc(draft.erro)}" placeholder="Ex.: achar que a pessoa caída tá respirando">
         <label class="sublbl" for="p-prot">Protagonista (opcional)</label><input type="text" id="p-prot" name="protagonista" value="${esc(draft.protagonista)}" placeholder="Ex.: motorista de app, boné e relógio verde">

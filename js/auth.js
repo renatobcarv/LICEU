@@ -15,7 +15,7 @@ export function supabaseConfigured() {
   return !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase?.createClient);
 }
 
-const LOGO = `<div class="auth-logo">${LOGO_MARK}<span class="wordmark">LICEU</span></div>`;
+const LOGO = `<div class="auth-logo">${LOGO_MARK}<span class="brand-sub">Intelligence</span></div>`;
 
 function screen(inner) {
   const root = $('#auth');
@@ -155,7 +155,7 @@ function onboardingView(resolve) {
     <h1>Sua <em>unidade</em></h1>
     <p class="muted">Crie a unidade (você vira administrador) ou entre na equipe com o código que o coordenador passou.</p>
     <form id="o-create" class="auth-form" novalidate>
-      <div class="field"><label for="o-nome">Nome da unidade</label><input id="o-nome" value="TEC Mais · Valparaíso de Goiás" required></div>
+      <div class="field"><label for="o-nome">Nome da unidade</label><input id="o-nome" value="" placeholder="ex.: Escola Exemplo · Centro" required></div>
       <button class="btn primary block" type="submit">Criar unidade</button>
     </form>
     <div class="auth-sep"><span>ou</span></div>

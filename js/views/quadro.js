@@ -12,7 +12,7 @@ export const autoRefresh = false; // o quadro se redesenha sozinho; mudanças de
 
 const BOARD_KEY = 'liceu.quadro.atual';
 const CORES = ['neutro', 'ouro', 'laranja', 'verde', 'vermelho'];
-const CORES_NOME = { neutro: 'Neutra', ouro: 'Ouro', laranja: 'Laranja', verde: 'Verde', vermelho: 'Vermelho' };
+const CORES_NOME = { neutro: 'Neutra', ouro: 'Lima', laranja: 'Azul', verde: 'Verde', vermelho: 'Vermelho' };
 const ZMIN = 0.3, ZMAX = 2;
 
 let boardId = (() => { try { return localStorage.getItem(BOARD_KEY) || ''; } catch (e) { return ''; } })();
