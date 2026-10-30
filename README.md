@@ -43,7 +43,7 @@ Detalhes de como os dois artefatos originais foram unidos e por quê: [docs/ARQU
 
 | Camada | Escolha | Por quê |
 |---|---|---|
-| Interface | HTML, CSS e JavaScript puro (módulos ES), visual Noir | Sem etapa de build pesada; abre direto no navegador; fácil de manter |
+| Interface | HTML, CSS e JavaScript puro (módulos ES), design system Gateway (veja docs/DESIGN.md) | Sem etapa de build pesada; abre direto no navegador; fácil de manter |
 | Banco e login | [Supabase](https://supabase.com) (Postgres + Auth + Realtime) | Login pronto, regras de acesso por unidade no próprio banco (RLS) e atualização em tempo real |
 | Hospedagem | [Vercel](https://vercel.com) | Deploy a cada push no GitHub, HTTPS e cabeçalhos de segurança |
 
@@ -55,7 +55,7 @@ Com `js/config.js` vazio, o app roda em **modo de teste**: sem login, com os dad
 index.html            casca do app
 termos.html           Termos de Uso
 privacidade.html      Política de Privacidade (LGPD)
-css/app.css           visual Noir
+css/app.css           design system (tokens e componentes; regras em docs/DESIGN.md)
 js/app.js             navegação, filtros e inicialização
 js/auth.js            cadastro, login, recuperação de senha e unidade
 js/store.js           dados (Supabase, navegador ou claude.ai, mesma interface)
