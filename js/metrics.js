@@ -234,6 +234,13 @@ export function overview(from, to, f = {}) {
 }
 
 export function prevPeriod(from, to) {
+  // Trimestre fechado (jan–mar, abr–jun…): compara com o trimestre anterior, até o mesmo dia se estiver em andamento.
+  const qStart = (d) => d.slice(0, 5) + String(Math.floor((Number(d.slice(5, 7)) - 1) / 3) * 3 + 1).padStart(2, '0') + '-01';
+  if (from === qStart(from) && to === monthEnd(addDays(qStart(from), 62))) {
+    const pf = qStart(addDays(from, -1)); const pt = addDays(from, -1); const tt = today();
+    if (tt >= from && tt <= to) { const n = daysBetween(from, tt); const lim = addDays(pf, n); return { from: pf, to: lim < pt ? lim : pt }; }
+    return { from: pf, to: pt };
+  }
   // Mês fechado compara com o mês anterior inteiro (outubro x setembro), não com 31 dias corridos.
   if (from === monthStart(from) && to === monthEnd(from)) {
     const p = addDays(from, -1); const ps = monthStart(p);
@@ -282,6 +289,7 @@ export const GRUPOS_META = [
 ];
 export const INDICATORS = [
   { id: 'matriculas', label: 'Matrículas', grupo: 'comercial', tipo: 'contagem', dir: 'up', fmt: num, unidade: 'matrículas', pergunta: 'Quantas matrículas?', calc: (a, b, f) => salesStats(a, b, f).matriculas },
+  { id: 'matriculasPagas', label: 'Matrículas pagas', grupo: 'comercial', tipo: 'contagem', dir: 'up', fmt: num, unidade: 'matrículas pagas', pergunta: 'Quantas matrículas pagas?', calc: (a, b, f) => matriculasDash(a, b, f, { leve: true }).pagas },
   { id: 'leads', label: 'Leads no WhatsApp', grupo: 'comercial', tipo: 'contagem', dir: 'up', fmt: num, unidade: 'leads', pergunta: 'Quantos leads novos?', calc: (a, b, f) => salesStats(a, b, f).leads },
   { id: 'receita', label: 'Receita de matrículas', grupo: 'comercial', tipo: 'contagem', dir: 'up', fmt: brl, unidade: 'R$', pergunta: 'Quanto em matrículas (R$)?', calc: (a, b, f) => salesStats(a, b, f).receita },
   { id: 'convLead', label: 'Conversão lead → matrícula', grupo: 'comercial', tipo: 'taxa', dir: 'up', fmt: pct, pctInput: true, unidade: '%', pergunta: 'Qual a conversão mínima (%)?', base: (a, b, f) => { const s = salesStats(a, b, f); return s.matriculas + ' matrículas de ' + s.leads + ' leads'; }, calc: (a, b, f) => salesStats(a, b, f).convLead },
@@ -485,4 +493,102 @@ export function measureTest(i) {
   // Meta de melhoria 0 (ex.: escalar verba mantendo o CAC) vale quando não piorou.
   const reached = delta === null ? null : alvo === 0 ? (ind.dir === 'up' ? delta >= 0 : delta <= 0) : improved && Math.abs(delta) * 100 >= alvo;
   return { ind, cur, base, delta, improved, reached, dias: n, baseDe: pa, baseAte: pb, ate: b, restante: i.fimTeste ? daysBetween(t, i.fimTeste) : null };
+}
+
+
+// ---------- Matrículas: visão geral (captação e matrículas pagas) ----------
+// Paga = matriculado com pagamento Pago ou Parcial (já pagou algo). Reserva = matriculado com pagamento Pendente.
+// Origem paga = ligada a campanha ou com origem Meta Ads/Google.
+export const isPaga = (l) => l.etapa === 'matriculado' && l.statusPagamento !== 'Pendente';
+export const isReserva = (l) => l.etapa === 'matriculado' && l.statusPagamento === 'Pendente';
+export const dataPag = (l) => l.dataPagamento || l.dataMatricula;
+const origemPaga = (l) => !!l.campanhaId || ['Meta Ads', 'Google'].includes(l.origem);
+export const ORIGEM_BALDE = (o) => (o === 'Meta Ads' ? 'Meta Ads' : o === 'Google' ? 'Google' : o === 'Indicação' ? 'Indicação' : ['Instagram orgânico', 'Site', 'Passante / balcão'].includes(o) ? 'Orgânico' : 'Outros');
+const arrecadadoDe = (l) => (l.taxaMatricula != null && l.taxaMatricula !== '' ? Number(l.taxaMatricula) || 0 : l.statusPagamento === 'Parcial' ? Number(l.valorPago) || 0 : l.mensalidade ? 0 : Number(l.valor) || 0);
+const contratadaDe = (l) => {
+  if (l.mensalidade) return (Number(l.mensalidade) || 0) * Math.max(0, (Number(l.parcelasTotal) || Number(l.parcelas) || 0) - (Number(l.parcelasPagas) || 0));
+  return Math.max(0, (Number(l.valor) || 0) - arrecadadoDe(l));
+};
+
+function dashCore(from, to, f) {
+  const all = store.all('leads').filter((l) => !f.cursoId || l.cursoId === f.cursoId);
+  const pagasL = all.filter((l) => isPaga(l) && inRange(dataPag(l), from, to));
+  const ex = extraMatriculas(from, to, f);
+  const entrou = all.filter((l) => inRange(l.entrada, from, to));
+  return { all, pagasL, ex, entrou, pagas: pagasL.length + ex.n };
+}
+
+export function matriculasDash(from, to, f = {}, { leve = false } = {}) {
+  const c = dashCore(from, to, f);
+  if (leve) return { pagas: c.pagas };
+  const P = prevPeriod(from, to);
+  const cp = dashCore(P.from, P.to, f);
+  const o = overview(from, to, f), op = overview(P.from, P.to, f);
+  const t = today();
+  // meta: "Matrículas pagas" ou "Matrículas" que cubra o período
+  // Meta: a que cobre o período inteiro; senão, a soma das metas que estão dentro dele (ex.: 3 metas mensais no trimestre).
+  const metas = store.all('goals').filter((g) => ['matriculasPagas', 'matriculas'].includes(g.indicador) && (!f.cursoId || !g.cursoId || g.cursoId === f.cursoId) && !g.cursoId === !f.cursoId);
+  const pref = (arr) => { const pg = arr.filter((g) => g.indicador === 'matriculasPagas'); return pg.length ? pg : arr; };
+  const cobre = pref(metas.filter((g) => g.inicio <= from && g.fim >= to))[0];
+  const dentro = pref(metas.filter((g) => g.inicio >= from && g.fim <= to));
+  const metaAlvo = cobre ? Number(cobre.alvo) : dentro.length ? sum(dentro, (g) => g.alvo) : null;
+  const goal = cobre || (dentro.length ? { nome: dentro.map((g) => g.nome).join(' + ') } : null);
+  const total = daysBetween(from, to) + 1;
+  const passados = t < from ? 0 : Math.min(total, daysBetween(from, t) + 1);
+  const arrecadado = sum(c.pagasL, arrecadadoDe) + c.ex.valor, arrecadadoP = sum(cp.pagasL, arrecadadoDe) + cp.ex.valor;
+  const contratada = sum(c.pagasL, contratadaDe), contratadaP = sum(cp.pagasL, contratadaDe);
+  const pagasMidia = c.pagasL.filter(origemPaga).length + c.ex.n, pagasMidiaP = cp.pagasL.filter(origemPaga).length + cp.ex.n;
+  const dias = c.pagasL.filter((l) => l.entrada).map((l) => daysBetween(l.entrada, dataPag(l))).filter((d) => d >= 0);
+  const diasP = cp.pagasL.filter((l) => l.entrada).map((l) => daysBetween(l.entrada, dataPag(l))).filter((d) => d >= 0);
+  const kpi = {
+    pagas: c.pagas, pagasP: cp.pagas,
+    meta: metaAlvo, metaPct: metaAlvo ? c.pagas / metaAlvo : null, metaNome: goal?.nome || '', tempo: total ? passados / total : 1,
+    arrecadado, arrecadadoP, contratada, contratadaP,
+    investido: o.investimento, investidoP: op.investimento,
+    cpm: pagasMidia && o.investimento ? o.investimento / pagasMidia : null, cpmP: pagasMidiaP && op.investimento ? op.investimento / pagasMidiaP : null,
+    roi: o.investimento ? contratada / o.investimento : null, roiP: op.investimento ? contratadaP / op.investimento : null,
+    conv: c.entrou.length ? c.pagas / c.entrou.length : null, convP: cp.entrou.length ? cp.pagas / cp.entrou.length : null,
+    leads: c.entrou.length, leadsP: cp.entrou.length,
+    tempoFechar: dias.length ? sum(dias) / dias.length : null, tempoFecharP: diasP.length ? sum(diasP) / diasP.length : null,
+    pagasMidia,
+  };
+  // evolução: por dia até 45 dias, depois por semana
+  const porSemana = total > 45;
+  const serie = [];
+  if (porSemana) { let w = weekStart(from); while (w <= to) { const a = w < from ? from : w, b = addDays(w, 6) > to ? to : addDays(w, 6); serie.push({ label: fmtDate(a), de: a, ate: b, v: c.pagasL.filter((l) => inRange(dataPag(l), a, b)).length, futuro: a > t }); w = addDays(w, 7); } }
+  else { for (let d = from; d <= to; d = addDays(d, 1)) serie.push({ label: fmtDate(d), de: d, ate: d, v: c.pagasL.filter((l) => dataPag(l) === d).length, futuro: d > t }); }
+  // funil (coorte de quem entrou no período)
+  const coorte = c.entrou;
+  const funil = [
+    { label: 'Leads', n: coorte.length },
+    { label: 'Atendidos', n: coorte.filter((l) => reached(l) >= 1 || l.visitouEm || l.etapa === 'matriculado').length },
+    { label: 'Visitaram', n: coorte.filter((l) => l.visitouEm || l.etapa === 'matriculado').length },
+    { label: 'Matrícula paga', n: coorte.filter(isPaga).length },
+  ];
+  // turmas
+  const turmas = store.all('turmas').filter((tm) => (!f.cursoId || tm.cursoId === f.cursoId) && Number(tm.vagas) > 0 && !['Concluída', 'Cancelada'].includes(tm.status) && (!tm.fim || tm.fim >= t)).map((tm) => {
+    const n = c.all.filter((l) => l.turmaId === tm.id && l.etapa === 'matriculado').length;
+    return { tm, n, vagas: Number(tm.vagas), ocup: n / Number(tm.vagas) };
+  }).sort((a, b) => (a.tm.inicio || '').localeCompare(b.tm.inicio || ''));
+  // consultores
+  const cons = {};
+  const add = (nome) => cons[nome] || (cons[nome] = { nome, pagas: 0, leads: 0, valor: 0 });
+  c.entrou.forEach((l) => { add(l.responsavel || 'Sem consultor').leads++; });
+  c.pagasL.forEach((l) => { const x = add(l.responsavel || 'Sem consultor'); x.pagas++; x.valor += Number(l.valor) || 0; });
+  const consultores = Object.values(cons).map((x) => ({ ...x, conv: x.leads ? x.pagas / x.leads : null })).filter((x) => x.pagas || x.leads).sort((a, b) => b.pagas - a.pagas || b.leads - a.leads);
+  // origem e forma de pagamento
+  const origem = { 'Meta Ads': 0, Google: 0, 'Indicação': 0, 'Orgânico': 0, Outros: 0 };
+  c.pagasL.forEach((l) => { origem[ORIGEM_BALDE(l.origem)]++; });
+  origem['Meta Ads'] += c.ex.n;
+  const formas = {};
+  c.pagasL.forEach((l) => { const k = /pix/i.test(l.formaPagamento || '') ? 'Pix' : /cart/i.test(l.formaPagamento || '') ? 'Cartão' : /boleto/i.test(l.formaPagamento || '') ? 'Boleto' : l.formaPagamento ? 'Outros' : 'Não informado'; formas[k] = (formas[k] || 0) + 1; });
+  // alertas
+  const reservas = c.all.filter((l) => isReserva(l) && l.dataMatricula && daysBetween(l.dataMatricula, t) > 3);
+  const cheias = turmas.filter((x) => x.ocup >= 0.9), vazias = turmas.filter((x) => x.ocup < 0.4);
+  const alertas = [];
+  if (reservas.length) alertas.push({ nivel: 'bad', titulo: `${reservas.length} reserva${reservas.length > 1 ? 's' : ''} sem pagamento há mais de 3 dias`, texto: 'Mande o lembrete com o Pix do sinal hoje. Reserva parada esfria.', href: '#matriculas?st=Pendente&todos=1', acao: 'Ver reservas', lista: reservas.slice(0, 5).map((l) => l.nome) });
+  cheias.forEach((x) => alertas.push({ nivel: 'warn', titulo: `${x.tm.nome}: ${Math.round(x.ocup * 100)}% ocupada`, texto: 'Abra lista de espera e já planeje a próxima turma.', href: '#matriculas?turma=' + encodeURIComponent(x.tm.id), acao: 'Abrir turma' }));
+  vazias.forEach((x) => alertas.push({ nivel: 'info', titulo: `${x.tm.nome}: só ${Math.round(x.ocup * 100)}% ocupada`, texto: 'Reforce a divulgação: planeje uma campanha para esta turma.', href: '#matriculas?turma=' + encodeURIComponent(x.tm.id), acao: 'Abrir turma' }));
+  if (metaAlvo && kpi.tempo > 0.5 && kpi.metaPct < 0.5 && t <= to) alertas.push({ nivel: 'bad', titulo: `Meta em ${Math.round(kpi.metaPct * 100)}% com ${Math.round(kpi.tempo * 100)}% do período passado`, texto: `Faltam ${metaAlvo - c.pagas} matrículas pagas. Priorize reservas pendentes e leads em negociação.`, href: '#funil', acao: 'Abrir funil' });
+  return { kpi, serie, porSemana, funil, turmas, consultores, origem, formas, alertas, reservas, periodo: { from, to, prev: P } };
 }

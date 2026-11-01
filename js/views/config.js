@@ -7,6 +7,7 @@ import { openDialog, toast, downloadFile, readFileText, ICON, confirmButton, cop
 import { auth, roleLabel, signOut, switchOrg } from '../auth.js';
 import { TERMS_VERSION } from '../brand.js';
 import { productDialog, pipeDialog, pipelines, leadPipeId } from '../leads.js';
+import { loadTestData } from '../demoData.js';
 import { courseName } from '../metrics.js';
 
 
@@ -39,6 +40,11 @@ export function render() {
   </section>
 
   <section class="card">
+    <header class="card-head"><div><h2>Consultores</h2><p class="muted">Quem atende e fecha matrículas. Aparecem como responsável no Funil e no ranking da Visão geral</p></div><button class="btn sm" data-cfg="consultor">${ICON.plus} Novo consultor</button></header>
+    ${(s.consultores || []).length ? `<ul class="todo">${s.consultores.map((c, i) => `<li><span><b>${esc(c.nome)}</b><small>${c.ativo === false ? 'inativo' : 'ativo'}</small></span><span class="row-actions"><button class="btn sm ghost" data-constog="${i}">${c.ativo === false ? 'Ativar' : 'Desativar'}</button><button class="icon-btn sm" data-consrm="${i}" aria-label="Remover">×</button></span></li>`).join('')}</ul>` : '<p class="empty-sm">Nenhum consultor cadastrado. O responsável do lead também pode ser digitado livre.</p>'}
+  </section>
+
+  <section class="card">
     <header class="card-head"><div><h2>Produtos</h2><p class="muted">O que você vende. No ganho, o produto preenche curso, valor e pagamento</p></div><button class="btn sm" data-cfg="product">${ICON.plus} Novo produto</button></header>
     ${store.all('products').length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>Produto</th><th>Curso</th><th class="r">Valor</th><th>Condição</th><th>Situação</th><th></th></tr></thead><tbody>${store.all('products').sort((a, b) => a.nome.localeCompare(b.nome)).map((p) => `<tr><td>${esc(p.nome)}</td><td>${esc(p.cursoId ? courseName(p.cursoId) : '—')}</td><td class="r">${p.valor ? brl(p.valor) : '—'}</td><td>${esc([p.formaPagamento, p.parcelas ? p.parcelas + 'x' : ''].filter(Boolean).join(' · ') || '—')}</td><td>${p.ativo === false ? 'Fora de venda' : 'À venda'}</td><td class="r"><button class="btn sm" data-product="${esc(p.id)}">Editar</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="empty-sm">Nenhum produto. Crie um por curso, com valor e condição (ex.: "Injetáveis · 6x no cartão").</p>'}
   </section>
@@ -55,7 +61,7 @@ export function render() {
     <div class="row-actions">
       <button class="btn" data-cfg="export">${ICON.download} Exportar backup (JSON)</button>
       ${isAdmin ? `<label class="btn" for="cfg-import">${ICON.upload} Restaurar backup</label><input type="file" id="cfg-import" accept=".json,application/json" class="sr">` : ''}
-      ${hasDemo ? '<button class="btn" data-cfg="demo-off">Remover dados de exemplo antigos</button>' : ''}
+      ${hasDemo ? '<button class="btn danger" data-cfg="demo-off">Remover dados de teste</button>' : '<button class="btn" data-cfg="demo-test">Carregar dados de teste (3 meses)</button>'}
     </div>
   </section>
 
@@ -158,6 +164,9 @@ export function mount(root, ctx) {
     if (ds.product) return productDialog(store.get('products', ds.product), ctx);
     if (ds.pipeEdit) return pipeDialog(pipelines().find((p) => p.id === ds.pipeEdit), ctx);
     if (ds.cfg === 'product') return productDialog(null, ctx);
+    if (ds.cfg === 'consultor') return openDialog({ title: 'Novo consultor', saveLabel: 'Adicionar', fields: [{ name: 'nome', label: 'Nome', required: true, full: true }], onSave: (d) => { const st = store.settings(); store.put('settings', { ...st, id: 'main', consultores: [...(st.consultores || []), { nome: d.nome, ativo: true }] }); ctx.refresh(); } });
+    if (ds.constog !== undefined || ds.consrm !== undefined) { const st = store.settings(); const list = [...(st.consultores || [])]; if (ds.consrm !== undefined) list.splice(+ds.consrm, 1); else list[+ds.constog] = { ...list[+ds.constog], ativo: list[+ds.constog].ativo === false }; store.put('settings', { ...st, id: 'main', consultores: list }); return ctx.refresh(); }
+    if (ds.cfg === 'demo-test') { const r = loadTestData(); toast(`Dados de teste: ${r.leads} leads e ${r.matriculas} matrículas em 3 meses. Remova antes de usar de verdade.`); return ctx.refresh(); }
     if (ds.cfg === 'pipe') return pipeDialog(null, ctx);
     const a = ds.cfg;
     if (a === 'unit') unitDialog(ctx);

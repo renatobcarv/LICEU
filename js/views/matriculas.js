@@ -7,26 +7,52 @@ import { courseName, campaignName, goalProgress, extraMatriculas } from '../metr
 import { openDialog, toast, ICON, meter, empty, downloadFile, badge } from '../ui.js';
 import { matriculaDialog, recebido, courseOpts, PAG_STATUS } from '../leads.js';
 import { importDialog as importNegocios } from '../importNegocios.js';
+import { matriculasDash } from '../metrics.js';
+import * as SEC from './mat/secoes.js';
+import { auth } from '../auth.js';
 import { listHTML as turmasList, editorOpen, editorHTML, editorMount, editing, editingId, pageHTML, pageMount } from '../turmas.js';
 
-let tab = 'lista';
+let tab = 'visao';
 let q = '';
 let fStatus = '';
 
 const isMat = (l) => l.etapa === 'matriculado';
+
+// ---------- Visão geral ----------
+const PERIODOS = [['semana', 'Semana'], ['mes', 'Mês'], ['trimestre', 'Trimestre'], ['custom', 'Personalizado']];
+function visao(ctx) {
+  const d = matriculasDash(ctx.from, ctx.to, ctx.f);
+  const vazio = !store.all('leads').length && !store.all('turmas').length;
+  return `<div class="toolbar"><div class="tabs" role="tablist">${[['visao', 'Visão geral'], ['lista', 'Matriculados'], ['cursos', 'Por curso'], ['turmas', 'Turmas']].map(([id, l]) => `<button type="button" role="tab" class="tab" data-tab="${id}" aria-selected="${tab === id}">${l}</button>`).join('')}</div><span class="grow"></span>
+      <button class="btn sm" data-act="importar">${ICON.upload} Importar planilha</button><button class="btn sm primary" data-act="new">${ICON.plus} Registrar matrícula</button></div>
+    <div class="period-bar"><div class="seg" role="group" aria-label="Período">${PERIODOS.map(([id, l]) => `<button type="button" class="seg-b" data-preset="${id}" aria-pressed="${ctx.preset === id}">${l}</button>`).join('')}</div>
+      <span class="muted">${fmtDate(ctx.from)} a ${fmtDate(ctx.to)} · comparado com ${fmtDate(d.periodo.prev.from)} a ${fmtDate(d.periodo.prev.to)}</span></div>
+    ${vazio ? '<div class="empty"><h3>Comece registrando matrículas</h3><p>Cadastre as turmas, registre os leads no Funil e marque o pagamento de cada matrícula. Ou importe a planilha do seu CRM. Para testar, use "Carregar dados de teste" em Configurações.</p></div>' : ''}
+    ${SEC.kpis(d)}
+    <div class="grid-2">${SEC.evolucao(d)}${SEC.funil(d)}</div>
+    <div class="grid-2">${SEC.turmas(d)}${SEC.consultores(d)}</div>
+    ${SEC.origem(d)}
+    ${SEC.alertas(d)}`;
+}
 
 export function render(ctx) {
   const { from, to, f } = ctx;
   // Ficha da turma: editor e página própria.
   if (ctx.params.turmaEdit) { const want = ctx.params.turmaEdit; if (!editing() || (want === 'nova' ? !!editingId() : editingId() !== want)) editorOpen(ctx.params.turmaEdit === 'nova' ? null : store.get('turmas', ctx.params.turmaEdit)); return editorHTML(); }
   if (ctx.params.turma) { const tm = store.get('turmas', ctx.params.turma); if (tm) return pageHTML(tm); }
+  if (ctx.params.tab) tab = ctx.params.tab;
+  if (ctx.params.st !== undefined) { tab = 'lista'; fStatus = ctx.params.st; }
+  // Visão geral (captação e matrículas pagas): só para quem gerencia (admin e editor).
+  const gestor = store.mode !== 'supabase' || ['admin', 'editor'].includes(auth.member?.role);
+  if (!gestor && tab === 'visao') tab = 'lista';
+  if (tab === 'visao') return visao(ctx);
   const all = store.all('leads').filter((l) => isMat(l) && (!f.cursoId || l.cursoId === f.cursoId));
   const per = all.filter((l) => inRange(l.dataMatricula, from, to));
   const ex = extraMatriculas(from, to, f);
   const receita = sum(per, (l) => l.valor) + ex.valor, rec = sum(per, recebido) + ex.valor;
   const goal = store.all('goals').find((g) => g.indicador === 'matriculas' && g.inicio <= to && g.fim >= from && (!f.cursoId || !g.cursoId || g.cursoId === f.cursoId));
   const gp = goal ? goalProgress(goal) : null;
-  const tabs = [['lista', 'Matriculados'], ['cursos', 'Por curso'], ['turmas', 'Turmas']];
+  const tabs = [...(gestor ? [['visao', 'Visão geral']] : []), ['lista', 'Matriculados'], ['cursos', 'Por curso'], ['turmas', 'Turmas']];
   return `
   <section class="mat-hero card">
     <div class="mh-main">
@@ -50,7 +76,7 @@ export function render(ctx) {
     <button class="btn sm" data-act="importar">${ICON.upload} Importar planilha</button>
     <button class="btn sm" data-act="export">${ICON.download} CSV</button>
   </div>
-  ${tab === 'lista' ? list(per) : tab === 'cursos' ? byCourse(per) : turmasList()}`;
+  ${tab === 'lista' ? (ctx.params.todos ? `<p class="banner info">Todas as reservas pendentes, de qualquer data. <a href="#matriculas?tab=lista">Voltar ao período</a></p>` + list(all) : list(per)) : tab === 'cursos' ? byCourse(per) : turmasList()}`;
 }
 
 function list(per) {
@@ -87,7 +113,8 @@ export function mount(root, ctx) {
     const b = e.target.closest('button');
     if (!b) return;
     const ds = b.dataset;
-    if (ds.tab) { tab = ds.tab; return ctx.refresh(); }
+    if (ds.preset) { if (ds.preset === 'custom') { $('#f-preset').value = 'custom'; $('#f-preset').dispatchEvent(new Event('change')); return; } return ctx.setPreset(ds.preset); }
+    if (ds.tab) { tab = ds.tab; if (ctx.params.tab || ctx.params.st !== undefined) { location.hash = '#matriculas'; return; } return ctx.refresh(); }
     if (ds.st !== undefined) { fStatus = ds.st; return ctx.refresh(); }
     if (ds.edit) return matriculaDialog(store.get('leads', ds.edit), ctx);
     if (ds.act === 'new') return matriculaDialog(null, ctx);
