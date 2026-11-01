@@ -91,7 +91,10 @@ export function campaignRows(from, to, f = {}) {
     const row = { ...c, ads: {} };
     METRIC_KEYS.forEach((k) => (row[k] = 0));
     let hasStats = false;
-    stats.filter((s) => s.campanhaId === c.id).forEach((s) => {
+    // Dados da API do Meta (diários) têm prioridade: CSV que cobre um dia já vindo da API é ignorado (sem gasto em dobro).
+    const cs = stats.filter((s) => s.campanhaId === c.id);
+    const apiDias = new Set(cs.filter((s) => s.origem === 'api').map((s) => s.inicio));
+    cs.filter((s) => s.origem === 'api' || !apiDias.size || ![...apiDias].some((d) => d >= s.inicio && d <= s.fim)).forEach((s) => {
       const w = share(s, from, to);
       if (!w) return;
       hasStats = true;

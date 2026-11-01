@@ -1,0 +1,28 @@
+# FLOWCLASS — Próximas implementações
+
+## Feito nesta rodada
+- [x] Fila offline: alterações sem internet ficam no aparelho e sobem sozinhas (status no topo)
+- [x] Bloco "Hoje" no Painel: 4 números, 1 alerta, 1 próxima ação
+- [x] Menu inferior no celular (Painel, Funil, Matrículas, Campanhas, Menu)
+- [x] Presets "Esta semana" e "Este trimestre"
+- [x] Edge Function `meta-sync` + botão "Sincronizar com o Meta" (ver `docs/META-SYNC.md`)
+- [x] Dados da API têm prioridade sobre CSV no mesmo período
+
+## Depende de você (bloqueado sem acesso)
+- [ ] Gerar token do Meta (System User) e colocar nos secrets do Supabase → ativar em Configurações › Integrações
+- [ ] Rodar o app em produção com Supabase e confirmar a fila offline de verdade
+- [ ] Conferir `supabase/schema.sql` aplicado no projeto (RLS por organização)
+- [ ] Preencher textos legais (termos, privacidade, LGPD) com dados da empresa
+
+## Próximo ciclo (maior impacto)
+1. [ ] Webhook do WhatsApp/CRM → lead entra no funil sozinho
+2. [ ] Seguidores do Instagram atualizando a meta automaticamente (Graph API)
+3. [ ] IA na Pauta Viral via Edge Function (roteiro gerado, não só modelo)
+4. [ ] Diagnóstico semanal escrito (resumo do que subiu, caiu e o que fazer)
+5. [ ] Agendamento automático do meta-sync (pg_cron diário)
+
+## Arrumação
+- [ ] Consolidar o menu lateral (menos itens, agrupar Conteúdo e Planejamento)
+- [ ] Bloquear dados financeiros no banco por papel (não só na tela)
+- [ ] Exportar relatórios em PDF
+- [ ] Testes automáticos rodando no GitHub a cada PR

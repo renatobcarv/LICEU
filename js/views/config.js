@@ -40,6 +40,11 @@ export function render() {
   </section>
 
   <section class="card">
+    <header class="card-head"><div><h2>Integrações</h2><p class="muted">Conexões que trazem dados sozinhas</p></div></header>
+    <label class="check-field"><input type="checkbox" data-cfg-toggle="metaSync"${s.metaSync ? ' checked' : ''}${store.mode === 'supabase' ? '' : ' disabled'}> Sincronização com o Meta ligada <small class="muted">(depois de publicar a função meta-sync e configurar o token; passo a passo em docs/META-SYNC.md no repositório)</small></label>
+  </section>
+
+  <section class="card">
     <header class="card-head"><div><h2>Consultores</h2><p class="muted">Quem atende e fecha matrículas. Aparecem como responsável no Funil e no ranking da Visão geral</p></div><button class="btn sm" data-cfg="consultor">${ICON.plus} Novo consultor</button></header>
     ${(s.consultores || []).length ? `<ul class="todo">${s.consultores.map((c, i) => `<li><span><b>${esc(c.nome)}</b><small>${c.ativo === false ? 'inativo' : 'ativo'}</small></span><span class="row-actions"><button class="btn sm ghost" data-constog="${i}">${c.ativo === false ? 'Ativar' : 'Desativar'}</button><button class="icon-btn sm" data-consrm="${i}" aria-label="Remover">×</button></span></li>`).join('')}</ul>` : '<p class="empty-sm">Nenhum consultor cadastrado. O responsável do lead também pode ser digitado livre.</p>'}
   </section>
@@ -147,6 +152,7 @@ function courseDialog(c, ctx) {
 
 export function mount(root, ctx) {
   if (store.mode === 'supabase') loadMembers(root);
+  root.addEventListener('change', (e) => { const k = e.target.dataset?.cfgToggle; if (!k) return; store.put('settings', { ...store.settings(), id: 'main', [k]: e.target.checked }); toast(e.target.checked ? 'Ligado.' : 'Desligado.'); });
   $('#cfg-import', root)?.addEventListener('change', async (e) => {
     const f = e.target.files[0]; if (!f) return;
     try {

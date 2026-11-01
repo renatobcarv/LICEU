@@ -102,7 +102,7 @@ function ctx(params) {
 function render() {
   const { view, params } = parseHash();
   current = view;
-  $$('.nav a').forEach((a) => a.setAttribute('aria-current', a.dataset.view === view.id ? 'page' : 'false'));
+  $$('.nav a, .bottom-nav a').forEach((a) => a.setAttribute('aria-current', a.dataset.view === view.id ? 'page' : 'false'));
   const entering = lastView !== view.id;
   document.body.dataset.view = view.id;
   if (entering) {
@@ -154,8 +154,11 @@ function renderStatus() {
     cloud: ['Dados salvos na nuvem do claude.ai', 'Todos que abrirem este painel veem os mesmos dados.'],
     local: ['Modo de teste: dados só neste navegador', 'Configure o Supabase para login e dados na nuvem. Exporte um backup em Configurações.'],
   }[store.mode];
-  el.textContent = MSG[0];
-  el.title = MSG[1];
+  const n = store.pendentes || 0;
+  const off = typeof navigator !== 'undefined' && navigator.onLine === false;
+  el.textContent = n ? `${n} alteraç${n > 1 ? 'ões' : 'ão'} aguardando internet` : off && store.mode === 'supabase' ? 'Sem internet: salvando no aparelho' : MSG[0];
+  el.title = n ? 'Ficam guardadas neste navegador e são enviadas sozinhas quando a conexão voltar. Não feche o navegador antes disso.' : MSG[1];
+  el.classList.toggle('pending', !!n || off);
   if (store.mode === 'supabase') {
     $('#user-line').hidden = false;
     $('#user-line').textContent = (auth.member?.nome || auth.user?.email || '') + ' · ' + roleLabel(auth.member?.role);
@@ -170,12 +173,17 @@ function shell() {
   $('#brand').innerHTML = '<span class="brand-text">' + LOGO_MARK + '<span class="brand-sub">Intelligence</span></span>';
   $('#menu-btn').innerHTML = ICON.menu;
   $('#menu-btn').addEventListener('click', () => $('#app').classList.toggle('nav-open'));
+  // Barra inferior no celular: os 4 lugares mais usados + o menu completo.
+  $('#bottom-nav').innerHTML = [['painel', 'Painel'], ['funil', 'Funil'], ['matriculas', 'Matrículas'], ['campanhas', 'Campanhas']].map(([id, l]) => `<a href="#${id}" data-view="${id}">${ICON[id]}<span>${l}</span></a>`).join('') + `<button type="button" id="bn-menu">${ICON.menu}<span>Menu</span></button>`;
+  $('#bn-menu').addEventListener('click', () => $('#app').classList.toggle('nav-open'));
   $('#scrim').addEventListener('click', () => $('#app').classList.remove('nav-open'));
   $('#logout').addEventListener('click', signOut);
   $('#f-preset').addEventListener('change', (e) => { prefs.preset = e.target.value; if (prefs.preset === 'custom') { const p = periodOf({ preset: 'mes' }); prefs.from = prefs.from || p.from; prefs.to = prefs.to || p.to; } savePrefs(); render(); });
   $('#f-curso').addEventListener('change', (e) => { prefs.cursoId = e.target.value; savePrefs(); render(); });
   ['#f-from', '#f-to'].forEach((s) => $(s).addEventListener('change', () => { prefs.from = $('#f-from').value; prefs.to = $('#f-to').value; savePrefs(); render(); }));
   window.addEventListener('hashchange', render);
+  window.addEventListener('online', () => { renderStatus(); toast('Internet de volta. Enviando o que ficou pendente.'); });
+  window.addEventListener('offline', () => { renderStatus(); toast('Sem internet. Pode continuar: as alterações ficam guardadas e vão quando a conexão voltar.', 'warn'); });
   const prog = $('#progress');
   const onScroll = () => { const max = document.documentElement.scrollHeight - innerHeight; prog.style.transform = 'scaleX(' + (max > 0 ? scrollY / max : 0).toFixed(4) + ')'; };
   window.addEventListener('scroll', onScroll, { passive: true });
