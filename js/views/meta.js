@@ -6,8 +6,9 @@
 // então batem com o Gerenciador e continuam certos depois de uma correção manual.
 
 import { store } from '../store.js';
+import { auth } from '../auth.js';
 import { esc, $, $$, brl, brl2, num, pct, num1, parseCSV, parseNum, parseDate, norm, toCSV, fmtDate, fmtRange, uid, today, inRange, div } from '../util.js';
-import { overview, campaignRows, mediaTotals, courseName, diagnostics, NIVEL, METRIC_KEYS, share } from '../metrics.js';
+import { settings, overview, campaignRows, mediaTotals, courseName, diagnostics, NIVEL, METRIC_KEYS, share } from '../metrics.js';
 import { openDialog, toast, badge, ICON, readFileText, downloadFile, empty, confirmButton } from '../ui.js';
 
 let canal = '';
@@ -60,6 +61,7 @@ export function render(ctx) {
   <div class="toolbar">
     <div class="chips" role="group" aria-label="Canal">${canais.map(([v, l]) => `<button type="button" class="chip" data-canal="${v}" aria-pressed="${canal === v}">${l}</button>`).join('')}</div>
     <span class="grow"></span>
+    ${store.mode === 'supabase' && settings().metaSync ? `<button class="btn" data-act="sync">${ICON.download} Sincronizar com o Meta</button>` : ''}
     <button class="btn primary" data-act="import">${ICON.upload} Importar relatório</button>
     <button class="btn" data-act="manual">${ICON.plus} Digitar métricas</button>
     <button class="btn" data-act="camps">Campanhas</button>
@@ -261,6 +263,13 @@ export function mount(root, ctx) {
     }
     const act = b.dataset.act;
     if (act === 'import') importDialog(ctx);
+    if (act === 'sync') {
+      b.disabled = true; b.textContent = 'Sincronizando…';
+      auth.client.functions.invoke('meta-sync', { body: { dias: 30 } }).then(({ data, error }) => {
+        if (error || data?.error) toast('Não sincronizou: ' + (data?.error || error.message), 'bad');
+        else toast(`Meta sincronizado: ${data.linhas} linhas de ${fmtDate(data.de)} a ${fmtDate(data.ate)}${data.campanhasNovas ? ', ' + data.campanhasNovas + ' campanhas novas' : ''}. Recarregue para ver.`);
+      }).finally(() => { b.disabled = false; b.textContent = 'Sincronizar com o Meta'; });
+    }
     if (act === 'manual') statDialog(null, ctx);
     if (act === 'camps') campaignsDialog(ctx);
     if (act === 'clear-pick') { picked.clear(); ctx.refresh(); }

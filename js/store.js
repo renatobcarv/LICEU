@@ -74,12 +74,31 @@ function sbError(e) {
   notify();
 }
 
+// ---------- fila de reenvio (Supabase) ----------
+// Se a gravação falhar por rede, a alteração fica guardada no navegador e é reenviada quando a
+// internet volta (evento "online" e a cada 20 s). Erro de permissão não entra na fila.
+const PEND_KEY = () => 'liceu.pendentes.' + orgId;
+let pend = new Map();
+const pendSave = () => { try { localStorage.setItem(PEND_KEY(), JSON.stringify([...pend.values()])); } catch (e) { /* opcional */ } };
+const pendLoad = () => { try { pend = new Map((JSON.parse(localStorage.getItem(PEND_KEY()) || '[]')).map((x) => [x.coll + '|' + x.id, x])); } catch (e) { pend = new Map(); } };
+const isPerm = (e) => /row-level security|permission|42501|jwt|401|403/i.test((e?.message || '') + ' ' + (e?.code || ''));
+function enqueue(coll, rec, del) { pend.set(coll + '|' + rec.id, { coll, id: rec.id, rec: del ? null : rec, del: !!del }); pendSave(); notify(); }
+function sendOne(x) {
+  return (x.del ? sb.from('records').delete().match({ org_id: orgId, collection: x.coll, id: x.id }) : sb.from('records').upsert({ org_id: orgId, collection: x.coll, id: x.id, data: x.rec, updated_at: new Date().toISOString() }))
+    .then(({ error }) => { if (error) throw error; });
+}
+let flushing = false;
+export async function flushPending() {
+  if (mode !== 'supabase' || flushing || !pend.size || (typeof navigator !== 'undefined' && navigator.onLine === false)) return;
+  flushing = true;
+  for (const [k, x] of [...pend]) {
+    try { await sendOne(x); pend.delete(k); } catch (e) { if (isPerm(e)) { pend.delete(k); sbError(e); } else break; }
+  }
+  pendSave(); flushing = false; notify();
+}
 function writeRemote(coll, rec, del) {
   if (mode === 'supabase') {
-    const q = del
-      ? sb.from('records').delete().match({ org_id: orgId, collection: coll, id: rec.id })
-      : sb.from('records').upsert({ org_id: orgId, collection: coll, id: rec.id, data: rec, updated_at: new Date().toISOString() });
-    q.then(({ error }) => error && sbError(error));
+    sendOne({ coll, id: rec.id, rec, del }).catch((e) => { if (isPerm(e)) sbError(e); else enqueue(coll, rec, del); });
     return;
   }
   if (mode !== 'cloud' || !db) return;
@@ -95,6 +114,7 @@ function writeRemote(coll, rec, del) {
 
 export const store = {
   lastError: null,
+  get pendentes() { return pend.size; },
   get mode() { return mode; },
   all(coll) { return Array.from(mem[coll].values()); },
   get(coll, id) { return mem[coll].get(id) || null; },
@@ -119,8 +139,10 @@ export const store = {
     if (mode === 'local') lsSave();
     if (mode === 'supabase') {
       for (let i = 0; i < out.length; i += 500) {
-        sb.from('records').upsert(out.slice(i, i + 500).map((r) => ({ org_id: orgId, collection: coll, id: r.id, data: r, updated_at: r.updatedAt })))
-          .then(({ error }) => error && sbError(error));
+        const lote = out.slice(i, i + 500);
+        sb.from('records').upsert(lote.map((r) => ({ org_id: orgId, collection: coll, id: r.id, data: r, updated_at: r.updatedAt })))
+          .then(({ error }) => { if (error) throw error; })
+          .catch((e) => { if (isPerm(e)) sbError(e); else lote.forEach((r) => enqueue(coll, r)); });
       }
     }
     notify();
@@ -163,6 +185,8 @@ export const store = {
 export async function initStore(session) {
   if (session?.client && session?.org) {
     sb = session.client; orgId = session.org.id; mode = 'supabase';
+    pendLoad();
+    if (!window.__liceuFlush) { window.__liceuFlush = true; window.addEventListener('online', () => flushPending()); setInterval(() => flushPending(), 20000); }
     COLLECTIONS.forEach((c) => mem[c].clear());
     for (let from = 0; ; from += 1000) {
       const { data, error } = await sb.from('records').select('collection,id,data').eq('org_id', orgId).range(from, from + 999);
@@ -170,6 +194,9 @@ export async function initStore(session) {
       data.forEach((r) => mem[r.collection]?.set(r.id, { ...r.data, id: r.id }));
       if (data.length < 1000) break;
     }
+    // Alterações que ainda não chegaram ao servidor valem sobre o que veio dele.
+    pend.forEach((x) => { if (x.del) mem[x.coll]?.delete(x.id); else mem[x.coll]?.set(x.id, x.rec); });
+    setTimeout(() => flushPending(), 1500);
     // Tempo real: o que outra pessoa da equipe salva aparece aqui sem recarregar.
     sb.channel('records-' + orgId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'records', filter: 'org_id=eq.' + orgId }, (p) => {

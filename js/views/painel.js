@@ -2,7 +2,7 @@
 
 import { store } from '../store.js';
 import { esc, brl, brl2, num, pct, fmtDate, fmtDow, today, addDays, inRange, sum, daysBetween } from '../util.js';
-import { extraMatriculas, overview, prevPeriod, delta, diagnostics, NIVEL, weeklySeries, goalProgress, STAGES, courseName, measureTest } from '../metrics.js';
+import { matriculasDash, salesStats, extraMatriculas, overview, prevPeriod, delta, diagnostics, NIVEL, weeklySeries, goalProgress, STAGES, courseName, measureTest } from '../metrics.js';
 import { barChart, funnel, meter, badge, ICON } from '../ui.js';
 import { recebido } from '../leads.js';
 
@@ -59,6 +59,8 @@ export function render(ctx) {
 
   return `
   ${hasDemo ? `<div class="banner warn">Este painel tem dados de exemplo misturados. Remova em <a href="#config">Configurações</a> antes de usar os números.</div>` : ''}
+
+  ${foco(ctx)}
 
   <div class="hero-grid">
     <section class="card mat-hero hero-ring">
@@ -140,3 +142,35 @@ export function render(ctx) {
 
 export const ice = (i) => Math.round(((Number(i.impacto) || 0) + (Number(i.confianca) || 0) + (Number(i.facilidade) || 0)) / 3 * 10) / 10;
 export const slug = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]+/g, '-');
+
+
+// Bloco "Hoje": 4 números, o alerta que mais importa e a próxima ação. Responde em 5 segundos.
+function foco(ctx) {
+  const { from, to, f } = ctx;
+  const d = matriculasDash(from, to, f);
+  const s = salesStats(from, to, f);
+  const k = d.kpi;
+  const dl = (a, b, dir = 'up') => { if (a === null || b === null || b === undefined || !b) return ''; const x = a / b - 1; if (Math.abs(x) < 0.005) return ''; const bom = dir === 'up' ? x > 0 : x < 0; return `<small class="${bom ? 'good' : 'bad'}">${x > 0 ? '↗' : '↘'} ${pct(Math.abs(x), 0)}</small>`; };
+  const nums = [
+    ['Matrículas pagas', num(k.pagas), dl(k.pagas, k.pagasP), '#matriculas'],
+    ['Custo por matrícula', brl2(k.cpm), dl(k.cpm, k.cpmP, 'down'), '#meta'],
+    ['Investido', brl(k.investido), '', '#meta'],
+    ['Conversão', pct(k.conv, 1), dl(k.conv, k.convP), '#funil'],
+  ];
+  const diag = diagnostics(from, to, f).find((x) => x.nivel === 'problema');
+  const alerta = d.alertas.find((a) => a.nivel === 'bad') || (diag ? { titulo: diag.titulo, texto: diag.texto, href: diag.acao?.href || '#painel', acao: diag.acao?.label || 'Ver' } : null) || d.alertas[0];
+  const acoes = [
+    s.followVencidos.length && { t: `Retornar ${s.followVencidos.length} lead${s.followVencidos.length > 1 ? 's' : ''} com retorno atrasado`, href: '#funil?vencidos=1' },
+    d.reservas.length && { t: `Cobrar ${d.reservas.length} reserva${d.reservas.length > 1 ? 's' : ''} sem pagamento`, href: '#matriculas?st=Pendente&todos=1' },
+    s.semContato.length && { t: `Fazer o 1º contato com ${s.semContato.length} lead${s.semContato.length > 1 ? 's' : ''} novo${s.semContato.length > 1 ? 's' : ''}`, href: '#funil' },
+    store.all('plans').length && { t: 'Ver como estão as campanhas planejadas', href: '#campanhas' },
+    !store.all('leads').length && { t: 'Registrar as primeiras conversas no Funil', href: '#funil' },
+  ].filter(Boolean)[0] || { t: 'Planejar a próxima campanha', href: '#campanhas' };
+  return `<section class="foco card" aria-label="Hoje">
+    <div class="foco-nums">${nums.map(([l, v, x, h]) => `<a class="foco-n" href="${h}"><span>${l}</span><b>${v}</b>${x}</a>`).join('')}</div>
+    <div class="foco-side">
+      ${alerta ? `<a class="foco-alert" href="${alerta.href}"><span class="badge bad">Atenção</span><b>${esc(alerta.titulo)}</b><small>${esc(alerta.texto || '')}</small></a>` : '<p class="foco-alert ok"><span class="badge good">Tudo certo</span><b>Nada urgente agora</b></p>'}
+      <a class="btn primary foco-next" href="${acoes.href}">${esc(acoes.t)} ${ICON.arrow}</a>
+    </div>
+  </section>`;
+}
