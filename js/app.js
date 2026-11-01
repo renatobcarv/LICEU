@@ -1,7 +1,7 @@
 // Casca do app: navegação, filtro global de período e curso, e troca de módulos.
 
 import { store, initStore, seedIfEmpty } from './store.js';
-import { $, $$, esc, today, monthStart, monthEnd, addMonths, addDays, fmtRange } from './util.js';
+import { $, $$, esc, today, monthStart, monthEnd, addMonths, addDays, fmtRange, weekStart } from './util.js';
 import { ICON, toast, countUp } from './ui.js';
 import { settings } from './metrics.js';
 import { initAuth, auth, roleLabel, signOut } from './auth.js';
@@ -9,6 +9,7 @@ import { LOGO_MARK, PRODUCT, applyTheme } from './brand.js';
 import * as painel from './views/painel.js';
 import * as meta from './views/meta.js';
 import * as campanhas from './views/campanhas.js';
+import { skeleton } from './views/mat/secoes.js';
 import * as funil from './views/funil.js';
 import * as matriculas from './views/matriculas.js';
 import * as pauta from './views/pauta.js';
@@ -59,6 +60,8 @@ const prefs = { preset: 'mes', from: '', to: '', cursoId: '', ...loadPrefs() };
 function periodOf(p) {
   const t = today();
   switch (p.preset) {
+    case 'semana': { const s = weekStart(t); return { from: s, to: addDays(s, 6) }; }
+    case 'trimestre': { const q = Math.floor((Number(t.slice(5, 7)) - 1) / 3) * 3 + 1; const s = t.slice(0, 5) + String(q).padStart(2, '0') + '-01'; return { from: s, to: monthEnd(addMonths(s, 2)) }; }
     case 'mesAnt': { const s = addMonths(t, -1); return { from: s, to: monthEnd(s) }; }
     case '7d': return { from: addDays(t, -6), to: t };
     case '30d': return { from: addDays(t, -29), to: t };
@@ -89,6 +92,8 @@ function ctx(params) {
     from, to, cursoId: prefs.cursoId, params,
     f: { cursoId: prefs.cursoId },
     go: (hash) => { if (location.hash === hash) render(); else location.hash = hash; },
+    preset: prefs.preset,
+    setPreset: (pr) => { prefs.preset = pr; savePrefs(); render(); },
     setPeriod: (a, b) => { prefs.preset = 'custom'; prefs.from = a; prefs.to = b; savePrefs(); render(); },
     refresh: () => render(),
   };
@@ -189,7 +194,8 @@ async function boot() {
   shell();
   $('#main').innerHTML = '<div class="loading">Carregando dados…</div>';
   const session = await initAuth(); // null quando o Supabase não está configurado
-  $('#main').innerHTML = '<div class="loading">Carregando dados da unidade…</div>';
+  // Esqueleto enquanto os dados da unidade chegam do banco.
+  $('#main').innerHTML = '<p class="loading">Carregando dados da unidade…</p>' + skeleton();
   await initStore(session);
   const canWrite = !session || auth.member?.role !== 'leitura';
   // Remove as 3 ideias de exemplo que vinham no início, se ninguém mexeu nelas.

@@ -65,6 +65,8 @@ export function productDialog(p, ctx) {
       { name: 'valor', label: 'Valor (R$)', type: 'number', value: p.valor },
       { name: 'formaPagamento', label: 'Forma de pagamento', type: 'select', options: ['', ...FORMAS], value: p.formaPagamento || '' },
       { name: 'parcelas', label: 'Parcelas', type: 'number', value: p.parcelas },
+      { name: 'taxaMatricula', label: 'Taxa de matrícula (R$)', type: 'number', value: p.taxaMatricula, hint: 'Pago no ato. Deixe vazio se o valor é único.' },
+      { name: 'mensalidade', label: 'Mensalidade (R$)', type: 'number', value: p.mensalidade, hint: 'Para cursos com parcelas mensais.' },
       { name: 'descricao', label: 'O que está incluso', type: 'textarea', value: p.descricao, full: true },
       { name: 'ativo', label: 'Disponível para venda', type: 'checkbox', value: p.ativo !== false, full: true },
     ],
@@ -136,6 +138,11 @@ export function matriculaDialog(l, ctx, { onDone } = {}) {
     { name: 'formaPagamento', label: 'Forma de pagamento', type: 'select', options: ['', ...FORMAS], value: l.formaPagamento || prod?.formaPagamento || '' },
     { name: 'parcelas', label: 'Parcelas', type: 'number', value: l.parcelas ?? prod?.parcelas ?? '' },
     { name: 'valorPago', label: 'Valor já recebido (R$)', type: 'number', value: l.valorPago ?? '' },
+    { name: 'dataPagamento', label: 'Data do pagamento', type: 'date', value: l.dataPagamento || '', hint: 'Vazio = data da matrícula.' },
+    { name: 'taxaMatricula', label: 'Taxa de matrícula (R$)', type: 'number', value: l.taxaMatricula ?? prod?.taxaMatricula ?? '' },
+    { name: 'mensalidade', label: 'Mensalidade (R$)', type: 'number', value: l.mensalidade ?? prod?.mensalidade ?? '' },
+    { name: 'parcelasTotal', label: 'Mensalidades no total', type: 'number', value: l.parcelasTotal ?? prod?.parcelas ?? '' },
+    { name: 'parcelasPagas', label: 'Mensalidades já pagas', type: 'number', value: l.parcelasPagas ?? '' },
   ];
   const extra = [
     ...(isNew ? [] : [{ name: 'nome', label: 'Nome do aluno', value: l.nome, required: true }, { name: 'telefone', label: 'WhatsApp', value: l.telefone }]),
@@ -169,6 +176,8 @@ export function matriculaDialog(l, ctx, { onDone } = {}) {
         if (p.valor) g('valor').value = p.valor;
         if (p.formaPagamento) g('formaPagamento').value = p.formaPagamento;
         if (p.parcelas) g('parcelas').value = p.parcelas;
+        if (p.taxaMatricula) g('taxaMatricula').value = p.taxaMatricula;
+        if (p.mensalidade) { g('mensalidade').value = p.mensalidade; if (p.parcelas) g('parcelasTotal').value = p.parcelas; }
       });
       g('cursoId').addEventListener('change', () => { if (!g('valor').value) g('valor').value = store.get('courses', g('cursoId').value)?.preco || ''; });
       (isNew ? g('nome') : g('produtoId')).focus();
@@ -184,6 +193,9 @@ export function matriculaDialog(l, ctx, { onDone } = {}) {
       if ((d.valorPago ?? 0) < 0) { toast('O valor recebido não pode ser negativo.', 'bad'); return false; }
       if (d.statusPagamento !== 'Pago' && d.valorPago && d.valor && d.valorPago > d.valor) { toast('Recebido (' + brl(d.valorPago) + ') maior que o valor da matrícula (' + brl(d.valor) + '). Corrija um dos dois ou marque como Pago.', 'bad'); return false; }
       if (d.statusPagamento === 'Pago') d.valorPago = null;
+      if (d.statusPagamento !== 'Pendente' && !d.dataPagamento) d.dataPagamento = d.dataMatricula;
+      if (d.statusPagamento === 'Pendente') d.dataPagamento = '';
+      if (d.parcelasPagas && d.parcelasTotal && d.parcelasPagas > d.parcelasTotal) { toast('Mensalidades pagas maior que o total.', 'bad'); return false; }
       const base = { ...l, ...d, valor: d.valor ?? 0, entrada: l.entrada || d.dataMatricula };
       delete base._;
       if (jaMatriculado) store.put('leads', base);
@@ -217,7 +229,7 @@ export function loseDialog(l, ctx) {
 // Pessoas que atendem: quem já aparece nos leads, a lista das configurações e você.
 export const myName = () => auth.member?.nome || '';
 export function responsaveis() {
-  const set = new Set([myName(), ...(store.settings().responsaveis || []), ...store.all('leads').map((l) => l.responsavel)].map((x) => (x || '').trim()).filter(Boolean));
+  const set = new Set([myName(), ...(store.settings().consultores || []).filter((c) => c.ativo !== false).map((c) => c.nome), ...(store.settings().responsaveis || []), ...store.all('leads').map((l) => l.responsavel)].map((x) => (x || '').trim()).filter(Boolean));
   return [...set].sort((a, b) => a.localeCompare(b));
 }
 const respList = () => `<datalist id="dl-resp">${responsaveis().map((r) => `<option value="${esc(r)}">`).join('')}</datalist>`;
@@ -257,6 +269,7 @@ export function editLead(l, ctx, preset = {}) {
     sec('Atendimento'),
     { name: 'responsavel', label: 'Responsável', value: l.responsavel, list: 'dl-resp' },
     { name: 'etiquetas', label: 'Etiquetas', value: tagList(l.etiquetas).join(', '), placeholder: 'separe por vírgula: feira, retorno, bolsa' },
+    { name: 'visitouEm', label: 'Visitou a escola em', type: 'date', value: l.visitouEm || '' },
     { name: 'proximaData', label: 'Data do próximo retorno', type: 'date', value: l.proximaData },
     { name: 'proximaAcao', label: 'Próxima ação', value: l.proximaAcao, placeholder: 'ex.: mandar datas da turma' },
     { name: 'motivoPerda', label: 'Motivo da perda', type: 'select', options: ['', ...LOSS_REASONS], value: l.motivoPerda },

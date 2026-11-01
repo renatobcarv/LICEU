@@ -256,3 +256,34 @@ export const ICON = {
   copy: svg('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
   arrow: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
 };
+
+// Linha (SVG): pontos com rótulo do valor no topo, eixo com poucas datas, dica ao passar.
+export function lineChart(data, { fmt = num, height = 180, label = '' } = {}) {
+  if (!data.length) return '<p class="empty-sm">Sem dados no período.</p>';
+  const W = 480, H = height, pl = 28, pr = 10, pt = 18, pb = 24;
+  const max = Math.max(1, ...data.map((d) => d.v || 0));
+  const x = (i) => pl + (data.length === 1 ? (W - pl - pr) / 2 : (i * (W - pl - pr)) / (data.length - 1));
+  const y = (v) => pt + (H - pt - pb) * (1 - v / max);
+  const real = data.filter((d) => !d.futuro);
+  const path = real.map((d, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(d.v || 0).toFixed(1)).join(' ');
+  const area = real.length ? path + ` L${x(real.length - 1).toFixed(1)} ${H - pb} L${x(0).toFixed(1)} ${H - pb} Z` : '';
+  const step = Math.max(1, Math.ceil(data.length / 7));
+  const grid = [0, 0.5, 1].map((r) => `<line x1="${pl}" x2="${W - pr}" y1="${y(max * r)}" y2="${y(max * r)}" class="lc-grid"/><text x="${pl - 6}" y="${y(max * r) + 4}" class="lc-ax" text-anchor="end">${esc(fmt(Math.round(max * r)))}</text>`).join('');
+  return `<figure class="lc" role="img" aria-label="${esc(label)}: ${data.map((d) => d.label + ' ' + fmt(d.v)).join(', ')}"><svg viewBox="0 0 ${W} ${H}">${grid}
+    ${area ? `<path d="${area}" class="lc-area"/><path d="${path}" class="lc-line"/>` : ''}
+    ${real.map((d, i) => `<g class="lc-pt"><circle cx="${x(i)}" cy="${y(d.v || 0)}" r="${d.v ? 3.5 : 2}"/>${d.v ? `<text x="${x(i)}" y="${y(d.v) - 8}" text-anchor="middle" class="lc-v">${esc(fmt(d.v))}</text>` : ''}<title>${esc(d.label)}: ${esc(fmt(d.v))}</title></g>`).join('')}
+    ${data.map((d, i) => (i % step === 0 || i === data.length - 1 ? `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" class="lc-ax">${esc(d.label)}</text>` : '')).join('')}
+  </svg></figure>`;
+}
+
+// Rosca (SVG) com legenda em lista: cores na ordem das séries do sistema.
+export function donut(items, { fmt = num, label = '' } = {}) {
+  const total = items.reduce((a, it) => a + (it.v || 0), 0);
+  if (!total) return '<p class="empty-sm">Sem dados no período.</p>';
+  const cores = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--warning)', 'var(--chart-4)'];
+  let acc = 0;
+  const R = 52, C = 2 * Math.PI * R;
+  const arcs = items.map((it, i) => { const frac = (it.v || 0) / total; const a = `<circle r="${R}" cx="70" cy="70" fill="none" stroke="${cores[i % cores.length]}" stroke-width="18" stroke-dasharray="${(frac * C).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc * C).toFixed(2)}" transform="rotate(-90 70 70)"><title>${esc(it.label)}: ${esc(fmt(it.v))}</title></circle>`; acc += frac; return a; }).join('');
+  return `<div class="donut" role="img" aria-label="${esc(label)}"><svg viewBox="0 0 140 140" width="140" height="140"><circle r="${R}" cx="70" cy="70" fill="none" stroke="var(--muted)" stroke-width="18"/>${arcs}<text x="70" y="68" text-anchor="middle" class="dn-n">${esc(fmt(total))}</text><text x="70" y="86" text-anchor="middle" class="dn-l">total</text></svg>
+    <ul class="dn-leg">${items.map((it, i) => `<li><span class="dn-sw" style="background:${cores[i % cores.length]}"></span><span>${esc(it.label)}</span><b>${esc(fmt(it.v))}</b><small>${Math.round(((it.v || 0) / total) * 100)}%</small></li>`).join('')}</ul></div>`;
+}

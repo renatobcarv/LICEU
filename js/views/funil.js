@@ -104,6 +104,7 @@ function cardHTML(l, p) {
       <button type="button" class="lead-open" data-edit="${esc(l.id)}"><b>${temp}${esc(l.nome)}</b><small>${esc(prod?.nome || courseName(l.cursoId))}</small></button>
       ${l.responsavel ? `<span class="avatar" title="${esc(l.responsavel)}">${esc(initials(l.responsavel))}</span>` : ''}
     </div>
+    ${l.visitouEm && OPEN(l) ? `<p class="tags"><span class="tag tag-visit">Visitou ${fmtDate(l.visitouEm)}</span></p>` : ''}
     ${tags.length ? `<p class="tags">${tags.slice(0, 3).map((x) => `<span class="tag">${esc(x)}</span>`).join('')}</p>` : ''}
     ${l.origem || l.campanhaId ? `<p class="lead-meta">${esc(l.origem || '')}${l.campanhaId ? ' · ' + esc(campaignName(l.campanhaId)) : ''}</p>` : ''}
     ${l.etapa === 'matriculado'
@@ -114,6 +115,7 @@ function cardHTML(l, p) {
     ${l.proximaAcao && OPEN(l) ? `<p class="lead-next">${esc(l.proximaAcao)}</p>` : ''}
     ${OPEN(l) ? `<div class="lead-actions">
       ${next ? `<button type="button" class="btn sm" data-move="${esc(l.id)}" data-to="${esc(next.id)}" title="Mover para ${esc(next.nome)}">${ICON.arrow}</button>` : ''}
+      ${l.visitouEm ? '' : `<button type="button" class="btn sm" data-visit="${esc(l.id)}" title="Marcar que visitou a escola">Visitou</button>`}
       <button type="button" class="btn sm win" data-win="${esc(l.id)}">✓ Ganho</button>
       <button type="button" class="btn sm ghost" data-lose="${esc(l.id)}">Perdido</button>
     </div>` : ''}
@@ -491,6 +493,7 @@ export function mount(root, ctx) {
     }
     if (ds.edit) return editLead(store.get('leads', ds.edit), ctx);
     if (ds.move) return moveToCol(store.get('leads', ds.move), ds.to, ctx, p);
+    if (ds.visit) { const l = store.get('leads', ds.visit); store.put('leads', { ...l, visitouEm: today() }); toast(l.nome + ' visitou a escola hoje.'); return ctx.refresh(); }
     if (ds.win) return matriculaDialog(store.get('leads', ds.win), ctx);
     if (ds.lose) return loseDialog(store.get('leads', ds.lose), ctx);
     if (ds.prod) return productDialog(store.get('products', ds.prod), ctx);
