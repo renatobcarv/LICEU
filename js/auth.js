@@ -31,10 +31,10 @@ function screen(inner) {
   root.innerHTML = `
     <aside class="auth-brand" aria-hidden="true">
       ${LOGO}
-      <div class="ab-copy"><p class="ab-eyebrow">Do anúncio à matrícula paga</p>
-        <h2>Saiba quanto custou <span>cada aluno.</span></h2>
+      <div class="ab-copy"><p class="ab-eyebrow">FLOWCLASS para escolas</p>
+        <h2>Saiba quanto custou <span>cada matrícula.</span></h2>
         <ul><li>Meta Ads com custo por matrícula</li><li>WhatsApp oficial dentro do funil</li><li>Time com missões, patentes e ranking</li></ul></div>
-      <div class="ab-case"><div><b>R$ 800</b><span>em anúncio</span></div><div><b>26</b><span>matrículas</span></div><div><b>R$ 30,80</b><span>por aluno</span></div></div>
+      <div class="ab-case"><div><b>R$ 800</b><span>em anúncio</span></div><div><b>26</b><span>matrículas</span></div><div><b>R$ 30,80</b><span>por matrícula</span></div></div>
       <p class="ab-foot">Campanha real da TEC Mais Valparaíso</p>
     </aside>
     <section class="auth-pane"><div class="auth-card">${LOGO}${inner}</div>
@@ -57,7 +57,7 @@ const tr = (e) => ERRORS[e?.message] || (/fetch|network/i.test(e?.message || '')
 
 // Campo de senha com mostrar/ocultar e aviso de Caps Lock.
 const passField = (id, label, auto, extra = '') => `<div class="field"><label for="${id}">${label}</label>
-  <div class="pass-wrap"><input id="${id}" type="password" autocomplete="${auto}" required ${extra}><button type="button" class="pass-eye" data-eye="${id}" aria-label="Mostrar senha" aria-pressed="false">👁</button></div>
+  <div class="pass-wrap"><input id="${id}" type="password" autocomplete="${auto}" required ${extra}><button type="button" class="pass-eye" data-eye="${id}" aria-label="Mostrar senha" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
   <p class="caps" id="${id}-caps" hidden>Caps Lock ligado</p></div>`;
 function bindPass(root) {
   root.querySelectorAll('[data-eye]').forEach((b) => b.addEventListener('click', () => {
@@ -171,7 +171,7 @@ function signupView(resolve) {
 
 function checkEmailView(resolve, email) {
   const root = screen(`
-    <div class="auth-mail" aria-hidden="true">✉</div>
+    <div class="auth-mail" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5 12 13l8.5-6.5"/></svg></div>
     <h1>Confira seu e-mail</h1>
     <p class="auth-sub">Enviamos um link de confirmação para <b>${esc(email)}</b>. Abra e você já entra no painel.</p>
     <p class="hint">Não chegou em 2 minutos? Olhe a caixa de spam ou promoções.</p>

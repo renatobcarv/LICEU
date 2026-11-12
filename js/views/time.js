@@ -8,14 +8,14 @@ import { estadoPessoa, RANKS } from '../game.js';
 import { myName } from '../leads.js';
 
 export const FUNCOES = {
-  lider: { nome: 'Líder', icone: '♛', a: '#c4f15a', b: '#12c48b', faz: 'Define a direção, cobra o ritmo e destrava o time.' },
+  lider: { nome: 'Líder', icone: '♛', a: '#a3ff12', b: '#12c48b', faz: 'Define a direção, cobra o ritmo e destrava o time.' },
   closer: { nome: 'Closer', icone: '◆', a: '#ffc940', b: '#ff7a1a', faz: 'Transforma conversa em matrícula paga.' },
   sdr: { nome: 'Atendimento / SDR', icone: '✆', a: '#12c48b', b: '#2ee6d6', faz: 'Responde rápido e qualifica cada lead.' },
   trafego: { nome: 'Gestor de Tráfego', icone: '➹', a: '#4f8bff', b: '#2ee6d6', faz: 'Cuida da verba, dos públicos e do custo por resultado.' },
   copy: { nome: 'Copywriter', icone: '✎', a: '#a46bff', b: '#ff4d9a', faz: 'Escreve o que faz o lead responder.' },
   social: { nome: 'Social Media', icone: '✦', a: '#ff4d9a', b: '#ff7a1a', faz: 'Mantém a constância e o engajamento nas redes.' },
   design: { nome: 'Criativos / Design', icone: '◐', a: '#2ee6d6', b: '#a46bff', faz: 'Cria as peças e vídeos que param a rolagem.' },
-  financeiro: { nome: 'Financeiro', icone: '$', a: '#ffc940', b: '#c4f15a', faz: 'Cobra, confere pagamentos e protege o caixa.' },
+  financeiro: { nome: 'Financeiro', icone: '$', a: '#ffc940', b: '#a3ff12', faz: 'Cobra, confere pagamentos e protege o caixa.' },
 };
 const KUDOS = ['🔥', '🚀', '👏', '🏆', '💡'];
 const iniciais = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase();

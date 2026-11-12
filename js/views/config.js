@@ -5,7 +5,7 @@ import { esc, $, $$, today, addDays, brl, uid, weekStart, monthStart } from '../
 import { settings, STAGES } from '../metrics.js';
 import { openDialog, toast, downloadFile, readFileText, ICON, confirmButton, copyText } from '../ui.js';
 import { auth, roleLabel, signOut, switchOrg } from '../auth.js';
-import { TERMS_VERSION } from '../brand.js';
+import { TERMS_VERSION, PALETAS, paletaAtual, applyPaleta } from '../brand.js';
 import { productDialog, pipeDialog, pipelines, leadPipeId } from '../leads.js';
 import { loadTestData } from '../demoData.js';
 import { courseName } from '../metrics.js';
@@ -35,6 +35,10 @@ export function render() {
     </section>
 
   </div>
+
+  <section class="card"><header class="card-head"><div><h2>Aparência</h2><p class="muted">Paleta do painel neste aparelho. A marca própria (white-label) tem prioridade sobre ela</p></div></header>
+    <div class="paletas">${Object.entries(PALETAS).map(([id, p]) => `<button type="button" class="paleta" data-paleta="${id}" aria-pressed="${paletaAtual() === id}"><span class="sw">${p.cores.map((c) => `<i style="background:${c}"></i>`).join('')}</span>${esc(p.nome)}<small>${p.cores.join(' · ')}</small></button>`).join('')}</div>
+  </section>
 
   <section class="card">
     <header class="card-head"><div><h2>Cursos</h2><p class="muted">O preço é usado como valor padrão da matrícula</p></div><button class="btn sm" data-cfg="course">${ICON.plus} Novo curso</button></header>
@@ -154,6 +158,7 @@ function courseDialog(c, ctx) {
 }
 
 export function mount(root, ctx) {
+  root.addEventListener('click', (e) => { const b = e.target.closest('[data-paleta]'); if (!b) return; applyPaleta(b.dataset.paleta); root.querySelectorAll('[data-paleta]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); toast('Paleta ' + PALETAS[b.dataset.paleta].nome + ' aplicada.'); });
   if (store.mode === 'supabase') { loadMembers(root); saas.mount(root, ctx); }
   root.addEventListener('change', (e) => { const k = e.target.dataset?.cfgToggle; if (!k) return; store.put('settings', { ...store.settings(), id: 'main', [k]: e.target.checked }); toast(e.target.checked ? 'Ligado.' : 'Desligado.'); });
   $('#cfg-import', root)?.addEventListener('change', async (e) => {
