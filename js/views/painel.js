@@ -5,6 +5,7 @@ import { esc, brl, brl2, num, pct, fmtDate, fmtDow, today, addDays, inRange, sum
 import { matriculasDash, salesStats, extraMatriculas, overview, prevPeriod, delta, diagnostics, NIVEL, weeklySeries, goalProgress, STAGES, courseName, measureTest } from '../metrics.js';
 import { barChart, funnel, meter, badge, ICON } from '../ui.js';
 import { recebido } from '../leads.js';
+import { estado, missoes, feitasHoje, toggleMissao, XP } from '../game.js';
 
 export function render(ctx) {
   const { from, to, f } = ctx;
@@ -59,6 +60,8 @@ export function render(ctx) {
 
   return `
   ${hasDemo ? `<div class="banner warn">Este painel tem dados de exemplo misturados. Remova em <a href="#config">Configurações</a> antes de usar os números.</div>` : ''}
+
+  ${jogo()}
 
   ${foco(ctx)}
 
@@ -173,4 +176,38 @@ function foco(ctx) {
       <a class="btn primary foco-next" href="${acoes.href}">${esc(acoes.t)} ${ICON.arrow}</a>
     </div>
   </section>`;
+}
+
+// Jogo: patente e XP no cartão de destaque, missões do dia e sequência ao lado.
+function jogo() {
+  const g = estado(); const ms = missoes(); const fh = feitasHoje();
+  const n = ms.filter((m) => fh.includes(m.id)).length; const full = n === ms.length;
+  return `<div class="game-grid">
+    <section class="game-hero" aria-label="Sua patente">
+      <div class="gh-top"><span class="gh-chip">Nível ${g.level}</span><span class="gh-chip dark">${num(g.xp)} XP</span></div>
+      <p class="gh-kicker">Sua patente</p>
+      <h2 class="gh-rank">${esc(g.rank.nome)}</h2>
+      <p class="gh-lema">“${esc(g.rank.lema)}”</p>
+      <div class="gh-bar" role="progressbar" aria-valuenow="${Math.round(g.progress * 100)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.max(3, g.progress * 100)}%"></i></div>
+      <p class="gh-next">${g.need - g.into} XP para o nível ${g.level + 1}${g.prox ? ` · próxima patente: <b>${esc(g.prox.nome)}</b> (nível ${g.prox.min})` : ''}</p>
+    </section>
+    <section class="missoes card" aria-label="Missões do dia">
+      <div class="ms-head">
+        <div class="ms-streak f${Math.min(6, [0, 1, 3, 7, 14, 30, 60].filter((x) => g.seq >= x).length - 1)}"><b>${g.seq}</b><span>${g.seq === 1 ? 'dia' : 'dias'}</span></div>
+        <div><p class="ms-kicker">${full ? 'Missão cumprida' : 'Missões de hoje'} · <span>${esc(g.faixa.nome)}</span></p><p class="muted">Recorde ${g.best} ${g.best === 1 ? 'dia' : 'dias'} · domingo é folga</p></div>
+        <span class="ms-count">${n}/${ms.length}</span>
+      </div>
+      <ul class="ms-list">${ms.map((m) => { const on = fh.includes(m.id); return `<li class="${on ? 'on' : ''}">
+        <button class="ms-check" data-missao="${m.id}" aria-pressed="${on}" aria-label="${on ? 'Desmarcar' : 'Concluir'}: ${esc(m.t)}">${on ? '✓' : ''}</button>
+        <a href="${m.href}">${m.principal ? '<small>Principal</small>' : ''}${esc(m.t)}</a><em>+${XP.missao}</em></li>`; }).join('')}</ul>
+      <p class="ms-foot">${full ? `Dia fechado. +${XP.dia} XP de bônus garantido.` : `Feche as ${ms.length} e ganhe +${XP.dia} XP de bônus.`}</p>
+    </section>
+  </div>`;
+}
+
+export function mount(root) {
+  root.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-missao]'); if (!b) return;
+    toggleMissao(b.dataset.missao, missoes().length);
+  });
 }

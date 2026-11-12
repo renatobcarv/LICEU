@@ -109,3 +109,10 @@ São de linha, com 18px e traço de 1,6, na cor do texto (estilo Lucide), e fica
 - [ ] Estado vazio que orienta, nunca "0/0" ou "—" sozinho.
 - [ ] Em 390px, `document.documentElement.scrollWidth` ≤ 390. Tabelas dentro de `.table-wrap`.
 - [ ] Rodou `node tools/check.mjs`.
+
+## Camada Glow (nov/2026)
+- Fundo preto profundo (`#050607`) com halos radiais lima fixos; nada de cinza chapado.
+- Cartões: degradê de vidro + borda de 1px feita com luz (`box-shadow` inset), não com cor sólida.
+- Brilho (`--glow`) só na ação principal, item ativo e conquistas. Se tudo brilha, nada brilha.
+- Cartão de destaque em degradê lima (`--lime-card`), um por tela, para o dado que mais importa (patente no Painel).
+- Movimento: "+XP" sobe ao registrar; comemoração só ao subir de nível. Respeita `prefers-reduced-motion`.
