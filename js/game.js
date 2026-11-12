@@ -25,7 +25,7 @@ export const FAIXAS = [
   { min: 14, nome: 'Viralizando' }, { min: 30, nome: 'Escala' }, { min: 60, nome: 'Modo Tubarão' },
 ];
 
-export const XP = { avanco: 5, reserva: 15, paga: 30, missao: 10, dia: 50, meta: 100 };
+export const XP = { ligacao: 2, avanco: 5, reserva: 15, paga: 30, missao: 10, dia: 50, meta: 100 };
 
 export const xpForLevel = (n) => 50 * (n - 1) * n;
 export function levelOf(xp) {
@@ -96,7 +96,7 @@ export function recorde() {
 export function xpTotal() {
   let xp = 0;
   for (const l of store.all('leads')) {
-    xp += Math.max(0, (l.historico || []).length - 1) * XP.avanco;
+    xp += Math.max(0, (l.historico || []).length - 1) * XP.avanco + (l.contatos || []).filter((c) => c.canal === 'tel').length * XP.ligacao;
     if (l.etapa === 'matriculado') xp += ['Pago', 'Parcial'].includes(l.statusPagamento) ? XP.paga : XP.reserva;
   }
   for (const r of Object.values(diasFeitos())) { xp += (r.feitas?.length || 0) * XP.missao; if (completo(r)) xp += XP.dia; }
@@ -158,7 +158,7 @@ export function estadoPessoa(nome, from = '2000-01-01', to = today()) {
   let xp = 0, pagasN = 0, reservas = 0, receita = 0, matMes = 0;
   const ini = today().slice(0, 8) + '01';
   for (const l of ls) {
-    xp += Math.max(0, (l.historico || []).filter((h) => h.data >= from && h.data <= to).length - 1) * XP.avanco;
+    xp += Math.max(0, (l.historico || []).filter((h) => h.data >= from && h.data <= to).length - 1) * XP.avanco + (l.contatos || []).filter((c) => c.canal === 'tel').length * XP.ligacao;
     if (l.etapa === 'matriculado') {
       const paga = ['Pago', 'Parcial'].includes(l.statusPagamento);
       xp += paga ? XP.paga : XP.reserva; if (paga) { pagasN++; receita += Number(l.valor) || 0; } else reservas++;

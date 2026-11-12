@@ -1281,3 +1281,28 @@ pre.brief { margin: var(--space-3) var(--space-4) 0; padding: var(--space-4); ba
   .ch-msg { padding: 6px 12px; } .ch-tools { right: 8px; } .ch-msg:hover .ch-tools { display: none; } .ch-msg:focus-within .ch-tools, .ch-msg:focus .ch-tools { display: flex; }
 }
 @media (prefers-reduced-motion: reduce) { .tm-ring::before { animation: none; } }
+
+/* ---- Contato: WhatsApp (nova geração) e ligação (clássica) ---- */
+.lead-contact { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+.ct { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 12px; border-radius: 999px; font: 700 12px/1 var(--font-sans); text-decoration: none; }
+.ct small { opacity: .75; font-weight: 600; }
+.ct-wa { color: #0a1f12; background: linear-gradient(180deg, #5ef08f, #25d366); box-shadow: 0 0 14px -6px #25d366; }
+.ct-tel { color: #fff; background: linear-gradient(180deg, #7aa7ff, var(--c-blue)); box-shadow: 0 0 14px -6px var(--c-blue); }
+.ct-last { font-size: 11px; color: var(--subtle-foreground); width: 100%; }
+.dial { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: var(--space-4); }
+.dial-top { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; }
+.dial-meter { min-width: 240px; display: grid; gap: 2px; } .dial-meter b { font: 800 34px/1 var(--font-sans); color: var(--c-blue); text-shadow: 0 0 20px rgba(79,139,255,.5); } .dial-meter span { font-size: 12px; color: var(--muted-foreground); }
+.dial-meter .tm-bar { --a: var(--c-blue); --b: var(--c-cyan); }
+.dial-card { padding: 28px; border-radius: 28px; display: grid; gap: 8px; align-content: start; background: radial-gradient(120% 80% at 0% 0%, rgba(79,139,255,.22), transparent 60%), radial-gradient(100% 80% at 100% 100%, rgba(46,230,214,.12), transparent 60%), #0b0d0e; box-shadow: inset 0 0 0 1px rgba(79,139,255,.3), 0 0 60px -30px var(--c-blue); }
+.dial-why { margin: 0; font: 700 11px/1 var(--font-sans); letter-spacing: .16em; text-transform: uppercase; color: var(--c-cyan); }
+.dial-card h2 { margin: 0; font: 800 clamp(26px, 4vw, 36px)/1.1 var(--font-sans); }
+.dial-phone { margin: 0; font: 700 22px/1.2 var(--font-mono); color: var(--foreground); letter-spacing: .02em; }
+.dial-go { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.dial-call { background: linear-gradient(180deg, #9cc0ff, var(--c-blue)); color: #fff; box-shadow: 0 0 0 1px rgba(79,139,255,.4), 0 10px 40px -12px var(--c-blue); }
+.dial-q { margin: 8px 0 0; font-weight: 700; }
+.dial-res { display: flex; flex-wrap: wrap; gap: 8px; }
+.dial-hist { margin: 8px 0 0; padding-left: 18px; font-size: 13px; color: var(--muted-foreground); }
+.dial-script { padding: 20px 24px; border-radius: 24px; background: var(--glass), #0b0d0e; box-shadow: inset 0 0 0 1px rgba(255,255,255,.07); align-self: start; }
+.dial-script summary { cursor: pointer; font-weight: 800; }
+.dial-script ol { margin: 12px 0 0; padding-left: 20px; display: grid; gap: 10px; } .dial-script p { margin: 2px 0 0; color: var(--muted-foreground-strong); font-size: 14px; }
+@media (max-width: 900px) { .dial { grid-template-columns: 1fr; } }
