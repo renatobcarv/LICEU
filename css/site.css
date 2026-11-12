@@ -304,3 +304,10 @@ h1, h2, h3 { margin: 0; color: var(--text); }
 .gc-foot { background: var(--accent-hex); border-top: 0; }
 .glowcard { background: radial-gradient(110% 45% at 50% 100%, rgb(var(--lime-rgb) / .55), transparent 60%), linear-gradient(180deg, #121512, #0a0c0a 70%); }
 .gc-chart { width: 100%; }
+/* Prints reais do produto */
+.real { margin: 0; border-radius: 18px; overflow: hidden; border: 1px solid var(--line-2); background: var(--surface); box-shadow: 0 40px 120px -40px rgb(var(--lime-rgb) / .35), 0 30px 80px -40px rgba(0,0,0,.9); }
+.real img { display: block; width: 100%; height: auto; }
+.real.big { margin-top: 20px; }
+.gallery { display: flex; gap: 6px; flex-wrap: wrap; }
+.gallery button { border: 1px solid var(--line-2); background: none; color: var(--muted); cursor: pointer; padding: 9px 16px; border-radius: 999px; font: 600 14px/1 var(--font); }
+.gallery button[aria-selected="true"] { background: var(--accent-hex); color: var(--lime-ink); border-color: transparent; }
