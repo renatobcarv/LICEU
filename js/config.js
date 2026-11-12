@@ -5,3 +5,8 @@
 // Na Vercel, SUPABASE_URL e SUPABASE_ANON_KEY (se definidas) substituem estes valores no build.
 export const SUPABASE_URL = 'https://kqaqccjsoqdpbnnyyemw.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_Hj2ojo0Yo9SRp88S8eQYjg_um6dJZiS';
+
+// App da Meta da PLATAFORMA (não do cliente) para o Embedded Signup do WhatsApp. São públicos por design.
+// Preencha depois que o app for criado e aprovado (docs/PENDENCIAS.md). Vazios = botão mostra a pendência.
+export const META_APP_ID = '';
+export const WA_CONFIG_ID = '';

@@ -127,3 +127,6 @@ Estratégia e tecnologia para negócios de educação · [renatobdev.pro](https:
 ---
 
 © 2026 Renato B. Carvalho. Todos os direitos reservados.
+
+## Para colocar no ar
+Pendências (Meta, WhatsApp, domínio, chaves): `docs/PENDENCIAS.md`. Arquitetura SaaS em níveis: `docs/SAAS.md`. Testes do banco: `bash tests/db/run.sh`.

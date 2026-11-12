@@ -9,13 +9,15 @@ import { TERMS_VERSION } from '../brand.js';
 import { productDialog, pipeDialog, pipelines, leadPipeId } from '../leads.js';
 import { loadTestData } from '../demoData.js';
 import { courseName } from '../metrics.js';
+import * as saas from './saas.js';
+import { ROLES, isAdminRole } from '../access.js';
 
 
 export function render() {
   const s = settings();
   const courses = store.all('courses').sort((a, b) => a.nome.localeCompare(b.nome));
   const isSb = store.mode === 'supabase';
-  const isAdmin = !isSb || auth.member?.role === 'admin';
+  const isAdmin = !isSb || isAdminRole(auth.member?.role);
   const hasDemo = COLLECTIONS.some((c) => store.all(c).some((r) => r.demo));
   return `
   <div>
@@ -60,7 +62,7 @@ export function render() {
     <div class="table-wrap"><table class="tbl"><thead><tr><th>Funil</th><th>Etapas</th><th class="r">Leads</th><th></th></tr></thead><tbody>${pipelines().map((p) => `<tr><td>${esc(p.nome)}</td><td>${esc(p.etapas.map((e) => e.nome).join(' → '))}</td><td class="r">${store.all('leads').filter((l) => leadPipeId(l) === p.id).length}</td><td class="r"><button class="btn sm" data-pipe-edit="${esc(p.id)}">Editar ou excluir</button></td></tr>`).join('')}</tbody></table></div>
   </section>
 
-  ${isSb ? team(isAdmin) : `<section class="card"><header class="card-head"><div><h2>Equipe e login</h2></div></header><p class="note">${store.mode === 'cloud' ? 'Este painel está rodando dentro do claude.ai: quem tem acesso ao link vê os mesmos dados.' : 'Modo de teste: os dados ficam só neste navegador. Para login, equipe e dados na nuvem, configure o Supabase (veja o README do projeto).'}</p></section>`}
+  ${isSb ? team(isAdmin) + saas.render() : `<section class="card"><header class="card-head"><div><h2>Equipe e login</h2></div></header><p class="note">${store.mode === 'cloud' ? 'Este painel está rodando dentro do claude.ai: quem tem acesso ao link vê os mesmos dados.' : 'Modo de teste: os dados ficam só neste navegador. Para login, equipe e dados na nuvem, configure o Supabase (veja o README do projeto).'}</p></section>`}
 
   <section class="card">
     <header class="card-head"><div><h2>Backup e dados</h2><p class="muted">Exporte com frequência. O arquivo JSON tem todos os dados da unidade.</p></div></header>
@@ -94,7 +96,7 @@ function team(isAdmin) {
     ${isAdmin ? `<div class="row-actions"><span class="muted">Código de convite:</span><span class="code" id="inv-code">${esc(auth.org?.invite_code || '')}</span><button class="btn sm" data-cfg="copy-code">${ICON.copy} Copiar</button><button class="btn sm ghost" data-cfg="new-code">Gerar outro código</button></div>
     <p class="hint">Quem criar a conta e usar esse código entra como "Edita". Mude o papel abaixo. Gere outro código quando alguém sair da equipe.</p>` : ''}
     <div id="members"><p class="empty-sm">Carregando equipe…</p></div>
-    <p class="hint">Administrador: tudo, inclusive equipe e backup. Edita: cadastra e altera dados. Só leitura: vê painéis e relatórios.</p></section>`;
+    <details class="hint"><summary>O que cada perfil pode fazer</summary><ul>${Object.values(ROLES).map((r) => `<li><b>${esc(r.nome)}:</b> ${esc(r.faz)}</li>`).join('')}</ul><p>A regra vale no banco: quem não tem acesso não recebe o dado, mesmo mexendo no navegador.</p></details></section>`;
 }
 
 async function loadMembers(root) {
@@ -102,9 +104,9 @@ async function loadMembers(root) {
   if (!box) return;
   const { data, error } = await auth.client.from('members').select('user_id, role, nome, email, created_at, terms_version').eq('org_id', auth.org.id).order('created_at');
   if (error) { box.innerHTML = `<p class="form-error">${esc(error.message)}</p>`; return; }
-  const isAdmin = auth.member?.role === 'admin';
+  const isAdmin = isAdminRole(auth.member?.role);
   box.innerHTML = data.map((m) => `<div class="member-row"><div class="who"><b>${esc(m.nome || m.email)}</b><small>${esc(m.email || '')}${m.user_id === auth.user.id ? ' · você' : ''}${m.terms_version ? ' · termos aceitos (' + esc(m.terms_version) + ')' : ''}</small></div>
-    ${isAdmin && m.user_id !== auth.user.id ? `<label class="sr" for="role-${esc(m.user_id)}">Papel</label><select id="role-${esc(m.user_id)}" data-role="${esc(m.user_id)}" class="inline-select">${['admin', 'editor', 'leitura'].map((r) => `<option value="${r}"${r === m.role ? ' selected' : ''}>${roleLabel(r)}</option>`).join('')}</select><button class="btn sm ghost" data-rm="${esc(m.user_id)}">Remover</button>` : `<span class="badge">${esc(roleLabel(m.role))}</span>`}</div>`).join('');
+    ${isAdmin && m.user_id !== auth.user.id ? `<label class="sr" for="role-${esc(m.user_id)}">Papel</label><select id="role-${esc(m.user_id)}" data-role="${esc(m.user_id)}" class="inline-select">${Object.keys(ROLES).filter((r) => r !== 'owner' || auth.member?.role === 'owner').map((r) => `<option value="${r}"${r === m.role ? ' selected' : ''} title="${esc(ROLES[r].faz)}">${esc(ROLES[r].nome)}</option>`).join('')}</select><button class="btn sm ghost" data-rm="${esc(m.user_id)}">Remover</button>` : `<span class="badge">${esc(roleLabel(m.role))}</span>`}</div>`).join('');
   $$('[data-role]', box).forEach((sel) => sel.addEventListener('change', async () => {
     const { error: e } = await auth.client.from('members').update({ role: sel.value }).match({ org_id: auth.org.id, user_id: sel.dataset.role });
     toast(e ? 'Não foi possível mudar o papel: ' + e.message : 'Papel atualizado.', e ? 'bad' : '');
@@ -152,7 +154,7 @@ function courseDialog(c, ctx) {
 }
 
 export function mount(root, ctx) {
-  if (store.mode === 'supabase') loadMembers(root);
+  if (store.mode === 'supabase') { loadMembers(root); saas.mount(root, ctx); }
   root.addEventListener('change', (e) => { const k = e.target.dataset?.cfgToggle; if (!k) return; store.put('settings', { ...store.settings(), id: 'main', [k]: e.target.checked }); toast(e.target.checked ? 'Ligado.' : 'Desligado.'); });
   $('#cfg-import', root)?.addEventListener('change', async (e) => {
     const f = e.target.files[0]; if (!f) return;

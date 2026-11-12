@@ -82,3 +82,6 @@ Testado em Postgres 16 com usuários simulados: isolamento entre unidades, papel
 2. Webhook do WhatsApp Business para criar o lead sozinho com o parâmetro do anúncio (`ctwa_clid`).
 3. Conciliação com o meio de pagamento para separar matrícula prometida de matrícula paga.
 4. Relatório semanal enviado por e-mail toda sexta.
+
+## Evolução para SaaS
+Níveis (escola local → várias escolas → agências → escala), perfis, white-label e WhatsApp por empresa: veja `docs/SAAS.md`. Pendências externas: `docs/PENDENCIAS.md`.
