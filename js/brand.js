@@ -12,6 +12,7 @@ export const TERMS_VERSION = '2026-10-26';
 // Tema único: Noir. Remove preferências antigas de tema salvas no navegador.
 export function applyTheme() {
   document.documentElement.removeAttribute('data-skin');
+  applyPaleta();
   try { localStorage.removeItem('liceu.theme'); } catch (e) { /* opcional */ }
 }
 
@@ -35,4 +36,17 @@ export function applyBranding(b = {}) {
   document.querySelectorAll('img.logo-full').forEach((img) => { if (URL_OK(atual.logo)) { img.src = atual.logo; img.alt = productName(); img.removeAttribute('width'); img.removeAttribute('height'); } });
   document.querySelectorAll('img.logo-mark').forEach((img) => { if (URL_OK(atual.simbolo)) img.src = atual.simbolo; });
   if (URL_OK(atual.favicon)) { const l = document.querySelector('link[rel~="icon"]'); if (l) l.href = atual.favicon; }
+}
+
+// ---------- Paleta (Toxic Luxury padrão, Acid Royal alternativa) ----------
+export const PALETAS = {
+  acid: { nome: 'Acid Royal', cores: ['#060706', '#C6FF00', '#8B00FF', '#142D16'] },
+  toxic: { nome: 'Toxic Luxury', cores: ['#070908', '#A3FF12', '#7B2CBF', '#102B20'] },
+};
+const PK = 'flowclass.paleta';
+export const paletaAtual = () => { try { return PALETAS[localStorage.getItem(PK)] ? localStorage.getItem(PK) : 'acid'; } catch (e) { return 'acid'; } };
+export function applyPaleta(id = paletaAtual()) {
+  document.documentElement.dataset.paleta = PALETAS[id] ? id : 'acid';
+  try { localStorage.setItem(PK, document.documentElement.dataset.paleta); } catch (e) { /* opcional */ }
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = '#060706';
 }

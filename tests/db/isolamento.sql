@@ -119,3 +119,12 @@ rollback;
 -- 10. Auditoria registra quem mexeu
 select pg_temp.ok('10 auditoria registrou as gravações', (select count(*) from audit_log) >= 5);
 \echo FIM
+
+-- 11. Teste grátis: empresa nova nasce com 7 dias e plano escolhido no cadastro
+begin; select pg_temp.como('cc000000-0000-0000-0000-0000000000cc');
+select set_config('request.jwt.claims', '{"email":"x@x.com","user_metadata":{"nome":"Novo","plano_interesse":"pro"}}', true);
+select create_org('Escola Nova');
+select pg_temp.ok('11 cadastro cria teste de 7 dias no plano escolhido', (select (trial_status(id)->>'dias')::int = 7 and trial_status(id)->>'status' = 'teste' and plano = 'pro' from orgs where nome = 'Escola Nova'));
+select pg_temp.ok('11b quem não é membro não vê o teste de outra empresa', (select trial_status('aaaaaaaa-0000-0000-0000-000000000000') is null));
+rollback;
+\echo FIM2

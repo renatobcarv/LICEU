@@ -21,7 +21,7 @@ export function render() {
     <div id="saas-uso"><p class="empty-sm">Carregando…</p></div></section>
 
   <section class="card saas"><header class="card-head"><div><h2>Marca (white-label)</h2><p class="muted">Nome, logotipo e cores que a sua equipe e seus clientes veem</p></div><button class="btn sm" data-saas="marca">Editar marca</button></header>
-    <div class="wl-prev" style="--p:${esc(o.branding?.primaria || '#c4f15a')};--s:${esc(o.branding?.secundaria || '#12c48b')}">
+    <div class="wl-prev" style="--p:${esc(o.branding?.primaria || '#a3ff12')};--s:${esc(o.branding?.secundaria || '#7a9e00')}">
       ${o.branding?.logo ? `<img src="${esc(o.branding.logo)}" alt="" class="wl-logo">` : '<span class="wl-dot"></span>'}
       <div><b>${esc(o.branding?.nome || 'FLOWCLASS Intelligence')}</b><small>${o.branding?.primaria ? 'Cores próprias aplicadas' : 'Usando a marca padrão'}</small></div>
     </div></section>
@@ -114,8 +114,8 @@ function marcaDialog() {
       { name: 'logo', label: 'Logotipo (link https, fundo transparente)', value: b.logo || '', full: true },
       { name: 'simbolo', label: 'Símbolo pequeno (link https)', value: b.simbolo || '' },
       { name: 'favicon', label: 'Ícone da aba (link https)', value: b.favicon || '' },
-      { name: 'primaria', label: 'Cor principal', type: 'color', value: b.primaria || '#c4f15a' },
-      { name: 'secundaria', label: 'Cor secundária', type: 'color', value: b.secundaria || '#12c48b' },
+      { name: 'primaria', label: 'Cor principal', type: 'color', value: b.primaria || '#a3ff12' },
+      { name: 'secundaria', label: 'Cor secundária', type: 'color', value: b.secundaria || '#7a9e00' },
       { name: 'destaque', label: 'Cor de destaque', type: 'color', value: b.destaque || '#ff7a1a' },
       { name: 'rodape', label: 'Rodapé', value: b.rodape || '', full: true },
     ],

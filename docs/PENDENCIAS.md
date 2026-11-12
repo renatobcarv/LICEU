@@ -3,7 +3,7 @@
 O código está pronto e testado. O que falta depende de contas, aprovações e chaves que só você (dono da empresa) pode criar. **Nenhum token vai no chat nem no código**: todos entram em Supabase › Project Settings › Edge Functions › Secrets.
 
 ## 1. Banco (5 minutos) · você
-- [ ] Supabase › SQL Editor: rodar `supabase/schema.sql` (se ainda não rodou) e depois **`supabase/migrations/002_saas.sql`**.
+- [ ] Supabase › SQL Editor: rodar `supabase/schema.sql` (se ainda não rodou), depois **`supabase/migrations/002_saas.sql`** e **`003_teste_gratis.sql`** (teste grátis de 7 dias).
 - [ ] Conferir em Table Editor que existem `plans`, `wa_connections`, `org_domains`.
 - [ ] Se for agência: `update orgs set tipo = 'agencia', plano = 'agencia' where nome = '<sua empresa>';` (a plataforma define o plano; não há cobrança ligada).
 

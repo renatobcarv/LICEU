@@ -226,6 +226,7 @@ async function boot() {
   const seeded = canWrite ? await seedIfEmpty() : false;
   try { lastXp = estado(); } catch { /* sem dados */ }
   render();
+  if (session) trialBar();
   if (seeded) toast('Tudo pronto. Comece cadastrando seus cursos em Configurações.');
   if (session && auth.member?.role === 'leitura') toast('Você tem acesso só de leitura.', 'warn');
 }
@@ -253,4 +254,16 @@ function celebrar(titulo, sub) {
   document.body.appendChild(el); el.addEventListener('click', () => el.remove());
   try { navigator.vibrate?.([30, 60, 30, 60, 80]); } catch { /* sem suporte */ }
   setTimeout(() => el.remove(), 3400);
+}
+
+// Teste grátis: faixa no topo com os dias que faltam (migração 003). Some quando a assinatura está ativa.
+async function trialBar() {
+  try {
+    const { data } = await auth.client.rpc('trial_status', { o: auth.org.id });
+    if (!data || data.status !== 'teste') return;
+    const d = data.dias;
+    const el = document.createElement('div'); el.className = 'trial-bar' + (d <= 2 ? ' end' : ''); el.setAttribute('role', 'status');
+    el.innerHTML = `<span><b>${d > 0 ? d + (d === 1 ? ' dia' : ' dias') : 'Último dia'}</b> de teste grátis${d > 0 ? '' : ' hoje'}. Tudo liberado até lá.</span><a class="btn sm primary" href="/planos" target="_blank" rel="noopener">Escolher plano</a>`;
+    document.querySelector('.content, main')?.before(el);
+  } catch (e) { /* banco sem a migração 003 */ }
 }

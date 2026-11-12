@@ -12,7 +12,7 @@ import { startFromTurma } from './views/campanhas.js';
 
 export const STATUS_TURMA = ['Planejando', 'Inscrições abertas', 'Lotada', 'Em andamento', 'Concluída', 'Cancelada'];
 const STATUS_CLS = { 'Planejando': '', 'Inscrições abertas': 'good', 'Lotada': 'warn', 'Em andamento': 'info', 'Concluída': 'info', 'Cancelada': 'bad' };
-export const CORES_TURMA = [['lima', '#c4f15a'], ['azul', '#7fb7ff'], ['verde', '#6fe0a0'], ['ambar', '#ffb547'], ['rosa', '#ff8fb1'], ['aco', '#a7b0b5']];
+export const CORES_TURMA = [['lima', '#a3ff12'], ['azul', '#7fb7ff'], ['verde', '#6fe0a0'], ['ambar', '#ffb547'], ['rosa', '#ff8fb1'], ['aco', '#a7b0b5']];
 const DIAS = [['seg', 'Seg'], ['ter', 'Ter'], ['qua', 'Qua'], ['qui', 'Qui'], ['sex', 'Sex'], ['sab', 'Sáb'], ['dom', 'Dom']];
 const MODALIDADES = ['Presencial', 'Online ao vivo', 'Híbrida'];
 const TURNOS = ['Manhã', 'Tarde', 'Noite', 'Integral', 'Fim de semana'];
