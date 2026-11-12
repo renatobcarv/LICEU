@@ -29,6 +29,8 @@ export const COLLECTIONS = [
   'ideas',     // ideias, testes e melhorias
   'reports',   // relatórios salvos
   'imports',   // histórico de importações
+  'team',      // pessoas do time (função, insígnia, reconhecimentos)
+  'chat',      // mensagens do chat do time (canal, autor, texto, reações)
 ];
 
 const LS_KEY = 'liceu.intelligence.v1';

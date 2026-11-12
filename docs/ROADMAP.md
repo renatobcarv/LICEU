@@ -34,3 +34,5 @@
 - [ ] Hall da Fama (ranking por consultor)
 - [ ] Registro de copies e identidade de marca (destrava Copy Killer real e Lenda do Branding)
 - [ ] Placar de esforço e radar por consultor
+- [x] Time gamificado (insígnia por função, board individual, kudos, pódio) e Chat do time (canais, menções, reações)
+- [x] Funil para os dois tipos de closer: WhatsApp e ligação (registro de tentativas, Modo ligação com fila e roteiro)

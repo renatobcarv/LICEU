@@ -10,6 +10,7 @@ import {
   matriculaDialog, loseDialog, editLead, courseOpts, campOpts, moveToCol, pipelines, pipeline, leadCol, leadStage, leadPipeId,
   pipeDialog, productDialog, responsaveis, tagList, TEMPERATURAS, myName, recebido,
 } from '../leads.js';
+import { botoes, discador, registrar, RESULTADOS } from '../contato.js';
 
 const PIPE_KEY = 'liceu.funil.atual';
 let tab = 'kanban';
@@ -17,6 +18,7 @@ let q = '';
 let view = 'todos';   // todos | abertos | hoje | ganhos | perdidos
 let fResp = '';
 let fTemp = '';
+let dialPos = 0;
 let lote = '';        // id da importação de contatos em foco na Lista
 let pipeId = (() => { try { return localStorage.getItem(PIPE_KEY) || 'principal'; } catch (e) { return 'principal'; } })();
 
@@ -33,7 +35,7 @@ export function render(ctx) {
   const s = salesStats(from, to, { ...f, funilId: p.id });
   const pipes = pipelines();
   const abertosPorFunil = (id) => store.all('leads').filter((l) => OPEN(l) && leadPipeId(l) === id).length;
-  const tabs = [['kanban', 'Kanban'], ['lista', 'Lista'], ['analise', 'Análise'], ['produtos', 'Produtos'], ['respostas', 'Respostas prontas']];
+  const tabs = [['kanban', 'Kanban'], ['lista', 'Lista'], ['discador', '☎ Modo ligação'], ['analise', 'Análise'], ['produtos', 'Produtos'], ['respostas', 'Respostas prontas']];
   return `
   <section class="pipe-bar" aria-label="Funis">
     <div class="pipe-tabs scroll-x" role="tablist">${pipes.map((x) => `<button type="button" class="pipe-tab" role="tab" data-pipe="${esc(x.id)}" aria-selected="${x.id === p.id}"><span>${esc(x.nome)}</span><small>${abertosPorFunil(x.id)}</small></button>`).join('')}
@@ -72,6 +74,7 @@ export function render(ctx) {
 function body(ctx, s, p) {
   if (tab === 'kanban') return board(ctx, p);
   if (tab === 'lista') return list(ctx, p);
+  if (tab === 'discador') return discador(store.all('leads').filter((l) => OPEN(l) && leadPipeId(l) === p.id && (!fResp || (fResp === '__none' ? !l.responsavel : l.responsavel === fResp))), dialPos);
   if (tab === 'analise') return analysis(ctx, s, p);
   if (tab === 'produtos') return produtos(ctx);
   return respostas();
@@ -113,6 +116,7 @@ function cardHTML(l, p) {
         ? `<p class="lead-meta">${esc(l.motivoPerda || 'Sem motivo')} · ${fmtDate(l.dataPerda)}</p>`
         : `<p class="lead-meta">${l.valor ? `<b>${brl(l.valor)}</b> · ` : ''}<span class="${parado >= 7 ? 'warn-t' : ''}">${parado === 0 ? 'Mudou hoje' : parado + (parado > 1 ? ' dias' : ' dia') + ' na etapa'}</span>${l.proximaData ? ` · <span class="${late ? 'bad' : due ? 'warn-t' : ''}">${due ? 'retorno hoje' : 'retorno ' + fmtDate(l.proximaData)}</span>` : ''}</p>`}
     ${l.proximaAcao && OPEN(l) ? `<p class="lead-next">${esc(l.proximaAcao)}</p>` : ''}
+    ${OPEN(l) ? botoes(l) : ''}
     ${OPEN(l) ? `<div class="lead-actions">
       ${next ? `<button type="button" class="btn sm" data-move="${esc(l.id)}" data-to="${esc(next.id)}" title="Mover para ${esc(next.nome)}">${ICON.arrow}</button>` : ''}
       ${l.visitouEm ? '' : `<button type="button" class="btn sm" data-visit="${esc(l.id)}" title="Marcar que visitou a escola">Visitou</button>`}
@@ -460,7 +464,20 @@ function bindDrag(root, ctx) {
   });
 }
 
+function resultadoDialog(id, ctx) {
+  const l = store.get('leads', id); if (!l) return;
+  openDialog({ title: 'Como foi a ligação com ' + l.nome + '?',
+    html: `<div class="dial-res">${RESULTADOS.map((r) => `<button type="button" class="btn ${r.cls}" data-res="${r.id}">${r.t}</button>`).join('')}</div><p class="hint">Não atendeu e caixa postal agendam nova tentativa para amanhã. "Retornar depois" agenda em 2 dias.</p>`,
+    onOpen: (form, dlg) => dlg.querySelectorAll('[data-res]').forEach((b) => b.addEventListener('click', () => { registrar(id, 'tel', b.dataset.res); dlg.close(); toast('Ligação registrada.'); ctx.refresh(); })) });
+}
+
 export function mount(root, ctx) {
+  root.addEventListener('click', (e) => {
+    const wa = e.target.closest('[data-wa]'); if (wa) { registrar(wa.dataset.wa, 'wa'); return; }
+    const tel = e.target.closest('[data-tel]'); if (tel) { if (!tel.dataset.nopop) setTimeout(() => resultadoDialog(tel.dataset.tel, ctx), 400); return; }
+    const res = e.target.closest('[data-res][data-lead]'); if (res) { registrar(res.dataset.lead, 'tel', res.dataset.res); toast('Registrado. Próximo da fila.'); ctx.refresh(); return; }
+    const pul = e.target.closest('[data-pular]'); if (pul) { dialPos = Number(pul.dataset.pular) || 0; ctx.refresh(); }
+  });
   const quick = $('#quick', root);
   const syncCamp = () => { $('#q-camp-wrap', root).hidden = !['Meta Ads', 'Google'].includes($('#q-origem', root).value); };
   $('#q-origem', root).addEventListener('change', syncCamp); syncCamp();

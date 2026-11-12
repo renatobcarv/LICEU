@@ -24,7 +24,7 @@ export function render() {
       <div class="ars-n"><b>${ganhas.length}</b><span>de ${cs.length} conquistas</span></div>
       <div class="ars-n"><b>${g.seq}</b><span>dias seguidos · ${esc(g.faixa.nome)}</span></div>
       <div class="ars-n"><b>${g.best}</b><span>recorde de dias</span></div>
-      <p class="muted ars-how">XP vem de atividade registrada: avanço de lead +${XP.avanco}, reserva +${XP.reserva}, matrícula paga +${XP.paga}, missão +${XP.missao}, dia completo +${XP.dia}, meta batida +${XP.meta}. Conquistas não dão XP: elas provam resultado.</p>
+      <p class="muted ars-how">XP vem de atividade registrada: ligação +${XP.ligacao}, avanço de lead +${XP.avanco}, reserva +${XP.reserva}, matrícula paga +${XP.paga}, missão +${XP.missao}, dia completo +${XP.dia}, meta batida +${XP.meta}. Conquistas não dão XP: elas provam resultado.</p>
     </section>
   </div>
 
