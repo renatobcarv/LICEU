@@ -150,3 +150,21 @@ export function conquistas(level) {
 }
 export const tituloAtivo = () => jogo().titulo || '';
 export function usarTitulo(id) { store.put('settings', { ...store.settings(), id: 'main', jogo: { ...jogo(), titulo: id } }); }
+
+// ---------- Por pessoa (Time): XP e patente a partir dos leads em que ela é responsável ----------
+const norm = (s) => String(s || '').trim().toLowerCase();
+export function estadoPessoa(nome, from = '2000-01-01', to = today()) {
+  const ls = store.all('leads').filter((l) => norm(l.responsavel) === norm(nome));
+  let xp = 0, pagasN = 0, reservas = 0, receita = 0, matMes = 0;
+  const ini = today().slice(0, 8) + '01';
+  for (const l of ls) {
+    xp += Math.max(0, (l.historico || []).filter((h) => h.data >= from && h.data <= to).length - 1) * XP.avanco;
+    if (l.etapa === 'matriculado') {
+      const paga = ['Pago', 'Parcial'].includes(l.statusPagamento);
+      xp += paga ? XP.paga : XP.reserva; if (paga) { pagasN++; receita += Number(l.valor) || 0; } else reservas++;
+      if ((l.dataMatricula || '') >= ini) matMes++;
+    }
+  }
+  const lv = levelOf(xp); const ri = rankIdx(lv.level);
+  return { xp, ...lv, rank: RANKS[ri], rankIdx: ri, leads: ls.length, pagas: pagasN, reservas, receita, matMes, abertos: ls.filter((l) => !['matriculado', 'perdido'].includes(l.etapa)).length };
+}

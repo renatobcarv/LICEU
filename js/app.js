@@ -16,7 +16,8 @@ import * as matriculas from './views/matriculas.js';
 import * as pauta from './views/pauta.js';
 import * as calendario from './views/calendario.js';
 import * as metas from './views/metas.js';
-import * as quadro from './views/quadro.js';
+import * as time from './views/time.js';
+import * as chat from './views/chat.js';
 import * as relatorios from './views/relatorios.js';
 import * as config from './views/config.js';
 import * as arsenal from './views/arsenal.js';
@@ -31,7 +32,8 @@ const VIEWS = [
   { id: 'pauta', label: 'Pauta Viral', title: ['Pauta', '*Viral'], kicker: 'Criação de conteúdo', mod: pauta, group: 'Produzir', noPeriod: true },
   { id: 'calendario', label: 'Calendário', title: ['*Calendário', 'editorial'], kicker: 'Planejamento', mod: calendario, group: 'Produzir', noPeriod: true },
   { id: 'metas', label: 'Metas e estratégias', title: ['Metas', 'e', '*estratégias'], kicker: 'Direção', mod: metas, group: 'Decidir', noPeriod: true },
-  { id: 'quadro', label: 'Quadro', title: ['Quadro de', '*planejamento'], kicker: 'Pensar e organizar', mod: quadro, group: 'Decidir', noPeriod: true },
+  { id: 'time', label: 'Time', title: ['Seu', '*time'], kicker: 'Quem faz acontecer', mod: time, group: 'Time', noPeriod: true },
+  { id: 'chat', label: 'Chat', title: ['Chat do', '*time'], kicker: 'Conversa da equipe', mod: chat, group: 'Time', noPeriod: true },
   { id: 'relatorios', label: 'Relatórios', title: ['*Relatórios', 'gerenciais'], kicker: 'Prestação de contas', mod: relatorios, group: 'Decidir' },
   { id: 'config', label: 'Configurações', title: ['*Configurações'], kicker: 'Sistema', mod: config, group: 'Sistema', noPeriod: true },
 ];
