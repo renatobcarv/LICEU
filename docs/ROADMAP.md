@@ -26,3 +26,11 @@
 - [ ] Bloquear dados financeiros no banco por papel (não só na tela)
 - [ ] Exportar relatórios em PDF
 - [ ] Testes automáticos rodando no GitHub a cada PR
+
+## Gamificação (feito)
+- [x] 11 patentes (Novato do Digital → Lenda do Marketing), XP só de registro real, missões do dia, sequência com folga no domingo
+- [x] Meu Arsenal: hierarquia, 15 conquistas comprovadas por dados, título escolhido
+- [ ] Eventos (Semana do ROI, Caçada aos Leads, Copy War…) e temporadas semanais
+- [ ] Hall da Fama (ranking por consultor)
+- [ ] Registro de copies e identidade de marca (destrava Copy Killer real e Lenda do Branding)
+- [ ] Placar de esforço e radar por consultor

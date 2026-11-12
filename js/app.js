@@ -1,5 +1,6 @@
 // Casca do app: navegação, filtro global de período e curso, e troca de módulos.
 
+import { estado } from './game.js';
 import { store, initStore, seedIfEmpty } from './store.js';
 import { $, $$, esc, today, monthStart, monthEnd, addMonths, addDays, fmtRange, weekStart } from './util.js';
 import { ICON, toast, countUp } from './ui.js';
@@ -18,6 +19,7 @@ import * as metas from './views/metas.js';
 import * as quadro from './views/quadro.js';
 import * as relatorios from './views/relatorios.js';
 import * as config from './views/config.js';
+import * as arsenal from './views/arsenal.js';
 
 const VIEWS = [
   { id: 'painel', label: 'Painel', title: ['Visão', '*geral'], kicker: 'Do anúncio à matrícula', mod: painel, group: 'Acompanhar' },
@@ -25,6 +27,7 @@ const VIEWS = [
   { id: 'campanhas', label: 'Campanhas', title: ['Planejar', 'campanha'], kicker: 'Do quiz à matrícula', mod: campanhas, group: 'Acompanhar', noPeriod: true },
   { id: 'funil', label: 'Funil', title: ['Funil', '*comercial'], kicker: 'Do WhatsApp à matrícula', mod: funil, group: 'Acompanhar' },
   { id: 'matriculas', label: 'Matrículas', title: ['*Matrículas'], kicker: 'Quem comprou', mod: matriculas, group: 'Acompanhar' },
+  { id: 'arsenal', label: 'Meu Arsenal', title: ['Meu', '*Arsenal'], kicker: 'Patente, conquistas e títulos', mod: arsenal, group: 'Acompanhar', noPeriod: true },
   { id: 'pauta', label: 'Pauta Viral', title: ['Pauta', '*Viral'], kicker: 'Criação de conteúdo', mod: pauta, group: 'Produzir', noPeriod: true },
   { id: 'calendario', label: 'Calendário', title: ['*Calendário', 'editorial'], kicker: 'Planejamento', mod: calendario, group: 'Produzir', noPeriod: true },
   { id: 'metas', label: 'Metas e estratégias', title: ['Metas', 'e', '*estratégias'], kicker: 'Direção', mod: metas, group: 'Decidir', noPeriod: true },
@@ -189,6 +192,7 @@ function shell() {
   window.addEventListener('scroll', onScroll, { passive: true });
   // Mudanças vindas de outra pessoa (nuvem) ou de outra tela redesenham, mas nunca no meio de uma digitação.
   store.on(() => {
+    try { xpWatch(); } catch (e) { console.warn(e); }
     if (current?.mod.autoRefresh === false) { renderStatus(); return; }
     const busy = $('#dlg').open || (document.activeElement && $('#main').contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));
     if (busy) { renderPending = true; return; }
@@ -209,9 +213,33 @@ async function boot() {
   // Remove as 3 ideias de exemplo que vinham no início, se ninguém mexeu nelas.
   if (canWrite) ['i_preco', 'i_bot', 'i_form'].forEach((id) => { const i = store.get('ideas', id); if (i && i.status === 'Ideia' && !i.resultado && !i.indicador) store.remove('ideas', id); });
   const seeded = canWrite ? await seedIfEmpty() : false;
+  try { lastXp = estado(); } catch { /* sem dados */ }
   render();
   if (seeded) toast('Tudo pronto. Comece cadastrando seus cursos em Configurações.');
   if (session && auth.member?.role === 'leitura') toast('Você tem acesso só de leitura.', 'warn');
 }
 
 boot();
+
+// XP: compara com o último valor e mostra o ganho na hora. Subir de patente ganha comemoração.
+let lastXp = null;
+function xpWatch() {
+  const g = estado();
+  if (lastXp === null) { lastXp = g; return; }
+  const ganho = g.xp - lastXp.xp;
+  if (ganho > 0) {
+    const f = document.createElement('div'); f.className = 'xp-float'; f.textContent = `+${ganho} XP`;
+    document.body.appendChild(f); setTimeout(() => f.remove(), 1600);
+    try { navigator.vibrate?.(14); } catch { /* sem suporte */ }
+  }
+  if (g.rankIdx > lastXp.rankIdx) celebrar(g.rank.nome, g.rank.sentido + ' “' + g.rank.lema + '”');
+  else if (g.level > lastXp.level) celebrar('Nível ' + g.level, g.rank.nome);
+  lastXp = g;
+}
+function celebrar(titulo, sub) {
+  const el = document.createElement('div'); el.className = 'celebra'; el.setAttribute('role', 'status');
+  el.innerHTML = `<div class="celebra-box"><p>Subiu de nível</p><h2>${esc(titulo)}</h2><small>${esc(sub)}</small></div>`;
+  document.body.appendChild(el); el.addEventListener('click', () => el.remove());
+  try { navigator.vibrate?.([30, 60, 30, 60, 80]); } catch { /* sem suporte */ }
+  setTimeout(() => el.remove(), 3400);
+}
