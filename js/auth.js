@@ -17,16 +17,32 @@ export function supabaseConfigured() {
 }
 
 const LOGO = `<div class="auth-logo">${LOGO_MARK}<span class="brand-sub">Intelligence</span></div>`;
+const PLANOS = { local: 'Escola', pro: 'Rede', agencia: 'Agência' };
+const qs = new URLSearchParams(location.search);
+const LAST = 'flowclass.ultimo.email';
+const lastEmail = () => { try { return localStorage.getItem(LAST) || ''; } catch (e) { return ''; } };
 
+// Tela dividida: marca e prova à esquerda (some no celular), formulário à direita.
 function screen(inner) {
   const root = $('#auth');
   root.hidden = false;
   $('#app').hidden = true;
-  root.innerHTML = `<div class="auth-card">${LOGO}<p class="auth-eyebrow">Intelligence</p>${inner}</div><p class="auth-foot">Marketing e matrículas em um só lugar · <a href="termos.html" target="_blank" rel="noopener">Termos de uso</a> · <a href="privacidade.html" target="_blank" rel="noopener">Privacidade</a></p>`;
+  root.className = 'auth-split';
+  root.innerHTML = `
+    <aside class="auth-brand" aria-hidden="true">
+      ${LOGO}
+      <div class="ab-copy"><p class="ab-eyebrow">Do anúncio à matrícula paga</p>
+        <h2>Saiba quanto custou <span>cada aluno.</span></h2>
+        <ul><li>Meta Ads com custo por matrícula</li><li>WhatsApp oficial dentro do funil</li><li>Time com missões, patentes e ranking</li></ul></div>
+      <div class="ab-case"><div><b>R$ 800</b><span>em anúncio</span></div><div><b>26</b><span>matrículas</span></div><div><b>R$ 30,80</b><span>por aluno</span></div></div>
+      <p class="ab-foot">Campanha real da TEC Mais Valparaíso</p>
+    </aside>
+    <section class="auth-pane"><div class="auth-card">${LOGO}${inner}</div>
+      <p class="auth-foot"><a href="/vendas">Conhecer o FLOWCLASS</a> · <a href="/planos">Planos</a> · <a href="termos.html" target="_blank" rel="noopener">Termos</a> · <a href="privacidade.html" target="_blank" rel="noopener">Privacidade</a></p></section>`;
   return root;
 }
 function msg(root, text, kind = 'bad') { const el = $('.auth-msg', root); el.textContent = text; el.className = 'auth-msg ' + kind; el.hidden = !text; }
-function busy(btn, on, label) { btn.disabled = on; if (label) btn.textContent = label; }
+function busy(btn, on, label) { btn.disabled = on; btn.classList.toggle('loading', on); if (label) btn.textContent = label; }
 
 const ERRORS = {
   'Invalid login credentials': 'E-mail ou senha incorretos.',
@@ -34,22 +50,72 @@ const ERRORS = {
   'User already registered': 'Já existe uma conta com esse e-mail. Use Entrar ou Esqueci a senha.',
   'Password should be at least 6 characters': 'A senha precisa ter pelo menos 8 caracteres.',
   'Email rate limit exceeded': 'Muitas tentativas seguidas. Espere alguns minutos e tente de novo.',
+  'Signups not allowed for otp': 'Não encontramos conta com esse e-mail. Crie uma conta primeiro.',
+  'Unable to validate email address: invalid format': 'Confira o e-mail: o formato parece errado.',
 };
-const tr = (e) => ERRORS[e?.message] || (/fetch|network/i.test(e?.message || '') ? 'Sem conexão com o servidor. Confira a internet e tente de novo.' : e?.message) || 'Não foi possível concluir. Tente de novo.';
+const tr = (e) => ERRORS[e?.message] || (/fetch|network/i.test(e?.message || '') ? 'Sem conexão com o servidor. Confira a internet e tente de novo.' : /rate limit|too many/i.test(e?.message || '') ? ERRORS['Email rate limit exceeded'] : e?.message) || 'Não foi possível concluir. Tente de novo.';
+
+// Campo de senha com mostrar/ocultar e aviso de Caps Lock.
+const passField = (id, label, auto, extra = '') => `<div class="field"><label for="${id}">${label}</label>
+  <div class="pass-wrap"><input id="${id}" type="password" autocomplete="${auto}" required ${extra}><button type="button" class="pass-eye" data-eye="${id}" aria-label="Mostrar senha" aria-pressed="false">👁</button></div>
+  <p class="caps" id="${id}-caps" hidden>Caps Lock ligado</p></div>`;
+function bindPass(root) {
+  root.querySelectorAll('[data-eye]').forEach((b) => b.addEventListener('click', () => {
+    const i = $('#' + b.dataset.eye, root); const show = i.type === 'password'; i.type = show ? 'text' : 'password';
+    b.setAttribute('aria-pressed', String(show)); b.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha'); i.focus();
+  }));
+  root.querySelectorAll('.pass-wrap input').forEach((i) => ['keydown', 'keyup'].forEach((ev) => i.addEventListener(ev, (e) => { const c = $('#' + i.id + '-caps', root); if (c && e.getModifierState) c.hidden = !e.getModifierState('CapsLock'); })));
+}
+// Sugere o domínio certo quando o e-mail tem erro comum de digitação.
+const DOMS = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com.br', 'icloud.com', 'live.com', 'uol.com.br', 'bol.com.br'];
+function lev(a, b) { const d = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j; for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; }
+export function emailHint(v) {
+  const m = String(v || '').trim().toLowerCase().match(/^([^@\s]+)@([^@\s]+)$/); if (!m) return '';
+  if (DOMS.includes(m[2])) return '';
+  const best = DOMS.map((d) => [d, lev(m[2], d)]).sort((x, y) => x[1] - y[1])[0];
+  return best && best[1] > 0 && best[1] <= 2 ? m[1] + '@' + best[0] : '';
+}
+function bindEmail(root) {
+  const i = $('#a-email', root), h = $('#a-email-hint', root); if (!i || !h) return;
+  const check = () => { const s = emailHint(i.value); h.hidden = !s; if (s) h.innerHTML = `Você quis dizer <button type="button" class="link" data-fix="${esc(s)}">${esc(s)}</button>?`; };
+  i.addEventListener('blur', check);
+  h.addEventListener('click', (e) => { const f = e.target.closest('[data-fix]'); if (f) { i.value = f.dataset.fix; h.hidden = true; } });
+}
+// Força da senha: comprimento e variedade. Não bloqueia além do mínimo de 8; orienta.
+export function forca(p) {
+  let n = 0; if (p.length >= 8) n++; if (p.length >= 12) n++; if (/[a-z]/.test(p) && /[A-Z]/.test(p)) n++; if (/\d/.test(p)) n++; if (/[^\w\s]/.test(p)) n++;
+  if (/^(.)\1+$/.test(p) || /^(12345678|password|senha123|qwerty)/i.test(p)) n = 0;
+  return p.length < 8 ? 0 : Math.min(4, Math.max(1, n - 1));
+}
+const FORCA = ['Muito curta', 'Fraca', 'Razoável', 'Boa', 'Forte'];
 
 function loginView(resolve, notice = '') {
   const root = screen(`
-    <h1>Entrar no <em>painel</em></h1>
+    <h1>Entrar</h1><p class="auth-sub">Bom te ver de novo.</p>
     <form id="a-form" class="auth-form" novalidate>
-      <div class="field"><label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" required></div>
-      <div class="field"><label for="a-pass">Senha</label><input id="a-pass" type="password" autocomplete="current-password" required></div>
+      <div class="field"><label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" inputmode="email" required value="${esc(lastEmail())}"><p class="hint" id="a-email-hint" hidden></p></div>
+      ${passField('a-pass', 'Senha', 'current-password')}
+      <div class="auth-row"><span></span><button type="button" class="link" id="to-reset">Esqueci a senha</button></div>
       <p class="auth-msg" role="alert" hidden></p>
       <button class="btn primary block" type="submit">Entrar</button>
     </form>
-    <div class="auth-links"><button class="link" id="to-signup">Criar conta</button><button class="link" id="to-reset">Esqueci a senha</button></div>`);
+    <div class="auth-sep"><span>ou</span></div>
+    <button class="btn block" id="to-magic" type="button">Receber link de acesso no e-mail</button>
+    <p class="auth-switch">Ainda não tem conta? <button class="link" id="to-signup">Criar conta grátis</button></p>`);
   if (notice) msg(root, notice, 'good');
+  bindPass(root); bindEmail(root);
   $('#to-signup', root).onclick = () => signupView(resolve);
   $('#to-reset', root).onclick = () => resetView(resolve);
+  $('#to-magic', root).onclick = async (e) => {
+    const email = $('#a-email', root).value.trim();
+    if (!email) { msg(root, 'Digite seu e-mail acima para receber o link.'); return $('#a-email', root).focus(); }
+    busy(e.target, true, 'Enviando…');
+    const { error } = await auth.client.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: location.origin + location.pathname } });
+    busy(e.target, false, 'Receber link de acesso no e-mail');
+    if (error) return msg(root, tr(error));
+    try { localStorage.setItem(LAST, email); } catch (er) { /* opcional */ }
+    msg(root, 'Link enviado para ' + email + '. Abra no mesmo aparelho para entrar.', 'good');
+  };
   $('#a-form', root).onsubmit = async (e) => {
     e.preventDefault();
     const email = $('#a-email', root).value.trim(), password = $('#a-pass', root).value;
@@ -58,61 +124,91 @@ function loginView(resolve, notice = '') {
     const { data, error } = await auth.client.auth.signInWithPassword({ email, password });
     busy(btn, false, 'Entrar');
     if (error) return msg(root, tr(error));
+    try { localStorage.setItem(LAST, email); } catch (er) { /* opcional */ }
     auth.user = data.user;
     chooseOrg(resolve);
   };
-  $('#a-email', root).focus();
+  $(lastEmail() ? '#a-pass' : '#a-email', root).focus();
 }
 
 function signupView(resolve) {
+  const plano = PLANOS[qs.get('plano')] ? qs.get('plano') : '';
   const root = screen(`
-    <h1>Criar <em>conta</em></h1>
+    <h1>Criar conta</h1><p class="auth-sub">Leva menos de um minuto.${plano ? ` <span class="plan-chip">Plano ${PLANOS[plano]}</span>` : ''}</p>
     <form id="a-form" class="auth-form" novalidate>
       <div class="field"><label for="a-nome">Seu nome</label><input id="a-nome" autocomplete="name" required></div>
-      <div class="field"><label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" required></div>
-      <div class="field"><label for="a-pass">Senha</label><input id="a-pass" type="password" autocomplete="new-password" minlength="8" required><p class="hint">Pelo menos 8 caracteres.</p></div>
+      <div class="field"><label for="a-email">E-mail de trabalho</label><input id="a-email" type="email" autocomplete="email" inputmode="email" required><p class="hint" id="a-email-hint" hidden></p></div>
+      ${passField('a-pass', 'Crie uma senha', 'new-password', 'minlength="8" aria-describedby="a-meter-t"')}
+      <div class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></div><p class="hint" id="a-meter-t">Pelo menos 8 caracteres. Misture letras, números e símbolos.</p>
       <label class="check-field" for="a-terms"><input type="checkbox" id="a-terms" required> <span>Li e aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.</span></label>
       <p class="auth-msg" role="alert" hidden></p>
       <button class="btn primary block" type="submit">Criar conta</button>
     </form>
-    <div class="auth-links"><button class="link" id="to-login">Já tenho conta</button></div>`);
+    <p class="auth-switch">Já tem conta? <button class="link" id="to-login">Entrar</button></p>`);
+  bindPass(root); bindEmail(root);
+  const pass = $('#a-pass', root), meter = $('.meter', root), mt = $('#a-meter-t', root);
+  pass.addEventListener('input', () => { const f = forca(pass.value); meter.dataset.f = pass.value ? f : ''; mt.textContent = pass.value ? 'Força da senha: ' + FORCA[f] : 'Pelo menos 8 caracteres. Misture letras, números e símbolos.'; });
   $('#to-login', root).onclick = () => loginView(resolve);
   $('#a-form', root).onsubmit = async (e) => {
     e.preventDefault();
-    const nome = $('#a-nome', root).value.trim(), email = $('#a-email', root).value.trim(), password = $('#a-pass', root).value;
-    if (!nome || !email || password.length < 8) return msg(root, 'Preencha nome, e-mail e uma senha com 8 caracteres ou mais.');
+    const nome = $('#a-nome', root).value.trim(), email = $('#a-email', root).value.trim(), password = pass.value;
+    if (!nome) { msg(root, 'Como você se chama?'); return $('#a-nome', root).focus(); }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg(root, 'Confira o e-mail.'); return $('#a-email', root).focus(); }
+    if (password.length < 8) { msg(root, 'A senha precisa ter pelo menos 8 caracteres.'); return pass.focus(); }
     if (!$('#a-terms', root).checked) return msg(root, 'Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.');
     const btn = $('button[type=submit]', root); busy(btn, true, 'Criando…');
-    const meta = { nome, terms_version: TERMS_VERSION, terms_accepted_at: new Date().toISOString() };
+    const meta = { nome, terms_version: TERMS_VERSION, terms_accepted_at: new Date().toISOString(), ...(plano ? { plano_interesse: plano } : {}) };
     const { data, error } = await auth.client.auth.signUp({ email, password, options: { data: meta, emailRedirectTo: location.origin + location.pathname } });
     busy(btn, false, 'Criar conta');
     if (error) return msg(root, tr(error));
-    if (!data.session) return loginView(resolve, 'Conta criada. Abra o link que enviamos para ' + email + ' e depois entre aqui.');
+    try { localStorage.setItem(LAST, email); } catch (er) { /* opcional */ }
+    if (!data.session) return checkEmailView(resolve, email);
     auth.user = data.user;
     chooseOrg(resolve);
   };
   $('#a-nome', root).focus();
 }
 
+function checkEmailView(resolve, email) {
+  const root = screen(`
+    <div class="auth-mail" aria-hidden="true">✉</div>
+    <h1>Confira seu e-mail</h1>
+    <p class="auth-sub">Enviamos um link de confirmação para <b>${esc(email)}</b>. Abra e você já entra no painel.</p>
+    <p class="hint">Não chegou em 2 minutos? Olhe a caixa de spam ou promoções.</p>
+    <p class="auth-msg" role="alert" hidden></p>
+    <button class="btn block" id="resend" type="button">Reenviar link</button>
+    <p class="auth-switch"><button class="link" id="to-login">Voltar para Entrar</button></p>`);
+  $('#to-login', root).onclick = () => loginView(resolve);
+  $('#resend', root).onclick = async (e) => {
+    busy(e.target, true, 'Reenviando…');
+    const { error } = await auth.client.auth.resend({ type: 'signup', email, options: { emailRedirectTo: location.origin + location.pathname } });
+    busy(e.target, false, 'Reenviar link');
+    msg(root, error ? tr(error) : 'Link reenviado.', error ? 'bad' : 'good');
+  };
+}
+
 function resetView(resolve) {
   const root = screen(`
-    <h1>Recuperar <em>senha</em></h1>
-    <p class="muted">Enviamos um link para você criar uma senha nova.</p>
+    <h1>Recuperar senha</h1><p class="auth-sub">Enviamos um link para você criar uma senha nova.</p>
     <form id="a-form" class="auth-form" novalidate>
-      <div class="field"><label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" required></div>
+      <div class="field"><label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" inputmode="email" required value="${esc(lastEmail())}"><p class="hint" id="a-email-hint" hidden></p></div>
       <p class="auth-msg" role="alert" hidden></p>
       <button class="btn primary block" type="submit">Enviar link</button>
     </form>
-    <div class="auth-links"><button class="link" id="to-login">Voltar para Entrar</button></div>`);
+    <p class="auth-switch"><button class="link" id="to-login">Voltar para Entrar</button></p>`);
+  bindEmail(root);
   $('#to-login', root).onclick = () => loginView(resolve);
   $('#a-form', root).onsubmit = async (e) => {
     e.preventDefault();
     const email = $('#a-email', root).value.trim();
     if (!email) return msg(root, 'Informe o e-mail.');
+    const btn = $('button[type=submit]', root); busy(btn, true, 'Enviando…');
     const { error } = await auth.client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    busy(btn, false, 'Enviar link');
     if (error) return msg(root, tr(error));
     msg(root, 'Se existir uma conta com esse e-mail, o link chega em alguns minutos.', 'good');
   };
+  $('#a-email', root).focus();
 }
 
 function newPasswordView(resolve) {
@@ -227,6 +323,7 @@ export function initAuth() {
     const { data } = await auth.client.auth.getSession();
     if (recovering) return;
     if (data.session) { auth.user = data.session.user; chooseOrg(resolve); }
+    else if (qs.get('cadastro')) signupView(resolve);
     else loginView(resolve);
   });
 }
