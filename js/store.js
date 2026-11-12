@@ -31,6 +31,7 @@ export const COLLECTIONS = [
   'imports',   // histórico de importações
   'team',      // pessoas do time (função, insígnia, reconhecimentos)
   'chat',      // mensagens do chat do time (canal, autor, texto, reações)
+  'wamsg',     // mensagens do WhatsApp oficial por lead (entrada pelo webhook, saída pela função whatsapp-send)
 ];
 
 const LS_KEY = 'liceu.intelligence.v1';
