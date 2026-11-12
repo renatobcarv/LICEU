@@ -42,6 +42,7 @@ export function render() {
   <section class="card">
     <header class="card-head"><div><h2>Integrações</h2><p class="muted">Conexões que trazem dados sozinhas</p></div></header>
     <label class="check-field"><input type="checkbox" data-cfg-toggle="metaSync"${s.metaSync ? ' checked' : ''}${store.mode === 'supabase' ? '' : ' disabled'}> Sincronização com o Meta ligada <small class="muted">(depois de publicar a função meta-sync e configurar o token; passo a passo em docs/META-SYNC.md no repositório)</small></label>
+    <label class="check-field"><input type="checkbox" data-cfg-toggle="whatsappApi"${s.whatsappApi ? ' checked' : ''}${store.mode === 'supabase' ? '' : ' disabled'}> WhatsApp oficial (Cloud API) ligado <small class="muted">(as conversas chegam no Funil e você responde de dentro do app; passo a passo em docs/WHATSAPP.md)</small></label>
   </section>
 
   <section class="card">

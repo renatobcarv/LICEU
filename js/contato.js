@@ -5,6 +5,8 @@ import { store } from './store.js';
 import { esc, today, addDays, fmtDate } from './util.js';
 import { courseName, settings } from './metrics.js';
 import { myName } from './leads.js';
+import { openDialog, toast } from './ui.js';
+import { auth } from './auth.js';
 
 export const RESULTADOS = [
   { id: 'avancou', t: 'Atendeu e avançou', cls: 'win', retorno: null },
@@ -98,4 +100,39 @@ export function discador(leads, pos = 0) {
     </section>
     <details class="dial-script" open><summary>Roteiro de ligação</summary><ol>${ROTEIRO.map(([t, s]) => `<li><b>${t}</b><p>${esc(sub(s))}</p></li>`).join('')}</ol></details>
   </div>`;
+}
+
+// ---------- WhatsApp oficial (Cloud API): conversa dentro do app ----------
+export const waApi = () => store.mode === 'supabase' && !!settings().whatsappApi;
+const thread = (id) => store.all('wamsg').filter((m) => m.leadId === id).sort((a, b) => a.em.localeCompare(b.em));
+const janelaAberta = (id) => { const u = thread(id).filter((m) => m.dir === 'in').pop(); return u && Date.now() - new Date(u.em).getTime() < 24 * 3600e3 ? u : null; };
+const tick = { sent: '✓', delivered: '✓✓', read: '✓✓', failed: '!' };
+function bolhas(id) {
+  const ms = thread(id);
+  return ms.length ? ms.map((m) => `<div class="wa-b ${m.dir}"><p>${esc(m.texto)}</p><small>${new Date(m.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}${m.dir === 'out' ? ` <i class="${m.status === 'read' ? 'read' : ''}">${tick[m.status] || ''}</i>` : ''}</small></div>`).join('') : '<p class="muted">Nenhuma mensagem pelo WhatsApp oficial ainda.</p>';
+}
+export function conversaDialog(id) {
+  const l = store.get('leads', id); if (!l) return;
+  const jan = janelaAberta(id);
+  const resp = settings().respostas || [];
+  const { dlg } = openDialog({ title: l.nome, wide: true,
+    html: `<div class="wa">
+      <p class="wa-top"><span>${esc(l.telefone || '')}</span><span class="badge ${jan ? 'good' : 'warn'}">${jan ? 'Janela de 24h aberta' : 'Fora da janela de 24h: só modelo aprovado'}</span></p>
+      <div class="wa-thread" id="wa-thread">${bolhas(id)}</div>
+      ${resp.length ? `<div class="wa-quick">${resp.slice(0, 6).map((r, i) => `<button type="button" class="btn sm" data-q="${i}">${esc(r.titulo)}</button>`).join('')}</div>` : ''}
+      <div class="wa-send"><textarea id="wa-in" rows="2" placeholder="${jan ? 'Escreva a mensagem' : 'Nome do modelo aprovado (ex.: retomada_contato)'}"></textarea><button type="button" class="btn primary" id="wa-go">Enviar</button></div>
+    </div>` });
+  const th = dlg.querySelector('#wa-thread'); th.scrollTop = th.scrollHeight;
+  const inp = dlg.querySelector('#wa-in');
+  dlg.querySelectorAll('[data-q]').forEach((b) => b.addEventListener('click', () => { inp.value = resp[b.dataset.q].texto.replace(/\{nome\}/gi, String(l.nome).split(' ')[0]); inp.focus(); }));
+  const off = store.on(() => { if (!dlg.open) return off(); th.innerHTML = bolhas(id); th.scrollTop = th.scrollHeight; });
+  dlg.querySelector('#wa-go').addEventListener('click', async (e) => {
+    const v = inp.value.trim(); if (!v) return;
+    e.target.disabled = true;
+    const body = janelaAberta(id) ? { leadId: id, texto: v } : { leadId: id, template: v };
+    const { data, error } = await auth.client.functions.invoke('whatsapp-send', { body });
+    e.target.disabled = false;
+    if (error || data?.error) return toast(data?.error || 'Não foi possível enviar.', 'bad');
+    inp.value = ''; registrar(id, 'wa');
+  });
 }

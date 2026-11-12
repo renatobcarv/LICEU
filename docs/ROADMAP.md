@@ -15,7 +15,7 @@
 - [ ] Preencher textos legais (termos, privacidade, LGPD) com dados da empresa
 
 ## Próximo ciclo (maior impacto)
-1. [ ] Webhook do WhatsApp/CRM → lead entra no funil sozinho
+1. [x] WhatsApp oficial: webhook cria o lead e conversa no Funil (falta publicar as funções e cadastrar o token)
 2. [ ] Seguidores do Instagram atualizando a meta automaticamente (Graph API)
 3. [ ] IA na Pauta Viral via Edge Function (roteiro gerado, não só modelo)
 4. [ ] Diagnóstico semanal escrito (resumo do que subiu, caiu e o que fazer)

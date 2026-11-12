@@ -10,7 +10,7 @@ import {
   matriculaDialog, loseDialog, editLead, courseOpts, campOpts, moveToCol, pipelines, pipeline, leadCol, leadStage, leadPipeId,
   pipeDialog, productDialog, responsaveis, tagList, TEMPERATURAS, myName, recebido,
 } from '../leads.js';
-import { botoes, discador, registrar, RESULTADOS } from '../contato.js';
+import { botoes, discador, registrar, RESULTADOS, waApi, conversaDialog } from '../contato.js';
 
 const PIPE_KEY = 'liceu.funil.atual';
 let tab = 'kanban';
@@ -473,7 +473,7 @@ function resultadoDialog(id, ctx) {
 
 export function mount(root, ctx) {
   root.addEventListener('click', (e) => {
-    const wa = e.target.closest('[data-wa]'); if (wa) { registrar(wa.dataset.wa, 'wa'); return; }
+    const wa = e.target.closest('[data-wa]'); if (wa) { if (waApi()) { e.preventDefault(); conversaDialog(wa.dataset.wa); } else registrar(wa.dataset.wa, 'wa'); return; }
     const tel = e.target.closest('[data-tel]'); if (tel) { if (!tel.dataset.nopop) setTimeout(() => resultadoDialog(tel.dataset.tel, ctx), 400); return; }
     const res = e.target.closest('[data-res][data-lead]'); if (res) { registrar(res.dataset.lead, 'tel', res.dataset.res); toast('Registrado. Próximo da fila.'); ctx.refresh(); return; }
     const pul = e.target.closest('[data-pular]'); if (pul) { dialPos = Number(pul.dataset.pular) || 0; ctx.refresh(); }
