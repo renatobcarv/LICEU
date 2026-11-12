@@ -24,8 +24,8 @@ export function renderPlanos(el, anual = false) {
       ${p.tag ? `<span class="plan-tag">${p.tag}</span>` : ''}
       <h3>${p.nome}</h3><p class="for">${p.para}</p>
       <div class="price"><b>${brl(mes)}</b><span>/mês</span></div>
-      <p class="price-note">${anual ? `${brl(p.mensal * ANUAL_MESES)} por ano · economia de ${brl(p.mensal * (12 - ANUAL_MESES))}` : 'Cobrança mensal, cancele quando quiser'}</p>
-      <a class="btn ${p.cls === 'hot' ? 'primary' : 'ghost'} block" href="${cadastro(p.id)}">Começar com o ${p.nome}</a>
+      <p class="price-note">${anual ? `${brl(p.mensal * ANUAL_MESES)} por ano · economia de ${brl(p.mensal * (12 - ANUAL_MESES))}` : '7 dias grátis · depois, cobrança mensal'}</p>
+      <a class="btn ${p.cls === 'hot' ? 'primary' : 'ghost'} block" href="${cadastro(p.id)}">Testar 7 dias grátis</a>
       <ul>${p.itens.map((i) => `<li>${i}</li>`).join('')}${p.nao.map((i) => `<li class="no">${i}</li>`).join('')}</ul>
     </article>`;
   }).join('');

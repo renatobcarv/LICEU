@@ -91,7 +91,7 @@ const FORCA = ['Muito curta', 'Fraca', 'Razoável', 'Boa', 'Forte'];
 
 function loginView(resolve, notice = '') {
   const root = screen(`
-    <h1>Entrar</h1><p class="auth-sub">Bom te ver de novo.</p>
+    <div class="auth-glyph" aria-hidden="true"><img src="assets/flowclass-mark.png" alt=""></div><h1>Entrar</h1><p class="auth-sub">Bom te ver de novo.</p>
     <form id="a-form" class="auth-form" novalidate>
       <div class="field"><label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" inputmode="email" required value="${esc(lastEmail())}"><p class="hint" id="a-email-hint" hidden></p></div>
       ${passField('a-pass', 'Senha', 'current-password')}
@@ -101,7 +101,7 @@ function loginView(resolve, notice = '') {
     </form>
     <div class="auth-sep"><span>ou</span></div>
     <button class="btn block" id="to-magic" type="button">Receber link de acesso no e-mail</button>
-    <p class="auth-switch">Ainda não tem conta? <button class="link" id="to-signup">Criar conta grátis</button></p>`);
+    <p class="auth-switch">Ainda não tem conta? <button class="link" id="to-signup">Testar 7 dias grátis</button></p>`);
   if (notice) msg(root, notice, 'good');
   bindPass(root); bindEmail(root);
   $('#to-signup', root).onclick = () => signupView(resolve);
@@ -134,15 +134,15 @@ function loginView(resolve, notice = '') {
 function signupView(resolve) {
   const plano = PLANOS[qs.get('plano')] ? qs.get('plano') : '';
   const root = screen(`
-    <h1>Criar conta</h1><p class="auth-sub">Leva menos de um minuto.${plano ? ` <span class="plan-chip">Plano ${PLANOS[plano]}</span>` : ''}</p>
+    <h1>Teste grátis por 7 dias</h1><p class="auth-sub">Sem cartão. Leva menos de um minuto.${plano ? ` <span class="plan-chip">Plano ${PLANOS[plano]}</span>` : ''}</p>
     <form id="a-form" class="auth-form" novalidate>
       <div class="field"><label for="a-nome">Seu nome</label><input id="a-nome" autocomplete="name" required></div>
-      <div class="field"><label for="a-email">E-mail de trabalho</label><input id="a-email" type="email" autocomplete="email" inputmode="email" required><p class="hint" id="a-email-hint" hidden></p></div>
+      <div class="field"><label for="a-email">E-mail de trabalho</label><input id="a-email" type="email" autocomplete="email" inputmode="email" required value="${esc(qs.get('email') || '')}"><p class="hint" id="a-email-hint" hidden></p></div>
       ${passField('a-pass', 'Crie uma senha', 'new-password', 'minlength="8" aria-describedby="a-meter-t"')}
       <div class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></div><p class="hint" id="a-meter-t">Pelo menos 8 caracteres. Misture letras, números e símbolos.</p>
       <label class="check-field" for="a-terms"><input type="checkbox" id="a-terms" required> <span>Li e aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.</span></label>
       <p class="auth-msg" role="alert" hidden></p>
-      <button class="btn primary block" type="submit">Criar conta</button>
+      <button class="btn primary block" type="submit">Começar teste grátis</button>
     </form>
     <p class="auth-switch">Já tem conta? <button class="link" id="to-login">Entrar</button></p>`);
   bindPass(root); bindEmail(root);
@@ -159,7 +159,7 @@ function signupView(resolve) {
     const btn = $('button[type=submit]', root); busy(btn, true, 'Criando…');
     const meta = { nome, terms_version: TERMS_VERSION, terms_accepted_at: new Date().toISOString(), ...(plano ? { plano_interesse: plano } : {}) };
     const { data, error } = await auth.client.auth.signUp({ email, password, options: { data: meta, emailRedirectTo: location.origin + location.pathname } });
-    busy(btn, false, 'Criar conta');
+    busy(btn, false, 'Começar teste grátis');
     if (error) return msg(root, tr(error));
     try { localStorage.setItem(LAST, email); } catch (er) { /* opcional */ }
     if (!data.session) return checkEmailView(resolve, email);
