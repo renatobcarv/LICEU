@@ -3,8 +3,9 @@
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { esc, $ } from './util.js';
-import { LOGO_MARK, TERMS_VERSION } from './brand.js';
+import { LOGO_MARK, TERMS_VERSION, applyBranding } from './brand.js';
 
+import { ROLES } from './access.js';
 const ORG_KEY = 'liceu.intelligence.org';
 const OLD_ORG_KEY = 'tecmais.intelligence.org'; // nome antigo, lido só para não perder a unidade escolhida
 export const auth = { client: null, user: null, org: null, member: null, configured: false };
@@ -134,15 +135,27 @@ function newPasswordView(resolve) {
   };
 }
 
+async function loadOrgs() {
+  // Migração 002: my_orgs() traz as empresas diretas e os clientes das agências que a pessoa administra.
+  const r = await auth.client.rpc('my_orgs');
+  if (!r.error) {
+    const { data: mine } = await auth.client.from('members').select('org_id, nome, email').eq('user_id', auth.user.id);
+    const me = new Map((mine || []).map((m) => [m.org_id, m]));
+    return { data: (r.data || []).map((o) => ({ org_id: o.id, role: o.role, nome: me.get(o.id)?.nome || auth.user.user_metadata?.nome || '', email: me.get(o.id)?.email || auth.user.email, orgs: { id: o.id, nome: o.nome, invite_code: o.invite_code, tipo: o.tipo, plano: o.plano, branding: o.branding || {}, parent_id: o.parent_id } })) };
+  }
+  // Banco sem a migração 002: formato antigo.
+  return auth.client.from('members').select('role, nome, email, org_id, orgs(id, nome, invite_code)').eq('user_id', auth.user.id);
+}
+
 async function chooseOrg(resolve) {
-  const { data, error } = await auth.client.from('members').select('role, nome, email, org_id, orgs(id, nome, invite_code)').eq('user_id', auth.user.id);
+  const { data, error } = await loadOrgs();
   if (error) { const root = screen(`<h1>Não foi possível carregar sua unidade</h1><p class="auth-msg bad">${esc(tr(error))}</p><p class="muted">Confira se o banco foi criado com o arquivo supabase/schema.sql.</p><button class="btn block" id="retry">Tentar de novo</button>`); $('#retry', root).onclick = () => chooseOrg(resolve); return; }
   const list = (data || []).filter((m) => m.orgs);
   let saved = null; try { saved = localStorage.getItem(ORG_KEY) || localStorage.getItem(OLD_ORG_KEY); } catch (e) { /* opcional */ }
   const pick = list.find((m) => m.org_id === saved) || (list.length === 1 ? list[0] : null);
   if (pick) return finish(pick, resolve);
   if (list.length > 1) {
-    const root = screen(`<h1>Escolha a <em>unidade</em></h1><div class="auth-list">${list.map((m) => `<button class="btn block" data-org="${esc(m.org_id)}">${esc(m.orgs.nome)} <small>${esc(roleLabel(m.role))}</small></button>`).join('')}</div>`);
+    const root = screen(`<h1>Escolha a <em>unidade</em></h1><div class="auth-list">${list.map((m) => `<button class="btn block" data-org="${esc(m.org_id)}">${m.orgs.parent_id ? '↳ ' : ''}${esc(m.orgs.nome)} <small>${esc(roleLabel(m.role))}${m.orgs.tipo === 'agencia' ? ' · agência' : ''}</small></button>`).join('')}</div>`);
     root.querySelectorAll('[data-org]').forEach((b) => (b.onclick = () => finish(list.find((m) => m.org_id === b.dataset.org), resolve)));
     return;
   }
@@ -187,6 +200,7 @@ function onboardingView(resolve) {
 
 function finish(m, resolve) {
   auth.org = m.orgs;
+  applyBranding(m.orgs.branding || {});
   auth.member = m;
   try { localStorage.setItem(ORG_KEY, m.org_id); } catch (e) { /* opcional */ }
   $('#auth').hidden = true;
@@ -195,7 +209,7 @@ function finish(m, resolve) {
   resolve(auth);
 }
 
-export const roleLabel = (r) => ({ admin: 'Administrador', editor: 'Edita', leitura: 'Só leitura' }[r] || r);
+export const roleLabel = (r) => ROLES[r]?.nome || r;
 
 // Resolve quando há usuário logado e unidade escolhida. Retorna null se o Supabase não estiver configurado.
 export function initAuth() {
@@ -208,6 +222,8 @@ export function initAuth() {
       if (event === 'PASSWORD_RECOVERY') { recovering = true; auth.user = session?.user; newPasswordView(resolve); }
       if (event === 'SIGNED_OUT' && auth.org) location.reload();
     });
+    // Marca do domínio (white-label) já na tela de login.
+    try { const b = await auth.client.rpc('branding_for_host', { h: location.hostname }); if (b.data && Object.keys(b.data).length) applyBranding(b.data); } catch (e) { /* banco sem migração 002 */ }
     const { data } = await auth.client.auth.getSession();
     if (recovering) return;
     if (data.session) { auth.user = data.session.user; chooseOrg(resolve); }

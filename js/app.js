@@ -6,7 +6,8 @@ import { $, $$, esc, today, monthStart, monthEnd, addMonths, addDays, fmtRange, 
 import { ICON, toast, countUp } from './ui.js';
 import { settings } from './metrics.js';
 import { initAuth, auth, roleLabel, signOut } from './auth.js';
-import { LOGO_MARK, PRODUCT, applyTheme } from './brand.js';
+import { LOGO_MARK, PRODUCT, applyTheme, productName } from './brand.js';
+import { canView, isFull } from './access.js';
 import * as painel from './views/painel.js';
 import * as meta from './views/meta.js';
 import * as campanhas from './views/campanhas.js';
@@ -22,7 +23,7 @@ import * as relatorios from './views/relatorios.js';
 import * as config from './views/config.js';
 import * as arsenal from './views/arsenal.js';
 
-const VIEWS = [
+const ALL_VIEWS = [
   { id: 'painel', label: 'Painel', title: ['Visão', '*geral'], kicker: 'Do anúncio à matrícula', mod: painel, group: 'Acompanhar' },
   { id: 'meta', label: 'Meta Ads', title: ['Meta', '*Ads'], kicker: 'Mídia paga', mod: meta, group: 'Acompanhar' },
   { id: 'campanhas', label: 'Campanhas', title: ['Planejar', 'campanha'], kicker: 'Do quiz à matrícula', mod: campanhas, group: 'Acompanhar', noPeriod: true },
@@ -37,6 +38,7 @@ const VIEWS = [
   { id: 'relatorios', label: 'Relatórios', title: ['*Relatórios', 'gerenciais'], kicker: 'Prestação de contas', mod: relatorios, group: 'Decidir' },
   { id: 'config', label: 'Configurações', title: ['*Configurações'], kicker: 'Sistema', mod: config, group: 'Sistema', noPeriod: true },
 ];
+let VIEWS = ALL_VIEWS;
 
 // Título com as palavras dentro de máscaras; a palavra com * vira serifada itálica em degradê.
 function titleHTML(parts) {
@@ -117,7 +119,7 @@ function render() {
     h.classList.remove('enter-title'); void h.offsetWidth; h.classList.add('enter-title');
     $('#view-kicker').textContent = view.kicker || 'FLOWCLASS Intelligence';
   }
-  document.title = view.label + ' · ' + PRODUCT;
+  document.title = view.label + ' · ' + productName();
   $('#filters').hidden = !!view.noPeriod;
   renderFilters();
   const c = ctx(params);
@@ -172,15 +174,19 @@ function renderStatus() {
   if (store.lastError) { toast(store.lastError, 'bad'); store.lastError = null; }
 }
 
-function shell() {
+function navHTML() {
   const groups = [...new Set(VIEWS.map((v) => v.group))];
   $('#nav').innerHTML = groups.map((g) => `<p class="nav-group">${esc(g)}</p>` + VIEWS.filter((v) => v.group === g).map((v) => `<a href="#${v.id}" data-view="${v.id}"><span class="ni">${ICON[v.id]}</span><span>${esc(v.label)}</span></a>`).join('')).join('');
+  const atalhos = [['painel', 'Painel'], ['funil', 'Funil'], ['matriculas', 'Matrículas'], ['campanhas', 'Campanhas'], ['chat', 'Chat'], ['pauta', 'Pauta'], ['relatorios', 'Relatórios']].filter(([id]) => VIEWS.some((v) => v.id === id)).slice(0, 4);
+  $('#bottom-nav').innerHTML = atalhos.map(([id, l]) => `<a href="#${id}" data-view="${id}">${ICON[id]}<span>${l}</span></a>`).join('') + `<button type="button" id="bn-menu">${ICON.menu}<span>Menu</span></button>`;
+  $('#bn-menu').addEventListener('click', () => $('#app').classList.toggle('nav-open'));
+}
+
+function shell() {
+  navHTML();
   $('#brand').innerHTML = '<span class="brand-text">' + LOGO_MARK + '<span class="brand-sub">Intelligence</span></span>';
   $('#menu-btn').innerHTML = ICON.menu;
   $('#menu-btn').addEventListener('click', () => $('#app').classList.toggle('nav-open'));
-  // Barra inferior no celular: os 4 lugares mais usados + o menu completo.
-  $('#bottom-nav').innerHTML = [['painel', 'Painel'], ['funil', 'Funil'], ['matriculas', 'Matrículas'], ['campanhas', 'Campanhas']].map(([id, l]) => `<a href="#${id}" data-view="${id}">${ICON[id]}<span>${l}</span></a>`).join('') + `<button type="button" id="bn-menu">${ICON.menu}<span>Menu</span></button>`;
-  $('#bn-menu').addEventListener('click', () => $('#app').classList.toggle('nav-open'));
   $('#scrim').addEventListener('click', () => $('#app').classList.remove('nav-open'));
   $('#logout').addEventListener('click', signOut);
   $('#f-preset').addEventListener('change', (e) => { prefs.preset = e.target.value; if (prefs.preset === 'custom') { const p = periodOf({ preset: 'mes' }); prefs.from = prefs.from || p.from; prefs.to = prefs.to || p.to; } savePrefs(); render(); });
@@ -211,7 +217,10 @@ async function boot() {
   // Esqueleto enquanto os dados da unidade chegam do banco.
   $('#main').innerHTML = '<p class="loading">Carregando dados da unidade…</p>' + skeleton();
   await initStore(session);
-  const canWrite = !session || auth.member?.role !== 'leitura';
+  // Menu por perfil (a trava real é no banco). Perfis parciais não semeiam dados iniciais.
+  VIEWS = ALL_VIEWS.filter((v) => canView(session ? auth.member?.role : null, v.id));
+  navHTML();
+  const canWrite = !session || isFull(auth.member?.role);
   // Remove as 3 ideias de exemplo que vinham no início, se ninguém mexeu nelas.
   if (canWrite) ['i_preco', 'i_bot', 'i_form'].forEach((id) => { const i = store.get('ideas', id); if (i && i.status === 'Ideia' && !i.resultado && !i.indicador) store.remove('ideas', id); });
   const seeded = canWrite ? await seedIfEmpty() : false;

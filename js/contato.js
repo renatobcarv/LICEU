@@ -129,7 +129,7 @@ export function conversaDialog(id) {
   dlg.querySelector('#wa-go').addEventListener('click', async (e) => {
     const v = inp.value.trim(); if (!v) return;
     e.target.disabled = true;
-    const body = janelaAberta(id) ? { leadId: id, texto: v } : { leadId: id, template: v };
+    const body = { orgId: auth.org?.id, leadId: id, ...(janelaAberta(id) ? { texto: v } : { template: v }) };
     const { data, error } = await auth.client.functions.invoke('whatsapp-send', { body });
     e.target.disabled = false;
     if (error || data?.error) return toast(data?.error || 'Não foi possível enviar.', 'bad');

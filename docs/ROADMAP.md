@@ -36,3 +36,10 @@
 - [ ] Placar de esforço e radar por consultor
 - [x] Time gamificado (insígnia por função, board individual, kudos, pódio) e Chat do time (canais, menções, reações)
 - [x] Funil para os dois tipos de closer: WhatsApp e ligação (registro de tentativas, Modo ligação com fila e roteiro)
+
+## Fundação SaaS (feito)
+- [x] Migração 002: 10 perfis com permissão por coleção no banco, agência › clientes, planos e consumo, domínios, WhatsApp por empresa (token cifrado), idempotência do webhook
+- [x] Login multiempresa (my_orgs), menu por perfil, marca dinâmica (white-label), Configurações › Plano, Marca, Domínio, WhatsApp, Clientes
+- [x] Embedded Signup (whatsapp-connect) e webhook/envio multiempresa
+- [x] 27 testes de isolamento e permissão em Postgres (`tests/db/run.sh`)
+- [ ] Pendências externas: `docs/PENDENCIAS.md`
