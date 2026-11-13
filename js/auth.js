@@ -6,6 +6,7 @@ import { esc, $ } from './util.js';
 import { LOGO_MARK, TERMS_VERSION, applyBranding } from './brand.js';
 
 import { ROLES } from './access.js';
+import { WHITELABEL } from './config.js';
 const ORG_KEY = 'liceu.intelligence.org';
 const OLD_ORG_KEY = 'tecmais.intelligence.org'; // nome antigo, lido só para não perder a unidade escolhida
 export const auth = { client: null, user: null, org: null, member: null, configured: false };
@@ -245,13 +246,13 @@ async function loadOrgs() {
 
 async function chooseOrg(resolve) {
   const { data, error } = await loadOrgs();
-  if (error) { const root = screen(`<h1>Não foi possível carregar sua unidade</h1><p class="auth-msg bad">${esc(tr(error))}</p><p class="muted">Confira se o banco foi criado com o arquivo supabase/schema.sql.</p><button class="btn block" id="retry">Tentar de novo</button>`); $('#retry', root).onclick = () => chooseOrg(resolve); return; }
+  if (error) { const root = screen(`<h1>Não foi possível abrir sua escola</h1><p class="auth-msg bad">${esc(tr(error))}</p><p class="muted">Tente de novo em instantes. Se continuar, fale com o suporte.</p><button class="btn block" id="retry">Tentar de novo</button>`); $('#retry', root).onclick = () => chooseOrg(resolve); return; }
   const list = (data || []).filter((m) => m.orgs);
   let saved = null; try { saved = localStorage.getItem(ORG_KEY) || localStorage.getItem(OLD_ORG_KEY); } catch (e) { /* opcional */ }
   const pick = list.find((m) => m.org_id === saved) || (list.length === 1 ? list[0] : null);
   if (pick) return finish(pick, resolve);
   if (list.length > 1) {
-    const root = screen(`<h1>Escolha a <em>unidade</em></h1><div class="auth-list">${list.map((m) => `<button class="btn block" data-org="${esc(m.org_id)}">${m.orgs.parent_id ? '↳ ' : ''}${esc(m.orgs.nome)} <small>${esc(roleLabel(m.role))}${m.orgs.tipo === 'agencia' ? ' · agência' : ''}</small></button>`).join('')}</div>`);
+    const root = screen(`<h1>Escolha a escola</h1><div class="auth-list">${list.map((m) => `<button class="btn block" data-org="${esc(m.org_id)}">${m.orgs.parent_id ? '↳ ' : ''}${esc(m.orgs.nome)} <small>${esc(roleLabel(m.role))}${m.orgs.tipo === 'agencia' ? ' · agência' : ''}</small></button>`).join('')}</div>`);
     root.querySelectorAll('[data-org]').forEach((b) => (b.onclick = () => finish(list.find((m) => m.org_id === b.dataset.org), resolve)));
     return;
   }
@@ -261,16 +262,16 @@ async function chooseOrg(resolve) {
 function onboardingView(resolve) {
   const nome = auth.user.user_metadata?.nome || '';
   const root = screen(`
-    <h1>Sua <em>unidade</em></h1>
-    <p class="muted">Crie a unidade (você vira administrador) ou entre na equipe com o código que o coordenador passou.</p>
+    <h1>Configure sua escola</h1>
+    <p class="auth-sub">Crie o espaço da sua escola (você vira o dono) ou entre no time com o código de convite que recebeu.</p>
     <form id="o-create" class="auth-form" novalidate>
-      <div class="field"><label for="o-nome">Nome da unidade</label><input id="o-nome" value="" placeholder="ex.: Escola Exemplo · Centro" required></div>
-      <button class="btn primary block" type="submit">Criar unidade</button>
+      <div class="field"><label for="o-nome">Nome da escola</label><input id="o-nome" value="" placeholder="ex.: Escola Exemplo · Centro" required></div>
+      <button class="btn primary block" type="submit">Criar minha escola</button>
     </form>
     <div class="auth-sep"><span>ou</span></div>
     <form id="o-join" class="auth-form" novalidate>
       <div class="field"><label for="o-code">Código de convite</label><input id="o-code" autocomplete="off" placeholder="ex.: 7f3a9c21" required></div>
-      <button class="btn block" type="submit">Entrar na equipe</button>
+      <button class="btn block" type="submit">Entrar no time</button>
     </form>
     <p class="auth-msg" role="alert" hidden></p>
     <div class="auth-links"><button class="link" id="o-out">Sair</button></div>`);
@@ -278,7 +279,7 @@ function onboardingView(resolve) {
   $('#o-create', root).onsubmit = async (e) => {
     e.preventDefault();
     const n = $('#o-nome', root).value.trim();
-    if (!n) return msg(root, 'Dê um nome para a unidade.');
+    if (!n) return msg(root, 'Dê um nome para a escola.');
     const { error } = await auth.client.rpc('create_org', { p_nome: n, p_user_nome: nome });
     if (error) return msg(root, tr(error));
     chooseOrg(resolve);
@@ -288,7 +289,7 @@ function onboardingView(resolve) {
     const code = $('#o-code', root).value.trim();
     if (!code) return msg(root, 'Informe o código.');
     const { data, error } = await auth.client.rpc('join_org', { p_code: code, p_user_nome: nome });
-    if (error) return msg(root, /not found|nao encontrado|não encontrado/i.test(error.message) ? 'Código não encontrado. Confira com o coordenador.' : tr(error));
+    if (error) return msg(root, /not found|nao encontrado|não encontrado/i.test(error.message) ? 'Código não encontrado. Confira com quem te convidou.' : tr(error));
     try { localStorage.setItem(ORG_KEY, data?.id || ''); } catch (er) { /* opcional */ }
     chooseOrg(resolve);
   };
@@ -296,7 +297,7 @@ function onboardingView(resolve) {
 
 function finish(m, resolve) {
   auth.org = m.orgs;
-  applyBranding(m.orgs.branding || {});
+  if (WHITELABEL) applyBranding(m.orgs.branding || {});
   auth.member = m;
   try { localStorage.setItem(ORG_KEY, m.org_id); } catch (e) { /* opcional */ }
   $('#auth').hidden = true;
@@ -319,7 +320,7 @@ export function initAuth() {
       if (event === 'SIGNED_OUT' && auth.org) location.reload();
     });
     // Marca do domínio (white-label) já na tela de login.
-    try { const b = await auth.client.rpc('branding_for_host', { h: location.hostname }); if (b.data && Object.keys(b.data).length) applyBranding(b.data); } catch (e) { /* banco sem migração 002 */ }
+    if (WHITELABEL) try { const b = await auth.client.rpc('branding_for_host', { h: location.hostname }); if (b.data && Object.keys(b.data).length) applyBranding(b.data); } catch (e) { /* banco sem migração 002 */ }
     const { data } = await auth.client.auth.getSession();
     if (recovering) return;
     if (data.session) { auth.user = data.session.user; chooseOrg(resolve); }

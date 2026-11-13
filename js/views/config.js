@@ -1,4 +1,4 @@
-// Configurações: unidade, aparência, cursos, equipe, dados e privacidade.
+// Configurações do assinante: conta, escola, vendas, equipe, plano, integrações, dados e privacidade.
 
 import { store, dump, COLLECTIONS } from '../store.js';
 import { esc, $, $$, today, addDays, brl, uid, weekStart, monthStart } from '../util.js';
@@ -13,72 +13,88 @@ import * as saas from './saas.js';
 import { ROLES, isAdminRole } from '../access.js';
 
 
-export function render() {
+// Abas das Configurações, do ponto de vista de quem assina o FLOWCLASS.
+const ABAS = [['conta', 'Conta'], ['escola', 'Escola'], ['vendas', 'Vendas'], ['equipe', 'Equipe'], ['plano', 'Plano'], ['integracoes', 'Integrações'], ['dados', 'Dados e privacidade']];
+let aba = 'conta';
+
+export function render(ctx = {}) {
+  if (ctx.params?.aba && ABAS.some(([id]) => id === ctx.params.aba)) aba = ctx.params.aba;
   const s = settings();
   const courses = store.all('courses').sort((a, b) => a.nome.localeCompare(b.nome));
   const isSb = store.mode === 'supabase';
   const isAdmin = !isSb || isAdminRole(auth.member?.role);
   const hasDemo = COLLECTIONS.some((c) => store.all(c).some((r) => r.demo));
-  return `
-  <div>
-    <section class="card">
-      <header class="card-head"><div><h2>Unidade</h2><p class="muted">Aparece no topo do menu e nos relatórios</p></div><button class="btn sm" data-cfg="unit">Editar</button></header>
-      <dl class="stats">
-        <div><dt>Unidade</dt><dd>${esc(s.unidade)}</dd></div>
-        <div><dt>Instagram</dt><dd>${esc(s.instagram)}</dd></div>
-        <div><dt>Coordenação</dt><dd>${esc(s.coordenador)}</dd></div>
-        <div><dt>Meta de stories por dia</dt><dd>${esc(s.metaStoriesDia)}</dd></div>
-        <div><dt>Alerta de CTR abaixo de</dt><dd>${esc(String(s.ctrMin).replace('.', ','))}%</dd></div>
-        <div><dt>Alerta de frequência acima de</dt><dd>${esc(String(s.freqMax).replace('.', ','))}</dd></div>
-      </dl>
-      <p class="hint">Pilares: ${esc(s.pilares.join(' · '))}</p>
-    </section>
+  const P = {};
 
-  </div>
-
-  <section class="card"><header class="card-head"><div><h2>Aparência</h2><p class="muted">Paleta do painel neste aparelho. A marca própria (white-label) tem prioridade sobre ela</p></div></header>
+  P.conta = `
+  ${isSb ? `<section class="card"><header class="card-head"><div><h2>Minha conta</h2><p class="muted">${esc(auth.member?.nome || '')} · ${esc(auth.user?.email || '')}</p></div></header>
+    <dl class="stats"><div><dt>Escola</dt><dd>${esc(auth.org?.nome || '')}</dd></div><div><dt>Seu perfil</dt><dd>${esc(roleLabel(auth.member?.role))}</dd></div></dl>
+    <div class="row-actions"><button class="btn" data-cfg="pass">Trocar senha</button><button class="btn" data-cfg="switch">Trocar de escola</button><button class="btn" data-cfg="logout">Sair</button></div></section>`
+  : `<section class="card"><header class="card-head"><div><h2>Modo de demonstração</h2></div></header><p class="note">Você está usando o FLOWCLASS sem login: os dados ficam só neste navegador. <a href="/?cadastro=1">Crie sua conta</a> para salvar na nuvem e convidar o time.</p></section>`}
+  <section class="card"><header class="card-head"><div><h2>Aparência</h2><p class="muted">Paleta do painel neste aparelho</p></div></header>
     <div class="paletas">${Object.entries(PALETAS).map(([id, p]) => `<button type="button" class="paleta" data-paleta="${id}" aria-pressed="${paletaAtual() === id}"><span class="sw">${p.cores.map((c) => `<i style="background:${c}"></i>`).join('')}</span>${esc(p.nome)}<small>${p.cores.join(' · ')}</small></button>`).join('')}</div>
   </section>
+  ${isSb ? `<section class="card"><header class="card-head"><div><h2>Encerrar conta</h2><p class="muted">Remove seu acesso. Se você for a única pessoa da escola, a escola e todos os dados dela também são apagados</p></div><button class="btn danger" data-cfg="delete-me">Excluir minha conta</button></header></section>` : ''}`;
 
+  P.escola = `
   <section class="card">
-    <header class="card-head"><div><h2>Cursos</h2><p class="muted">O preço é usado como valor padrão da matrícula</p></div><button class="btn sm" data-cfg="course">${ICON.plus} Novo curso</button></header>
-    <div class="table-wrap"><table class="tbl"><thead><tr><th>Curso</th><th class="r">Preço</th><th>Situação</th><th></th></tr></thead><tbody>${courses.map((c) => `<tr><td>${esc(c.nome)}</td><td class="r">${c.preco ? brl(c.preco) : '—'}</td><td>${c.ativo === false ? 'Inativo' : 'Ativo'}</td><td class="r"><button class="btn sm" data-course="${esc(c.id)}">Editar</button></td></tr>`).join('')}</tbody></table></div>
+    <header class="card-head"><div><h2>Dados da escola</h2><p class="muted">Aparece no menu e nos relatórios</p></div>${isAdmin ? '<button class="btn sm" data-cfg="unit">Editar</button>' : ''}</header>
+    <dl class="stats">
+      <div><dt>Nome</dt><dd>${esc(s.unidade || '—')}</dd></div>
+      <div><dt>Instagram</dt><dd>${esc(s.instagram || '—')}</dd></div>
+      <div><dt>Responsável pelo marketing</dt><dd>${esc(s.coordenador || '—')}</dd></div>
+      <div><dt>Meta de stories por dia</dt><dd>${esc(s.metaStoriesDia)}</dd></div>
+      <div><dt>Alerta de CTR abaixo de</dt><dd>${esc(String(s.ctrMin).replace('.', ','))}%</dd></div>
+      <div><dt>Alerta de frequência acima de</dt><dd>${esc(String(s.freqMax).replace('.', ','))}</dd></div>
+    </dl>
+    <p class="hint">Pilares de conteúdo: ${esc(s.pilares.join(' · '))}</p>
   </section>
-
   <section class="card">
-    <header class="card-head"><div><h2>Integrações</h2><p class="muted">Conexões que trazem dados sozinhas</p></div></header>
-    <label class="check-field"><input type="checkbox" data-cfg-toggle="metaSync"${s.metaSync ? ' checked' : ''}${store.mode === 'supabase' ? '' : ' disabled'}> Sincronização com o Meta ligada <small class="muted">(depois de publicar a função meta-sync e configurar o token; passo a passo em docs/META-SYNC.md no repositório)</small></label>
-    <label class="check-field"><input type="checkbox" data-cfg-toggle="whatsappApi"${s.whatsappApi ? ' checked' : ''}${store.mode === 'supabase' ? '' : ' disabled'}> WhatsApp oficial (Cloud API) ligado <small class="muted">(as conversas chegam no Funil e você responde de dentro do app; passo a passo em docs/WHATSAPP.md)</small></label>
+    <header class="card-head"><div><h2>Cursos</h2><p class="muted">O preço é o valor padrão da matrícula</p></div><button class="btn sm" data-cfg="course">${ICON.plus} Novo curso</button></header>
+    ${courses.length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>Curso</th><th class="r">Preço</th><th>Situação</th><th></th></tr></thead><tbody>${courses.map((c) => `<tr><td>${esc(c.nome)}</td><td class="r">${c.preco ? brl(c.preco) : '—'}</td><td>${c.ativo === false ? 'Inativo' : 'Ativo'}</td><td class="r"><button class="btn sm" data-course="${esc(c.id)}">Editar</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="empty-sm">Cadastre os cursos que a escola vende. É o primeiro passo para medir custo por matrícula.</p>'}
   </section>
-
-  <section class="card">
-    <header class="card-head"><div><h2>Consultores</h2><p class="muted">Quem atende e fecha matrículas. Aparecem como responsável no Funil e no ranking da Visão geral</p></div><button class="btn sm" data-cfg="consultor">${ICON.plus} Novo consultor</button></header>
-    ${(s.consultores || []).length ? `<ul class="todo">${s.consultores.map((c, i) => `<li><span><b>${esc(c.nome)}</b><small>${c.ativo === false ? 'inativo' : 'ativo'}</small></span><span class="row-actions"><button class="btn sm ghost" data-constog="${i}">${c.ativo === false ? 'Ativar' : 'Desativar'}</button><button class="icon-btn sm" data-consrm="${i}" aria-label="Remover">×</button></span></li>`).join('')}</ul>` : '<p class="empty-sm">Nenhum consultor cadastrado. O responsável do lead também pode ser digitado livre.</p>'}
-  </section>
-
   <section class="card">
     <header class="card-head"><div><h2>Produtos</h2><p class="muted">O que você vende. No ganho, o produto preenche curso, valor e pagamento</p></div><button class="btn sm" data-cfg="product">${ICON.plus} Novo produto</button></header>
     ${store.all('products').length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>Produto</th><th>Curso</th><th class="r">Valor</th><th>Condição</th><th>Situação</th><th></th></tr></thead><tbody>${store.all('products').sort((a, b) => a.nome.localeCompare(b.nome)).map((p) => `<tr><td>${esc(p.nome)}</td><td>${esc(p.cursoId ? courseName(p.cursoId) : '—')}</td><td class="r">${p.valor ? brl(p.valor) : '—'}</td><td>${esc([p.formaPagamento, p.parcelas ? p.parcelas + 'x' : ''].filter(Boolean).join(' · ') || '—')}</td><td>${p.ativo === false ? 'Fora de venda' : 'À venda'}</td><td class="r"><button class="btn sm" data-product="${esc(p.id)}">Editar</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="empty-sm">Nenhum produto. Crie um por curso, com valor e condição (ex.: "Injetáveis · 6x no cartão").</p>'}
-  </section>
+  </section>`;
 
+  P.vendas = `
   <section class="card">
     <header class="card-head"><div><h2>Funis comerciais</h2><p class="muted">Nome, etapas e limite de cada funil. Excluir pede para onde vão os leads</p></div><button class="btn sm" data-cfg="pipe">${ICON.plus} Novo funil</button></header>
     <div class="table-wrap"><table class="tbl"><thead><tr><th>Funil</th><th>Etapas</th><th class="r">Leads</th><th></th></tr></thead><tbody>${pipelines().map((p) => `<tr><td>${esc(p.nome)}</td><td>${esc(p.etapas.map((e) => e.nome).join(' → '))}</td><td class="r">${store.all('leads').filter((l) => leadPipeId(l) === p.id).length}</td><td class="r"><button class="btn sm" data-pipe-edit="${esc(p.id)}">Editar ou excluir</button></td></tr>`).join('')}</tbody></table></div>
   </section>
-
-  ${isSb ? team(isAdmin) + saas.render() : `<section class="card"><header class="card-head"><div><h2>Equipe e login</h2></div></header><p class="note">${store.mode === 'cloud' ? 'Este painel está rodando dentro do claude.ai: quem tem acesso ao link vê os mesmos dados.' : 'Modo de teste: os dados ficam só neste navegador. Para login, equipe e dados na nuvem, configure o Supabase (veja o README do projeto).'}</p></section>`}
-
   <section class="card">
-    <header class="card-head"><div><h2>Backup e dados</h2><p class="muted">Exporte com frequência. O arquivo JSON tem todos os dados da unidade.</p></div></header>
+    <header class="card-head"><div><h2>Consultores</h2><p class="muted">Quem atende e fecha matrículas. Aparecem como responsável no Funil e no ranking</p></div><button class="btn sm" data-cfg="consultor">${ICON.plus} Novo consultor</button></header>
+    ${(s.consultores || []).length ? `<ul class="todo">${s.consultores.map((c, i) => `<li><span><b>${esc(c.nome)}</b><small>${c.ativo === false ? 'inativo' : 'ativo'}</small></span><span class="row-actions"><button class="btn sm ghost" data-constog="${i}">${c.ativo === false ? 'Ativar' : 'Desativar'}</button><button class="icon-btn sm" data-consrm="${i}" aria-label="Remover">×</button></span></li>`).join('')}</ul>` : '<p class="empty-sm">Nenhum consultor cadastrado. O responsável do lead também pode ser digitado livre.</p>'}
+  </section>`;
+
+  P.equipe = isSb ? team(isAdmin) : `<section class="card"><header class="card-head"><div><h2>Equipe</h2></div></header><p class="note">Para convidar o time, <a href="/?cadastro=1">crie sua conta</a>. Cada pessoa entra com o próprio login e vê só o que o perfil dela permite.</p></section>`;
+
+  P.plano = isSb ? saas.renderPlano() : `<section class="card"><header class="card-head"><div><h2>Plano</h2></div></header><p class="note">Teste grátis por 7 dias, sem cartão. <a href="/planos" target="_blank" rel="noopener">Ver planos</a></p></section>`;
+
+  P.integracoes = `${isSb ? saas.renderWhatsApp() : ''}
+  <section class="card">
+    <header class="card-head"><div><h2>Meta Ads</h2><p class="muted">Gasto, alcance e conversas por anúncio, todo dia, sem importar planilha</p></div></header>
+    <label class="check-field"><input type="checkbox" data-cfg-toggle="metaSync"${s.metaSync ? ' checked' : ''}${isSb ? '' : ' disabled'}> Sincronização automática com o Meta Ads</label>
+    <p class="hint">${isSb ? 'Ao ligar, o FLOWCLASS busca os números da sua conta de anúncios. Enquanto a conexão não é ativada pelo nosso time, você pode importar o relatório do Meta em Meta Ads › Importar.' : 'Disponível com conta criada.'}</p>
+  </section>
+  <section class="card">
+    <header class="card-head"><div><h2>WhatsApp no Funil</h2><p class="muted">Abrir as conversas dentro do app em vez do WhatsApp do celular</p></div></header>
+    <label class="check-field"><input type="checkbox" data-cfg-toggle="whatsappApi"${s.whatsappApi ? ' checked' : ''}${isSb ? '' : ' disabled'}> Usar a conversa do WhatsApp oficial dentro do Funil</label>
+    <p class="hint">Desligado, o botão WhatsApp do cartão abre o seu WhatsApp com a mensagem pronta.</p>
+  </section>`;
+
+  P.dados = `
+  <section class="card">
+    <header class="card-head"><div><h2>Backup</h2><p class="muted">Exporte com frequência. O arquivo tem todos os dados da escola</p></div></header>
     <div class="row-actions">
       <button class="btn" data-cfg="export">${ICON.download} Exportar backup (JSON)</button>
       ${isAdmin ? `<label class="btn" for="cfg-import">${ICON.upload} Restaurar backup</label><input type="file" id="cfg-import" accept=".json,application/json" class="sr">` : ''}
-      ${hasDemo ? '<button class="btn danger" data-cfg="demo-off">Remover dados de teste</button>' : '<button class="btn" data-cfg="demo-test">Carregar dados de teste (3 meses)</button>'}
+      ${hasDemo ? '<button class="btn danger" data-cfg="demo-off">Remover dados de exemplo</button>' : (!isSb ? '<button class="btn" data-cfg="demo-test">Carregar dados de exemplo (3 meses)</button>' : '')}
     </div>
   </section>
-
   <section class="card">
-    <header class="card-head"><div><h2>Privacidade (LGPD)</h2><p class="muted">Os leads são dados pessoais. Guarde só o necessário e pelo tempo necessário.</p></div></header>
+    <header class="card-head"><div><h2>Privacidade (LGPD)</h2><p class="muted">Os leads são dados pessoais. Guarde só o necessário e pelo tempo necessário</p></div></header>
     <div class="row-actions">
       <button class="btn" data-cfg="anon">Anonimizar leads perdidos há mais de 12 meses</button>
       <button class="btn" data-cfg="find">Localizar dados de uma pessoa</button>
@@ -86,13 +102,15 @@ export function render() {
       <a class="btn ghost" href="termos.html" target="_blank" rel="noopener">Termos de uso</a>
     </div>
     <p class="hint">"Localizar dados de uma pessoa" atende pedidos de acesso, correção ou exclusão feitos por um lead (LGPD, art. 18). Versão dos termos: ${TERMS_VERSION}.</p>
-    ${isAdmin ? '<details class="more"><summary>Zona de perigo</summary><div class="inner"><p class="note">Apaga todos os dados da unidade (leads, campanhas, calendário, metas e relatórios). Exporte um backup antes.</p><button class="btn danger" data-cfg="wipe">Apagar todos os dados da unidade</button></div></details>' : ''}
-  </section>
+    ${isAdmin ? '<details class="more"><summary>Zona de perigo</summary><div class="inner"><p class="note">Apaga todos os dados da escola (leads, campanhas, calendário, metas e relatórios). Exporte um backup antes.</p><button class="btn danger" data-cfg="wipe">Apagar todos os dados da escola</button></div></details>' : ''}
+  </section>`;
 
-  ${isSb ? `<section class="card"><header class="card-head"><div><h2>Minha conta</h2><p class="muted">${esc(auth.user?.email || '')}</p></div></header>
-    <div class="row-actions"><button class="btn" data-cfg="pass">Trocar senha</button><button class="btn" data-cfg="switch">Trocar de unidade</button><button class="btn" data-cfg="logout">Sair</button><button class="btn danger" data-cfg="delete-me">Excluir minha conta</button></div>
-    <p class="hint">Excluir a conta remove seu acesso. Se você for a única pessoa da unidade, a unidade e todos os dados dela também são apagados.</p></section>` : ''}
-  `;
+  const visiveis = ABAS.filter(([id]) => isAdmin || !['plano', 'integracoes'].includes(id));
+  if (!visiveis.some(([id]) => id === aba)) aba = 'conta';
+  return `<div class="cfg">
+    <nav class="cfg-nav" role="tablist" aria-label="Configurações">${visiveis.map(([id, nome]) => `<button type="button" role="tab" data-aba="${id}" aria-selected="${id === aba}">${nome}</button>`).join('')}</nav>
+    <div class="cfg-body">${visiveis.map(([id]) => `<div class="cfg-panel" data-panel="${id}"${id === aba ? '' : ' hidden'}>${P[id]}</div>`).join('')}</div>
+  </div>`;
 }
 
 function team(isAdmin) {
@@ -125,11 +143,11 @@ async function loadMembers(root) {
 function unitDialog(ctx) {
   const s = settings();
   openDialog({
-    title: 'Unidade', wide: true,
+    title: 'Dados da escola', wide: true,
     fields: [
-      { name: 'unidade', label: 'Nome da unidade', value: s.unidade, required: true },
+      { name: 'unidade', label: 'Nome da escola', value: s.unidade, required: true },
       { name: 'instagram', label: 'Instagram', value: s.instagram },
-      { name: 'coordenador', label: 'Coordenação de marketing', value: s.coordenador },
+      { name: 'coordenador', label: 'Responsável pelo marketing', value: s.coordenador },
       { name: 'metaStoriesDia', label: 'Meta de stories por dia', type: 'number', value: s.metaStoriesDia },
       { name: 'ctrMin', label: 'Alerta quando CTR ficar abaixo de (%)', type: 'number', value: s.ctrMin },
       { name: 'freqMax', label: 'Alerta quando frequência passar de', type: 'number', value: s.freqMax },
@@ -158,6 +176,7 @@ function courseDialog(c, ctx) {
 }
 
 export function mount(root, ctx) {
+  root.addEventListener('click', (e) => { const t = e.target.closest('[data-aba]'); if (!t) return; aba = t.dataset.aba; root.querySelectorAll('[data-aba]').forEach((x) => x.setAttribute('aria-selected', String(x === t))); root.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== aba; }); history.replaceState(null, '', '#config?aba=' + aba); });
   root.addEventListener('click', (e) => { const b = e.target.closest('[data-paleta]'); if (!b) return; applyPaleta(b.dataset.paleta); root.querySelectorAll('[data-paleta]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); toast('Paleta ' + PALETAS[b.dataset.paleta].nome + ' aplicada.'); });
   if (store.mode === 'supabase') { loadMembers(root); saas.mount(root, ctx); }
   root.addEventListener('change', (e) => { const k = e.target.dataset?.cfgToggle; if (!k) return; store.put('settings', { ...store.settings(), id: 'main', [k]: e.target.checked }); toast(e.target.checked ? 'Ligado.' : 'Desligado.'); });
@@ -166,7 +185,7 @@ export function mount(root, ctx) {
     try {
       const data = JSON.parse(await readFileText(f));
       if (!data || !COLLECTIONS.some((c) => Array.isArray(data[c]))) throw new Error('Arquivo não parece um backup do FLOWCLASS Intelligence.');
-      openDialog({ title: 'Restaurar backup?', saveLabel: 'Substituir tudo', html: `<p>O backup tem ${COLLECTIONS.map((c) => (data[c]?.length || 0)).reduce((a, b) => a + b, 0)} registros. Os dados atuais da unidade serão substituídos por ele.</p>`, onSave: () => { store.replaceAll(data); toast('Backup restaurado.'); ctx.refresh(); } });
+      openDialog({ title: 'Restaurar backup?', saveLabel: 'Substituir tudo', html: `<p>O backup tem ${COLLECTIONS.map((c) => (data[c]?.length || 0)).reduce((a, b) => a + b, 0)} registros. Os dados atuais da escola serão substituídos por ele.</p>`, onSave: () => { store.replaceAll(data); toast('Backup restaurado.'); ctx.refresh(); } });
     } catch (er) { toast(er.message, 'bad'); }
     e.target.value = '';
   });

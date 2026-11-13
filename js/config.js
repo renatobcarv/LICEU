@@ -10,3 +10,7 @@ export const SUPABASE_ANON_KEY = 'sb_publishable_Hj2ojo0Yo9SRp88S8eQYjg_um6dJZiS
 // Preencha depois que o app for criado e aprovado (docs/PENDENCIAS.md). Vazios = botão mostra a pendência.
 export const META_APP_ID = '';
 export const WA_CONFIG_ID = '';
+
+// White-label (marca própria, domínio, clientes de agência). Desligado: o produto é o FLOWCLASS.
+// O banco e o código continuam prontos; mude para true quando for vender para agências.
+export const WHITELABEL = false;

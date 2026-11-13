@@ -3,13 +3,13 @@
 
 export const PLANOS = [
   { id: 'local', nome: 'Escola', para: 'Uma escola ou unidade', mensal: 297, cls: '',
-    itens: ['Até 10 usuários', '1 número de WhatsApp oficial', 'Funil, Modo ligação e matrículas', 'Meta Ads com custo por matrícula', 'Pauta Viral, calendário e Ciclo CEC', 'Time gamificado e chat', 'Sua marca no painel'],
-    nao: ['Domínio próprio', 'Clientes (agência)'] },
-  { id: 'pro', nome: 'Rede', para: 'Redes, franquias e várias unidades', mensal: 697, cls: 'hot', tag: 'Mais escolhido',
-    itens: ['Até 40 usuários', '5 números de WhatsApp', 'Tudo do plano Escola', '5.000 gerações de IA por mês', 'Domínio próprio (painel.suaescola.com.br)', 'Perfis por função: vendas, atendimento, social', 'Suporte prioritário'],
-    nao: ['Clientes (agência)'] },
-  { id: 'agencia', nome: 'Agência', para: 'Agências que atendem várias escolas', mensal: 1497, cls: 'ag',
-    itens: ['Até 100 usuários', '30 números de WhatsApp', 'Até 50 clientes com dados separados', 'White-label completo e 5 domínios', 'Entre em qualquer cliente com 1 clique', '30.000 gerações de IA por mês', 'Onboarding junto com a equipe'],
+    itens: ['Até 10 usuários', '1 número de WhatsApp oficial', 'Funil, Modo ligação e matrículas', 'Meta Ads com custo por matrícula', 'Pauta Viral, calendário e Ciclo CEC', 'Metas do time, patentes e chat', '500 gerações de IA por mês'],
+    nao: ['Suporte prioritário'] },
+  { id: 'pro', nome: 'Rede', para: 'Escolas com mais de um time comercial', mensal: 697, cls: 'hot', tag: 'Mais escolhido',
+    itens: ['Até 40 usuários', '5 números de WhatsApp', 'Tudo do plano Escola', '5.000 gerações de IA por mês', 'Perfis por função: vendas, atendimento, social', 'Relatórios por consultor e por curso', 'Suporte prioritário'],
+    nao: [] },
+  { id: 'agencia', nome: 'Grupo', para: 'Grupos educacionais com várias unidades', mensal: 1497, cls: 'ag',
+    itens: ['Até 100 usuários', '30 números de WhatsApp', 'Tudo do plano Rede', '30.000 gerações de IA por mês', 'Implantação junto com o seu time', 'Gerente de conta dedicado'],
     nao: [] },
 ];
 export const ANUAL_MESES = 10; // anual = paga 10, usa 12

@@ -7,33 +7,50 @@ import { toast, openDialog, ICON, confirmButton } from '../ui.js';
 import { auth } from '../auth.js';
 import { applyBranding } from '../brand.js';
 import { isAdminRole } from '../access.js';
-import { META_APP_ID, WA_CONFIG_ID } from '../config.js';
+import { META_APP_ID, WA_CONFIG_ID, WHITELABEL } from '../config.js';
 
 const sb = () => auth.client;
 const org = () => auth.org || {};
 const admin = () => isAdminRole(auth.member?.role);
 
-export function render() {
+const PLANO_NOME = { local: 'Escola', pro: 'Rede', agencia: 'Grupo' };
+
+export function renderPlano() {
   if (!admin()) return '';
+  return `<section class="card saas" id="saas-plano"><header class="card-head"><div><h2>Seu plano</h2><p class="muted">${esc(org().nome || '')}</p></div><a class="btn sm primary" href="/planos" target="_blank" rel="noopener">Ver planos</a></header>
+    <div id="saas-trial"></div>
+    <div id="saas-uso"><p class="empty-sm">Carregando…</p></div></section>
+  ${WHITELABEL ? render() : ''}`;
+}
+
+export function renderWhatsApp() {
+  if (!admin()) return '';
+  return `<section class="card saas"><header class="card-head"><div><h2>WhatsApp oficial</h2><p class="muted">Conecte o número da escola pela Meta. As conversas caem direto no Funil, com o anúncio de origem</p></div><button class="btn sm primary" data-saas="wa">Conectar WhatsApp</button></header>
+    <div id="saas-wa"><p class="empty-sm">Carregando…</p></div></section>`;
+}
+
+// Cartões de white-label (marca, domínio, clientes). Só aparecem com WHITELABEL ligado.
+export function render() {
+  if (!admin() || !WHITELABEL) return '';
   const o = org();
   return `
-  <section class="card saas" id="saas-plano"><header class="card-head"><div><h2>Plano e consumo</h2><p class="muted">${esc(o.nome || '')} · ${o.tipo === 'agencia' ? 'Agência' : 'Empresa'}${o.parent_id ? ' · cliente de agência' : ''}</p></div></header>
-    <div id="saas-uso"><p class="empty-sm">Carregando…</p></div></section>
-
   <section class="card saas"><header class="card-head"><div><h2>Marca (white-label)</h2><p class="muted">Nome, logotipo e cores que a sua equipe e seus clientes veem</p></div><button class="btn sm" data-saas="marca">Editar marca</button></header>
-    <div class="wl-prev" style="--p:${esc(o.branding?.primaria || '#a3ff12')};--s:${esc(o.branding?.secundaria || '#7a9e00')}">
+    <div class="wl-prev" style="--p:${esc(o.branding?.primaria || '#c6ff00')};--s:${esc(o.branding?.secundaria || '#8b00ff')}">
       ${o.branding?.logo ? `<img src="${esc(o.branding.logo)}" alt="" class="wl-logo">` : '<span class="wl-dot"></span>'}
-      <div><b>${esc(o.branding?.nome || 'FLOWCLASS Intelligence')}</b><small>${o.branding?.primaria ? 'Cores próprias aplicadas' : 'Usando a marca padrão'}</small></div>
+      <div><b>${esc(o.branding?.nome || 'FLOWCLASS')}</b><small>${o.branding?.primaria ? 'Cores próprias aplicadas' : 'Usando a marca padrão'}</small></div>
     </div></section>
-
-  <section class="card saas"><header class="card-head"><div><h2>Domínio próprio</h2><p class="muted">Ex.: painel.suaescola.com.br. Disponível nos planos Rede e Agência</p></div><button class="btn sm" data-saas="dominio">${ICON.plus} Adicionar domínio</button></header>
+  <section class="card saas"><header class="card-head"><div><h2>Domínio próprio</h2><p class="muted">Ex.: painel.suaescola.com.br</p></div><button class="btn sm" data-saas="dominio">${ICON.plus} Adicionar domínio</button></header>
     <div id="saas-dom"><p class="empty-sm">Carregando…</p></div></section>
-
-  <section class="card saas"><header class="card-head"><div><h2>WhatsApp oficial</h2><p class="muted">Cada empresa conecta o próprio número pela Meta. As conversas caem no Funil desta empresa</p></div><button class="btn sm primary" data-saas="wa">Conectar WhatsApp</button></header>
-    <div id="saas-wa"><p class="empty-sm">Carregando…</p></div></section>
-
-  ${o.tipo === 'agencia' ? `<section class="card saas"><header class="card-head"><div><h2>Clientes da agência</h2><p class="muted">Cada cliente tem dados, equipe e WhatsApp separados. Você entra em qualquer um</p></div><button class="btn sm" data-saas="cliente">${ICON.plus} Novo cliente</button></header>
+  ${o.tipo === 'agencia' ? `<section class="card saas"><header class="card-head"><div><h2>Clientes da agência</h2><p class="muted">Cada cliente tem dados, equipe e WhatsApp separados</p></div><button class="btn sm" data-saas="cliente">${ICON.plus} Novo cliente</button></header>
     <div id="saas-cli"><p class="empty-sm">Carregando…</p></div></section>` : ''}`;
+}
+
+async function trial(root) {
+  const box = $('#saas-trial', root); if (!box) return;
+  const { data } = await sb().rpc('trial_status', { o: org().id });
+  if (!data) return;
+  const st = { teste: 'Teste grátis', ativa: 'Assinatura ativa', atrasada: 'Pagamento pendente', cancelada: 'Cancelada', cortesia: 'Cortesia' }[data.status] || data.status;
+  box.innerHTML = `<div class="plan-now"><div><small>Situação</small><b>${esc(st)}</b></div><div><small>Plano</small><b>${esc(PLANO_NOME[data.plano] || data.plano)}</b></div>${data.status === 'teste' ? `<div><small>Teste termina em</small><b>${data.dias} ${data.dias === 1 ? 'dia' : 'dias'}</b></div>` : ''}</div>`;
 }
 
 async function uso(root) {
@@ -45,10 +62,10 @@ async function uso(root) {
   const p = (plans || []).find((x) => x.id === org().plano) || { nome: org().plano || 'local', limites: {} };
   const mes = new Date().toISOString().slice(0, 7);
   const ia = (u || []).find((r) => r.metrica === 'ia' && r.periodo === mes)?.qtd || 0;
-  const linhas = [['Usuários', membros || 0, p.limites.usuarios], ['Números de WhatsApp', (wa || []).length, p.limites.whatsapp], ['Gerações de IA no mês', ia, p.limites.ia_mes], ['Domínios próprios', null, p.limites.dominios]];
-  if (org().tipo === 'agencia') linhas.push(['Clientes', null, p.limites.clientes]);
-  box.innerHTML = `<p class="plan-name">Plano <b>${esc(p.nome)}</b></p><div class="uso">${linhas.map(([l, v, max]) => `<div><span>${l}</span><b>${v == null ? '' : v + ' / '}${max ?? '—'}</b>${v != null && max ? `<div class="tm-bar"><i style="width:${Math.min(100, (v / max) * 100)}%"></i></div>` : ''}</div>`).join('')}</div>
-    <p class="hint">Cobrança ainda não está ligada: o plano é definido pela plataforma. Os limites já valem no banco.</p>`;
+  const linhas = [['Usuários', membros || 0, p.limites.usuarios], ['Números de WhatsApp', (wa || []).length, p.limites.whatsapp], ['Gerações de IA no mês', ia, p.limites.ia_mes]];
+  if (WHITELABEL) { linhas.push(['Domínios próprios', null, p.limites.dominios]); if (org().tipo === 'agencia') linhas.push(['Clientes', null, p.limites.clientes]); }
+  box.innerHTML = `<div class="uso">${linhas.map(([l, v, max]) => `<div><span>${l}</span><b>${v == null ? '' : v + ' / '}${max ?? '—'}</b>${v != null && max ? `<div class="tm-bar"><i style="width:${Math.min(100, (v / max) * 100)}%"></i></div>` : ''}</div>`).join('')}</div>
+    <p class="hint">Precisa de mais usuários ou números? Mude de plano a qualquer momento; seus dados continuam iguais.</p>`;
 }
 
 async function dominios(root) {
@@ -64,7 +81,7 @@ async function whatsapp(root) {
   if (error) { box.innerHTML = `<p class="hint">Rode a migração 002 no Supabase para conectar números.</p>`; return; }
   const st = { conectado: 'good', pendente: 'warn', erro: 'bad', desconectado: '' };
   box.innerHTML = (data.length ? data.map((c) => `<div class="member-row"><div class="who"><b>${esc(c.telefone || c.phone_number_id)}</b><small>${esc(c.nome_verificado || '')}${c.qualidade ? ' · qualidade ' + esc(c.qualidade) : ''}${c.erro ? ' · ' + esc(c.erro) : ''}</small></div><span class="badge ${st[c.status] || ''}">${esc(c.status)}</span><button class="btn sm ghost" data-warm="${esc(c.id)}">Desconectar</button></div>`).join('') : '<p class="empty-sm">Nenhum número conectado.</p>')
-    + (!META_APP_ID ? '<p class="hint">Para o botão funcionar, a plataforma precisa do App da Meta aprovado (META_APP_ID e WA_CONFIG_ID em js/config.js). Veja docs/PENDENCIAS.md.</p>' : '');
+    + (!META_APP_ID ? '<p class="hint">A conexão pelo painel está sendo liberada pela Meta. Enquanto isso, nosso time conecta o seu número com você: fale com o suporte.</p>' : '');
 }
 
 async function clientes(root) {
@@ -84,7 +101,7 @@ function loadFb() {
   });
 }
 async function conectarWhatsApp(root) {
-  if (!META_APP_ID || !WA_CONFIG_ID) return toast('A conexão pelo painel precisa do App da Meta da plataforma (pendência em docs/PENDENCIAS.md).', 'warn');
+  if (!META_APP_ID || !WA_CONFIG_ID) return toast('A conexão pelo painel ainda está sendo liberada pela Meta. Fale com o suporte para conectar seu número.', 'warn');
   let sessao = {};
   const ouvir = (ev) => {
     if (!/facebook\.com$/.test(new URL(ev.origin).hostname)) return;
@@ -130,7 +147,7 @@ function marcaDialog() {
 
 export function mount(root, ctx) {
   if (!admin() || !sb()) return;
-  uso(root); dominios(root); whatsapp(root); clientes(root);
+  uso(root); trial(root); whatsapp(root); if (WHITELABEL) { dominios(root); clientes(root); }
   root.addEventListener('click', async (e) => {
     const a = e.target.closest('[data-saas]')?.dataset.saas;
     if (a === 'marca') return marcaDialog();
