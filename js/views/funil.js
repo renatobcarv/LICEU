@@ -19,6 +19,7 @@ let view = 'todos';   // todos | abertos | hoje | ganhos | perdidos
 let fResp = '';
 let fTemp = '';
 let dialPos = 0;
+let quickAberto = false; // celular: formulário de nova conversa aberto pela pessoa nesta sessão
 let lote = '';        // id da importação de contatos em foco na Lista
 let pipeId = (() => { try { return localStorage.getItem(PIPE_KEY) || 'principal'; } catch (e) { return 'principal'; } })();
 
@@ -472,6 +473,12 @@ function resultadoDialog(id, ctx) {
 }
 
 export function mount(root, ctx) {
+  // No celular o formulário de nova conversa começa recolhido: o Kanban aparece primeiro.
+  const qf = root.querySelector('#quick');
+  if (qf && window.innerWidth < 760) {
+    qf.classList.toggle('fechado', !quickAberto);
+    qf.querySelector('h2')?.addEventListener('click', () => { quickAberto = qf.classList.toggle('fechado') === false; if (quickAberto) qf.querySelector('input')?.focus(); });
+  }
   root.addEventListener('click', (e) => {
     const wa = e.target.closest('[data-wa]'); if (wa) { if (waApi()) { e.preventDefault(); conversaDialog(wa.dataset.wa); } else registrar(wa.dataset.wa, 'wa'); return; }
     const tel = e.target.closest('[data-tel]'); if (tel) { if (!tel.dataset.nopop) setTimeout(() => resultadoDialog(tel.dataset.tel, ctx), 400); return; }

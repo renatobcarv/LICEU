@@ -78,7 +78,19 @@ function hooksFor(d) {
   return out;
 }
 
-const telaDe = (h) => h.split(/(?<=[.?!])\s+/)[0].replace(/[.?!]+$/, '').split(/\s+/).slice(0, 7).join(' ').toUpperCase();
+// Texto de tela: até 7 palavras, sem terminar em preposição/artigo solto ("...NO ESTÁGIO DE").
+const SOLTAS = new Set(['de', 'do', 'da', 'dos', 'das', 'em', 'no', 'na', 'nos', 'nas', 'a', 'o', 'as', 'os', 'e', 'ou', 'que', 'para', 'pra', 'com', 'um', 'uma', 'por', 'pelo', 'pela', 'se', 'ao', 'à', 'sem', 'sua', 'seu', 'te', 'é']);
+const telaDe = (h) => {
+  const w = h.split(/(?<=[.?!])\s+/)[0].replace(/[.?!:,;]+$/, '').split(/\s+/).slice(0, 7);
+  while (w.length > 2 && SOLTAS.has(w[w.length - 1].toLowerCase().replace(/[.,;:!?]/g, ''))) w.pop();
+  return w.join(' ').replace(/[,;:]$/, '').toUpperCase();
+};
+// Corrige preposição + artigo que o molde cria ao trocar [tema] por "o curso": "em o" -> "no", "de a" -> "da"...
+const CONTR = { 'em o': 'no', 'em a': 'na', 'em os': 'nos', 'em as': 'nas', 'de o': 'do', 'de a': 'da', 'de os': 'dos', 'de as': 'das', 'por o': 'pelo', 'por a': 'pela', 'por os': 'pelos', 'por as': 'pelas' };
+export const contrair = (t) => String(t).replace(/\b(em|de|por|Em|De|Por|EM|DE|POR) (o|a|os|as|O|A|OS|AS)\b/g, (m, p, a) => {
+  const r = CONTR[(p + ' ' + a).toLowerCase()]; if (!r) return m;
+  return p === p.toUpperCase() && p.length > 1 ? r.toUpperCase() : p[0] === p[0].toUpperCase() ? r[0].toUpperCase() + r.slice(1) : r;
+});
 
 function entregaLines(d) {
   const ideia = clean(d.ideia);
@@ -181,6 +193,6 @@ export function buildKit(form) {
     ...(anuncio(d, hooks) ? [{ id: 'anuncio', titulo: 'Variações para anúncio', texto: anuncio(d, hooks) }] : []),
     { id: 'checklist', titulo: 'Checklist de gravação', texto: checklist(d) },
   ];
-  return blocos;
+  return blocos.map((b) => ({ ...b, texto: contrair(b.texto) }));
 }
 export const kitText = (blocos) => blocos.map((b) => `■ ${b.titulo.toUpperCase()}\n${b.texto}`).join('\n\n');
