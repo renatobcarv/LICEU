@@ -121,8 +121,57 @@ function team(isAdmin) {
   return `<section class="card" id="team"><header class="card-head"><div><h2>Equipe</h2><p class="muted">${esc(auth.org?.nome || '')} · seu papel: ${esc(roleLabel(auth.member?.role))}</p></div></header>
     ${isAdmin ? `<div class="row-actions"><span class="muted">Código de convite:</span><span class="code" id="inv-code">${esc(auth.org?.invite_code || '')}</span><button class="btn sm" data-cfg="copy-code">${ICON.copy} Copiar</button><button class="btn sm ghost" data-cfg="new-code">Gerar outro código</button></div>
     <p class="hint">Quem criar a conta e usar esse código entra como "Edita". Mude o papel abaixo. Gere outro código quando alguém sair da equipe.</p>` : ''}
+    ${isAdmin ? `<div class="inv-cta"><div><b>Convide alguém para o time</b><small>Link com o perfil já definido. Envie por WhatsApp, e-mail ou copie.</small></div><button class="btn primary" data-cfg="convidar">${ICON.plus || '+'} Convidar pessoa</button></div><div id="convites"></div>` : ''}
     <div id="members"><p class="empty-sm">Carregando equipe…</p></div>
     <details class="hint"><summary>O que cada perfil pode fazer</summary><ul>${Object.values(ROLES).map((r) => `<li><b>${esc(r.nome)}:</b> ${esc(r.faz)}</li>`).join('')}</ul><p>A regra vale no banco: quem não tem acesso não recebe o dado, mesmo mexendo no navegador.</p></details></section>`;
+}
+
+const linkConvite = (c) => `${location.origin}${location.pathname}?convite=${c}`;
+async function loadConvites(root) {
+  const box = $('#convites', root); if (!box || !auth.client) return;
+  const { data } = await auth.client.from('invites').select('code, role, email, nome, usos, usos_max, expira_em').eq('org_id', auth.org.id).order('created_at', { ascending: false });
+  const vivos = (data || []).filter((i) => i.usos < i.usos_max && new Date(i.expira_em) > new Date());
+  box.innerHTML = vivos.length ? `<p class="inv-k">Convites ativos</p>${vivos.map((i) => `<div class="inv-row"><div><b>${esc(i.nome || i.email || 'Link aberto')}</b><small>${esc(ROLES[i.role]?.nome || i.role)} · ${i.usos}/${i.usos_max} uso${i.usos_max > 1 ? 's' : ''} · vence ${esc(new Date(i.expira_em).toLocaleDateString('pt-BR'))}</small></div><button class="btn sm" data-inv-copy="${esc(i.code)}">${ICON.copy} Link</button><button class="btn sm ghost" data-inv-rm="${esc(i.code)}">Cancelar</button></div>`).join('')}` : '';
+  $$('[data-inv-copy]', box).forEach((b) => b.addEventListener('click', () => copyText(linkConvite(b.dataset.invCopy), b)));
+  $$('[data-inv-rm]', box).forEach((b) => b.addEventListener('click', async () => {
+    if (!confirmButton(b, 'Confirmar')) return;
+    const { error } = await auth.client.from('invites').delete().eq('code', b.dataset.invRm);
+    toast(error ? error.message : 'Convite cancelado.', error ? 'bad' : ''); loadConvites(root);
+  }));
+}
+
+function convidarDialog(root) {
+  const roles = Object.keys(ROLES).filter((r) => r !== 'owner').map((r) => [r, ROLES[r].nome]);
+  const { dlg, err } = openDialog({
+    title: 'Convidar pessoa', saveLabel: 'Gerar convite',
+    fields: [
+      { name: 'role', label: 'Perfil no time', type: 'select', options: roles, value: 'sales', required: true },
+      { name: 'nome', label: 'Nome (opcional)', placeholder: 'Como vai aparecer no time' },
+      { name: 'email', label: 'E-mail (opcional)', type: 'email', placeholder: 'Só esse e-mail poderá usar', hint: 'Com e-mail, o convite vale só para essa pessoa.' },
+      { name: 'usos', label: 'Quantas pessoas podem usar', type: 'select', options: [['1', '1 pessoa'], ['5', 'Até 5'], ['20', 'Até 20']], value: '1' },
+      { name: 'dias', label: 'Validade', type: 'select', options: [['1', '1 dia'], ['7', '7 dias'], ['30', '30 dias']], value: '7' },
+    ],
+    onSave: (d) => {
+      auth.client.rpc('create_invite', { p_org: auth.org.id, p_role: d.role, p_email: d.email || null, p_nome: d.nome || null, p_usos: Number(d.usos), p_dias: Number(d.dias) }).then(({ data, error }) => {
+        if (error) { toast(/plan limit/.test(error.message) ? 'Seu plano chegou ao limite de usuários. Mude de plano para convidar mais.' : error.message, 'bad'); return; }
+        conviteGerado(data, d); loadConvites(root);
+      });
+    },
+  });
+  void dlg; void err;
+}
+
+function conviteGerado(inv, d) {
+  const url = linkConvite(inv.code);
+  const papel = ROLES[inv.role]?.nome || inv.role;
+  const msg = `Oi${d.nome ? ' ' + d.nome.split(' ')[0] : ''}! Te convidei para o time da ${auth.org?.nome || 'escola'} no FLOWCLASS como ${papel}. Crie sua conta por este link: ${url}`;
+  const { dlg } = openDialog({
+    title: 'Convite pronto',
+    html: `<div class="inv-ok"><div class="inv-selo">${ICON.check}</div><p>Envie para ${esc(d.nome || d.email || 'a pessoa')}. Perfil: <b>${esc(papel)}</b>.</p>
+      <div class="inv-link"><input readonly value="${esc(url)}" aria-label="Link do convite"><button type="button" class="btn primary" data-x="copy">${ICON.copy} Copiar</button></div>
+      <div class="inv-share"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msg)}">WhatsApp</a><a class="btn" href="mailto:${encodeURIComponent(inv.email || '')}?subject=${encodeURIComponent('Convite para o time da ' + (auth.org?.nome || 'escola'))}&body=${encodeURIComponent(msg)}">E-mail</a></div></div>`,
+  });
+  dlg.querySelector('[data-x="copy"]').addEventListener('click', (e) => copyText(url, e.currentTarget));
 }
 
 async function loadMembers(root) {
@@ -183,7 +232,7 @@ export function mount(root, ctx) {
   root.addEventListener('click', (e) => { const b = e.target.closest('[data-ia-quero]'); if (!b) return; const st = store.settings(); const l = new Set(st.iaInteresse || []); l.has(b.dataset.iaQuero) ? l.delete(b.dataset.iaQuero) : l.add(b.dataset.iaQuero); store.put('settings', { ...st, id: 'main', iaInteresse: [...l] }); toast(l.has(b.dataset.iaQuero) ? 'Anotado. Avisamos quando estiver disponível.' : 'Removido da sua lista.'); });
   root.addEventListener('click', (e) => { const t = e.target.closest('[data-aba]'); if (!t) return; aba = t.dataset.aba; root.querySelectorAll('[data-aba]').forEach((x) => x.setAttribute('aria-selected', String(x === t))); root.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== aba; }); history.replaceState(null, '', '#config?aba=' + aba); });
   root.addEventListener('click', (e) => { const b = e.target.closest('button[data-paleta]'); if (!b) return; applyPaleta(b.dataset.paleta); root.querySelectorAll('[data-paleta]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); toast('Paleta ' + PALETAS[b.dataset.paleta].nome + ' aplicada.'); });
-  if (store.mode === 'supabase') { loadMembers(root); saas.mount(root, ctx); }
+  if (store.mode === 'supabase') { loadMembers(root); loadConvites(root); saas.mount(root, ctx); }
   root.addEventListener('change', (e) => { const k = e.target.dataset?.cfgToggle; if (!k) return; store.put('settings', { ...store.settings(), id: 'main', [k]: e.target.checked }); toast(e.target.checked ? 'Ligado.' : 'Desligado.'); });
   $('#cfg-import', root)?.addEventListener('change', async (e) => {
     const f = e.target.files[0]; if (!f) return;
@@ -220,6 +269,7 @@ export function mount(root, ctx) {
     }
     if (a === 'find') findPerson();
     if (a === 'wipe') { if (!confirmButton(b, 'Clique de novo para apagar tudo')) return; store.replaceAll({}); toast('Todos os dados foram apagados.'); ctx.refresh(); }
+    if (a === 'convidar') convidarDialog(root);
     if (a === 'copy-code') copyText(auth.org.invite_code, $('#inv-code', root));
     if (a === 'new-code') {
       if (!confirmButton(b, 'Confirmar: o código atual para de funcionar')) return;
