@@ -40,7 +40,7 @@ Serve para começar já, sem esperar a aprovação do Embedded Signup.
 - [ ] **Falta construir**: a função que confere o TXT e marca `verificado` (hoje é manual: `update org_domains set verificado = true, verificado_em = now() where host = '...'`).
 
 ## 7. Claude no atendimento (próximo ciclo) · você
-- [ ] Chave da API da Anthropic como segredo `ANTHROPIC_API_KEY` (console.anthropic.com). Definir limite de gasto mensal no console.
+- [ ] Chave da API da Anthropic como segredo `ANTHROPIC_API_KEY` (console.anthropic.com), limite de gasto mensal no console, e publicar `ia-criar`. Passo a passo: `docs/IA.md`.
 - [ ] Decidir o modo inicial: **copiloto** (sugere, humano envia). Recomendado começar assim.
 
 ## 8. Cobrança (quando for vender)

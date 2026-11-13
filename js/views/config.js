@@ -11,6 +11,7 @@ import { loadTestData } from '../demoData.js';
 import { courseName } from '../metrics.js';
 import * as saas from './saas.js';
 import { ROLES, isAdminRole } from '../access.js';
+import { FERRAMENTAS_IA, iaOnline } from '../ia.js';
 
 
 // Abas das Configurações, do ponto de vista de quem assina o FLOWCLASS.
@@ -73,6 +74,9 @@ export function render(ctx = {}) {
   P.plano = isSb ? saas.renderPlano() : `<section class="card"><header class="card-head"><div><h2>Plano</h2></div></header><p class="note">Teste grátis por 7 dias, sem cartão. <a href="/planos" target="_blank" rel="noopener">Ver planos</a></p></section>`;
 
   P.integracoes = `${isSb ? saas.renderWhatsApp() : ''}
+  <section class="card"><header class="card-head"><div><h2>Ferramentas de IA</h2><p class="muted">O que a IA já faz no FLOWCLASS e o que vem por aí. Marque o que você quer usar: isso define a nossa fila de integrações</p></div></header>
+    <div class="ia-cat">${FERRAMENTAS_IA.map((f) => { const quer = (s.iaInteresse || []).includes(f.id); return `<div class="ia-tool ${f.status}"><span class="ia-ic">${ICON[f.id === 'claude' ? 'ia' : f.id === 'higgsfield' ? 'f_motion' : f.id === 'imagem' ? 'f_post' : f.id === 'voz' ? 'f_live' : f.id === 'canva' ? 'f_arte' : 'raio']}</span><div><b>${esc(f.nome)}</b><small>${esc(f.faz)}</small></div>${f.status === 'ativo' ? `<span class="badge good">${iaOnline() ? 'Ativo' : 'Com conta'}</span>` : `<button type="button" class="btn sm ${quer ? 'primary' : ''}" data-ia-quero="${f.id}">${quer ? 'Na sua lista' : 'Quero usar'}</button>`}</div>`; }).join('')}</div>
+  </section>
   <section class="card">
     <header class="card-head"><div><h2>Meta Ads</h2><p class="muted">Gasto, alcance e conversas por anúncio, todo dia, sem importar planilha</p></div></header>
     <label class="check-field"><input type="checkbox" data-cfg-toggle="metaSync"${s.metaSync ? ' checked' : ''}${isSb ? '' : ' disabled'}> Sincronização automática com o Meta Ads</label>
@@ -176,8 +180,9 @@ function courseDialog(c, ctx) {
 }
 
 export function mount(root, ctx) {
+  root.addEventListener('click', (e) => { const b = e.target.closest('[data-ia-quero]'); if (!b) return; const st = store.settings(); const l = new Set(st.iaInteresse || []); l.has(b.dataset.iaQuero) ? l.delete(b.dataset.iaQuero) : l.add(b.dataset.iaQuero); store.put('settings', { ...st, id: 'main', iaInteresse: [...l] }); toast(l.has(b.dataset.iaQuero) ? 'Anotado. Avisamos quando estiver disponível.' : 'Removido da sua lista.'); });
   root.addEventListener('click', (e) => { const t = e.target.closest('[data-aba]'); if (!t) return; aba = t.dataset.aba; root.querySelectorAll('[data-aba]').forEach((x) => x.setAttribute('aria-selected', String(x === t))); root.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== aba; }); history.replaceState(null, '', '#config?aba=' + aba); });
-  root.addEventListener('click', (e) => { const b = e.target.closest('[data-paleta]'); if (!b) return; applyPaleta(b.dataset.paleta); root.querySelectorAll('[data-paleta]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); toast('Paleta ' + PALETAS[b.dataset.paleta].nome + ' aplicada.'); });
+  root.addEventListener('click', (e) => { const b = e.target.closest('button[data-paleta]'); if (!b) return; applyPaleta(b.dataset.paleta); root.querySelectorAll('[data-paleta]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); toast('Paleta ' + PALETAS[b.dataset.paleta].nome + ' aplicada.'); });
   if (store.mode === 'supabase') { loadMembers(root); saas.mount(root, ctx); }
   root.addEventListener('change', (e) => { const k = e.target.dataset?.cfgToggle; if (!k) return; store.put('settings', { ...store.settings(), id: 'main', [k]: e.target.checked }); toast(e.target.checked ? 'Ligado.' : 'Desligado.'); });
   $('#cfg-import', root)?.addEventListener('change', async (e) => {
