@@ -7,13 +7,14 @@ import { HOOKS, BANK, FORMATOS, OBJETIVOS, CONSCIENCIA, OBJECOES, buildBrief } f
 import { buildKit, kitText, AMBIENTES, QUEM, TONS } from '../pauta-gen.js';
 import { salesStats, contentStats, settings } from '../metrics.js';
 import { openDialog, toast, copyText, ICON, badge, confirmButton, dayPicker } from '../ui.js';
+import { estudioBar, brainstorm, bindBrain, agendarIdeia, iconFormato, visualizar } from './estudio.js';
 
 export const autoRefresh = false; // não redesenha no meio da digitação
 
 const DRAFT_KEY = 'liceu.intelligence.pauta.draft';
 const BLANK = { qstep: 0, v: 0, kitEdits: {}, ambiente: 'lab', ambienteLivre: '', quem: 'professor', tom: 'Direto', duracao: 30, palavra: '', formato: 'Reels', objetivo: OBJETIVOS[0][0], consciencia: CONSCIENCIA[2][0], objecao: '', cenario: 'Claude escolhe', validado: 'Ainda não', curso: '', ideia: '', erro: '', protagonista: '', publico: '', entrega: '', prova: '', refs: '', cta: '', restricoes: '', voz: '', anuncio: false, picked: [], usarDados: true };
 let draft = loadDraft();
-let tab = 'nova';
+let tab = 'ideias';
 let cat = 'Todos';
 let hq = '';
 
@@ -46,7 +47,11 @@ function radios(name, opts) {
 export function render(ctx) {
   const p = ctx.params;
   // Atalhos vindos de outros módulos (diagnóstico, campanha, calendário).
-  if (p.curso !== undefined || p.anuncio || p.objecao || p.de || p.id) {
+  if (p.ideia) {
+    const it = store.get('pautas', p.ideia);
+    if (it) { draft = { ...structuredClone(BLANK), ...(it.form || {}), ideia: it.form?.ideia || it.titulo, formato: FORMATOS.includes(it.form?.formato) ? it.form.formato : 'Reels', _id: it.id, qstep: 0 }; saveDraft(); tab = 'nova'; }
+    history.replaceState(null, '', '#pauta');
+  } else if (p.curso !== undefined || p.anuncio || p.objecao || p.de || p.id) {
     draft = { ...structuredClone(BLANK) };
     if (p.curso) draft.curso = store.get('courses', p.curso)?.nome || '';
     if (p.anuncio) { draft.anuncio = true; draft.objetivo = 'Conversas no WhatsApp'; }
@@ -58,11 +63,13 @@ export function render(ctx) {
   }
   const pautas = store.all('pautas').sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   return `
+  ${estudioBar()}
   <div class="toolbar"><div class="tabs" role="tablist">
-    <button type="button" class="tab" role="tab" data-ptab="nova" aria-selected="${tab === 'nova'}">${draft._id ? 'Editando pauta' : 'Nova pauta'}</button>
+    <button type="button" class="tab" role="tab" data-ptab="ideias" aria-selected="${tab === 'ideias'}">${ICON.ideia} Brainstorm</button>
+    <button type="button" class="tab" role="tab" data-ptab="nova" aria-selected="${tab === 'nova'}">${ICON.raio} ${draft._id ? 'Editando pauta' : 'Nova pauta'}</button>
     <button type="button" class="tab" role="tab" data-ptab="banco" aria-selected="${tab === 'banco'}">Banco de pautas <span class="count">${pautas.length}</span></button>
   </div></div>
-  ${tab === 'banco' ? bank(pautas) : form()}`;
+  ${tab === 'banco' ? bank(pautas) : tab === 'ideias' ? brainstorm() : form()}`;
 }
 
 // ---------- quiz ----------
@@ -127,9 +134,9 @@ function bank(list) {
   if (!list.length) return '<div class="empty"><h3>Nenhuma pauta salva</h3><p>Monte um briefing e clique em Salvar e escolher o dia. Toda pauta fica aqui e no calendário.</p></div>';
   return `<div class="table-wrap"><table class="tbl"><thead><tr><th>Pauta</th><th>Formato</th><th>Objetivo</th><th>Calendário</th><th>Status</th><th></th></tr></thead><tbody>${list.map((p) => {
     const cal = p.calendarId ? store.get('calendar', p.calendarId) : null;
-    return `<tr><td><b>${esc(p.titulo)}</b><small class="cell-sub">${esc(p.form?.curso || '')}</small></td><td>${esc(p.form?.formato || '')}</td><td>${esc((p.form?.objetivo || '').split(' (')[0])}</td><td>${cal ? `<a href="#calendario?d=${esc(cal.data)}">${fmtDate(cal.data)}</a>` : '—'}</td>
+    return `<tr><td><b>${esc(p.titulo)}</b><small class="cell-sub">${esc(p.form?.curso || '')}</small></td><td><span class="idea-f">${iconFormato(p.form?.formato || 'Reels')}<span>${esc(p.form?.formato || '')}</span></span></td><td>${esc((p.form?.objetivo || '').split(' (')[0])}</td><td>${cal ? `<a href="#calendario?d=${esc(cal.data)}">${fmtDate(cal.data)}</a>` : '—'}</td>
     <td><label class="sr" for="ps-${esc(p.id)}">Status</label><select id="ps-${esc(p.id)}" data-pstatus="${esc(p.id)}">${STATUS.map((s) => `<option${s === p.status ? ' selected' : ''}>${s}</option>`).join('')}</select></td>
-    <td class="r nowrap"><button class="btn sm" data-popen="${esc(p.id)}">Abrir</button> <button class="btn sm ghost" data-pdel="${esc(p.id)}">Excluir</button></td></tr>`;
+    <td class="r nowrap"><button class="btn sm ghost" data-pver="${esc(p.id)}" aria-label="Visualizar">${ICON.olho}</button> <button class="btn sm" data-popen="${esc(p.id)}">Abrir</button> <button class="btn sm ghost" data-pdel="${esc(p.id)}">Excluir</button></td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
 
@@ -188,16 +195,18 @@ function titleOf(d) { return (d.ideia || d.curso || 'Pauta sem título').split(/
 function savePauta(extra = {}) {
   const old = draft._id ? store.get('pautas', draft._id) : null;
   const { _id, ...form } = draft;
-  const p = store.put('pautas', { ...(old || {}), titulo: titleOf(draft), form, brief: brief(), kit: kitText(kitBlocks()), status: old?.status || 'Briefing pronto', ...extra });
+  const p = store.put('pautas', { ...(old || {}), titulo: titleOf(draft), form, brief: brief(), kit: kitText(kitBlocks()), status: !old || old.status === 'Ideia' ? 'Briefing pronto' : old.status, ...extra });
   draft._id = p.id; saveDraft();
   return p;
 }
 
 export function mount(root, ctx) {
+  if (tab === 'ideias') bindBrain(root, ctx, (pt) => openDialog({ title: 'Agendar ideia', saveLabel: 'Agendar', fields: [{ name: 'data', label: 'Dia da postagem', type: 'date', value: today(), required: true }], onSave: (d) => { agendarIdeia(pt, d.data, ctx); } }));
   root.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
     const ds = b.dataset;
+    if (ds.pver) return visualizar(store.get('pautas', ds.pver), ctx);
     if (tab === 'nova') readQuiz(root);
     if (ds.ptab) { tab = ds.ptab; ctx.refresh(); return; }
     if (ds.popen) { const p = store.get('pautas', ds.popen); draft = { ...structuredClone(BLANK), ...p.form, _id: p.id, qstep: 'kit' }; saveDraft(); tab = 'nova'; ctx.refresh(); return; }

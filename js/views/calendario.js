@@ -6,6 +6,8 @@ import { esc, $, $$, today, monthStart, monthEnd, addMonths, addDays, weekStart,
 import { settings, courseName, STORY_BLOCKS, storiesCount } from '../metrics.js';
 import { openDialog, toast, ICON, badge, confirmButton } from '../ui.js';
 import { slug } from './painel.js';
+import { estudioBar, agendarIdeia, iconFormato, visualizar } from './estudio.js';
+import { XP_C } from '../criador.js';
 
 export const TIPOS = ['Publicação', 'Gravação', 'Campanha', 'Turma / curso', 'Tarefa', 'Evento'];
 export const STATUS = ['Ideia', 'Planejado', 'Em produção', 'Pronto', 'Publicado', 'Cancelado'];
@@ -26,8 +28,16 @@ export function render(ctx) {
     <span class="grow"></span>
     <button class="btn primary" data-cadd="${today()}">${ICON.plus} Novo item</button>
   </div>
+  ${tab === 'mes' ? estudioBar() + ideiasStrip() : ''}
   ${tab === 'mes' || tab === 'lista' ? `<div class="chips legend" role="group" aria-label="Filtrar por tipo"><button type="button" class="chip" data-tipo="" aria-pressed="${!fTipo}">Todos</button>${TIPOS.map((t) => `<button type="button" class="chip" data-tipo="${esc(t)}" aria-pressed="${fTipo === t}"><span class="type-dot t-${slug(t)}" aria-hidden="true"></span>${esc(t)}</button>`).join('')}</div>` : ''}
   ${tab === 'mes' ? monthView() : tab === 'lista' ? listView() : tab === 'stories' ? storiesView() : weeksView(ctx)}`;
+}
+
+// Ideias do brainstorm ainda sem data: arraste para um dia do calendário.
+function ideiasStrip() {
+  const ls = store.all('pautas').filter((p) => !p.calendarId && ['Ideia', 'Briefing pronto', 'Roteiro aprovado', 'Gravado'].includes(p.status)).sort((a, b) => (b.fogo || 0) - (a.fogo || 0)).slice(0, 12);
+  return `<section class="cal-ideias" aria-label="Ideias para agendar"><p class="es-k">${ICON.ideia} Arraste uma ideia para o dia</p>
+    ${ls.length ? `<div class="ci-list">${ls.map((p) => `<button type="button" class="ci-chip" draggable="true" data-ideia="${esc(p.id)}" data-cver="${esc(p.id)}">${iconFormato(p.form?.formato || 'Reels')}<span>${esc(p.titulo)}</span>${p.fogo ? `<em>${ICON.fogo}${p.fogo}</em>` : ''}</button>`).join('')}</div>` : '<p class="muted">Nenhuma ideia solta. <a href="#pauta">Faça um brainstorm na Pauta Viral</a>.</p>'}</section>`;
 }
 
 function items() {
@@ -49,9 +59,9 @@ function monthView() {
     <div class="cal-body">${cells.map((c) => {
       const its = list.filter((i) => i.data === c);
       const out = c.slice(0, 7) !== month.slice(0, 7);
-      return `<div class="cal-day${out ? ' out' : ''}${c === t ? ' today' : ''}" role="gridcell">
+      return `<div class="cal-day${out ? ' out' : ''}${c === t ? ' today' : ''}" role="gridcell" data-dia="${c}">
         <button type="button" class="cal-num" data-cadd="${c}" aria-label="Adicionar em ${fmtDate(c)}">${toDate(c).getDate()}</button>
-        ${its.map((i) => `<button type="button" class="cal-item st-${slug(i.status)}" data-cedit="${esc(i.id)}"><span class="type-dot t-${slug(i.tipo)}" aria-hidden="true"></span><span class="ci-t">${esc(i.titulo || i.tipo)}</span></button>`).join('')}
+        ${its.map((i) => `<div class="cal-it-wrap"><button type="button" class="cal-item st-${slug(i.status)}" data-cedit="${esc(i.id)}">${i.tipo === 'Publicação' && i.formato ? `<span class="ci-ic">${iconFormato(i.formato)}</span>` : `<span class="type-dot t-${slug(i.tipo)}" aria-hidden="true"></span>`}<span class="ci-t">${esc(i.titulo || i.tipo)}</span></button>${i.tipo === 'Publicação' && !['Publicado', 'Cancelado'].includes(i.status) ? `<button type="button" class="ci-pub" data-publicar="${esc(i.id)}" title="Marcar como publicado (+${XP_C.publicado} XP)" aria-label="Marcar como publicado">${ICON.check}</button>` : ''}</div>`).join('')}
       </div>`;
     }).join('')}</div>
   </div>
@@ -60,7 +70,7 @@ function monthView() {
 
 function agenda(list) {
   const days = [...new Set(list.map((i) => i.data))];
-  return days.map((d) => `<div class="ag-day"><h4>${fmtDate(d)} <small>${fmtDow(d)}</small></h4>${list.filter((i) => i.data === d).map((i) => `<button type="button" class="ag-item" data-cedit="${esc(i.id)}"><span class="type-dot t-${slug(i.tipo)}" aria-hidden="true"></span><span>${esc(i.titulo || i.tipo)}<small>${esc(i.tipo)}${i.formato ? ' · ' + esc(i.formato) : ''} · ${esc(i.status)}</small></span></button>`).join('')}</div>`).join('');
+  return days.map((d) => `<div class="ag-day"><h4>${fmtDate(d)} <small>${fmtDow(d)}</small></h4>${list.filter((i) => i.data === d).map((i) => `<div class="cal-it-wrap"><button type="button" class="ag-item" data-cedit="${esc(i.id)}">${i.formato ? `<span class="ci-ic">${iconFormato(i.formato)}</span>` : `<span class="type-dot t-${slug(i.tipo)}" aria-hidden="true"></span>`}<span>${esc(i.titulo || i.tipo)}<small>${esc(i.tipo)}${i.formato ? ' · ' + esc(i.formato) : ''} · ${esc(i.status)}</small></span></button>${i.tipo === 'Publicação' && !['Publicado', 'Cancelado'].includes(i.status) ? `<button type="button" class="ci-pub" data-publicar="${esc(i.id)}" aria-label="Marcar como publicado">${ICON.check}</button>` : ''}</div>`).join('')}</div>`).join('');
 }
 
 function listView() {
@@ -189,6 +199,8 @@ export function mount(root, ctx) {
     if (ds.mnav !== undefined) { const n = Number(ds.mnav); month = n === 0 ? monthStart(today()) : addMonths(month, n); if (ctx.params.d) history.replaceState(null, '', '#calendario'); ctx.params.d = ''; ctx.refresh(); return; }
     if (ds.ctab) { tab = ds.ctab; ctx.params.d = ''; ctx.refresh(); return; }
     if (ds.tipo !== undefined) { fTipo = ds.tipo; ctx.refresh(); return; }
+    if (ds.publicar) { const it = store.get('calendar', ds.publicar); store.put('calendar', { ...it, status: 'Publicado', publicadoEm: today() }); if (it.pautaId) { const pt = store.get('pautas', it.pautaId); if (pt) store.put('pautas', { ...pt, status: 'Publicado', publicadoEm: today() }); } toast('Publicado. Preencha o resultado do post em 2 ou 3 dias.'); return ctx.refresh(); }
+    if (ds.cver) return visualizar(store.get('pautas', ds.cver), ctx);
     if (ds.cadd) return editItem(null, ctx, { data: ds.cadd });
     if (ds.cedit) return editItem(store.get('calendar', ds.cedit), ctx);
     if (ds.week) return weekDialog(ds.week, ctx);
@@ -199,6 +211,13 @@ export function mount(root, ctx) {
       store.put('stories', { ...r, id: ds.story, blocos: { ...(r.blocos || {}), [ds.block]: next } });
       ctx.refresh();
     }
+  });
+  $$('[data-ideia]', root).forEach((c) => c.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/ideia', c.dataset.ideia); e.dataTransfer.effectAllowed = 'copy'; document.body.classList.add('arrastando'); }));
+  $$('[data-ideia]', root).forEach((c) => c.addEventListener('dragend', () => document.body.classList.remove('arrastando')));
+  $$('[data-dia]', root).forEach((d) => {
+    d.addEventListener('dragover', (e) => { if ([...e.dataTransfer.types].includes('text/ideia')) { e.preventDefault(); d.classList.add('drop'); } });
+    d.addEventListener('dragleave', () => d.classList.remove('drop'));
+    d.addEventListener('drop', (e) => { e.preventDefault(); d.classList.remove('drop'); const id = e.dataTransfer.getData('text/ideia'); if (id) agendarIdeia(store.get('pautas', id), d.dataset.dia, ctx); });
   });
   $$('[data-sobs]', root).forEach((inp) => inp.addEventListener('change', () => { const d = inp.dataset.sobs; const r = store.get('stories', d) || { id: d, blocos: {} }; store.put('stories', { ...r, id: d, obs: inp.value.trim() }); }));
   void confirmButton; void iso;

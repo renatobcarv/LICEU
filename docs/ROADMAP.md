@@ -43,3 +43,4 @@
 - [x] Embedded Signup (whatsapp-connect) e webhook/envio multiempresa
 - [x] 27 testes de isolamento e permissão em Postgres (`tests/db/run.sh`)
 - [ ] Pendências externas: `docs/PENDENCIAS.md`
+- [x] Estúdio do criador: brainstorm com votos, prévia do post no celular, ideias arrastáveis para o calendário, publicar em um toque, XP de conteúdo, desafio semanal e conquistas de criador
