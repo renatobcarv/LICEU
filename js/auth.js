@@ -7,6 +7,7 @@ import { LOGO_MARK, TERMS_VERSION, applyBranding } from './brand.js';
 
 import { ROLES } from './access.js';
 import { WHITELABEL } from './config.js';
+import { montarQuiz } from './perfil.js';
 const ORG_KEY = 'liceu.intelligence.org';
 const OLD_ORG_KEY = 'tecmais.intelligence.org'; // nome antigo, lido só para não perder a unidade escolhida
 export const auth = { client: null, user: null, org: null, member: null, configured: false };
@@ -21,6 +22,10 @@ const LOGO = `<div class="auth-logo">${LOGO_MARK}<span class="brand-sub">Intelli
 const PLANOS = { local: 'Escola', pro: 'Rede', agencia: 'Agência' };
 const qs = new URLSearchParams(location.search);
 const LAST = 'flowclass.ultimo.email';
+const CONV = 'flowclass.convite';
+const conviteAtual = () => { try { return localStorage.getItem(CONV) || ''; } catch (e) { return ''; } };
+const guardarConvite = (c) => { try { c ? localStorage.setItem(CONV, c) : localStorage.removeItem(CONV); } catch (e) { /* opcional */ } };
+if (qs.get('convite')) guardarConvite(qs.get('convite').trim().toLowerCase());
 const lastEmail = () => { try { return localStorage.getItem(LAST) || ''; } catch (e) { return ''; } };
 
 // Tela dividida: marca e prova à esquerda (some no celular), formulário à direita.
@@ -132,13 +137,13 @@ function loginView(resolve, notice = '') {
   $(lastEmail() ? '#a-pass' : '#a-email', root).focus();
 }
 
-function signupView(resolve) {
+function signupView(resolve, pre = {}) {
   const plano = PLANOS[qs.get('plano')] ? qs.get('plano') : '';
   const root = screen(`
-    <h1>Teste grátis por 7 dias</h1><p class="auth-sub">Sem cartão. Leva menos de um minuto.${plano ? ` <span class="plan-chip">Plano ${PLANOS[plano]}</span>` : ''}</p>
+    <h1>${pre.convite ? 'Criar sua conta' : 'Teste grátis por 7 dias'}</h1><p class="auth-sub">${pre.convite ? 'Depois você entra direto no time.' : 'Sem cartão. Leva menos de um minuto.'}${plano ? ` <span class="plan-chip">Plano ${PLANOS[plano]}</span>` : ''}</p>
     <form id="a-form" class="auth-form" novalidate>
-      <div class="field"><label for="a-nome">Seu nome</label><input id="a-nome" autocomplete="name" required></div>
-      <div class="field"><label for="a-email">E-mail de trabalho</label><input id="a-email" type="email" autocomplete="email" inputmode="email" required value="${esc(qs.get('email') || '')}"><p class="hint" id="a-email-hint" hidden></p></div>
+      <div class="field"><label for="a-nome">Seu nome</label><input id="a-nome" autocomplete="name" required value="${esc(pre.nome || '')}"></div>
+      <div class="field"><label for="a-email">E-mail de trabalho</label><input id="a-email" type="email" autocomplete="email" inputmode="email" required value="${esc(pre.email || qs.get('email') || '')}"><p class="hint" id="a-email-hint" hidden></p></div>
       ${passField('a-pass', 'Crie uma senha', 'new-password', 'minlength="8" aria-describedby="a-meter-t"')}
       <div class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></div><p class="hint" id="a-meter-t">Pelo menos 8 caracteres. Misture letras, números e símbolos.</p>
       <label class="check-field" for="a-terms"><input type="checkbox" id="a-terms" required> <span>Li e aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.</span></label>
@@ -168,6 +173,46 @@ function signupView(resolve) {
     chooseOrg(resolve);
   };
   $('#a-nome', root).focus();
+}
+
+const ROLE_TXT = { admin: 'Administrador', manager: 'Gestor', editor: 'Edita tudo', social: 'Social Media', sales: 'Vendas', support: 'Atendimento', analyst: 'Analista', leitura: 'Só leitura', client: 'Cliente' };
+async function conviteView(resolve) {
+  const code = conviteAtual();
+  const { data: info } = await auth.client.rpc('invite_info', { p_code: code });
+  if (!info || !info.valido) {
+    const root = screen(`<div class="auth-glyph" aria-hidden="true"><img src="assets/flowclass-mark.png" alt=""></div><h1>Convite indisponível</h1><p class="auth-sub">${info ? 'Esse convite já foi usado ou venceu.' : 'Não encontramos esse convite.'} Peça um link novo para quem te convidou.</p><button class="btn block" id="cv-login">Entrar com minha conta</button>`);
+    guardarConvite('');
+    $('#cv-login', root).onclick = () => loginView(resolve);
+    return;
+  }
+  const root = screen(`
+    <div class="cv-card">
+      <div class="auth-glyph" aria-hidden="true"><img src="assets/flowclass-mark.png" alt=""></div>
+      <p class="cv-k">Você foi convidado</p>
+      <h1>${esc(info.escola)}</h1>
+      <p class="auth-sub">Seu perfil no time: <span class="plan-chip">${esc(ROLE_TXT[info.role] || info.role)}</span></p>
+      <ul class="cv-passos"><li><b>1</b>Crie sua conta</li><li><b>2</b>Responda 6 perguntas rápidas</li><li><b>3</b>Receba suas primeiras quests</li></ul>
+      <button class="btn primary block" id="cv-novo">Criar minha conta</button>
+      <button class="btn block" id="cv-tenho">Já tenho conta</button>
+    </div>`);
+  $('#cv-novo', root).onclick = () => signupView(resolve, { email: info.email || '', nome: info.nome || '', convite: true });
+  $('#cv-tenho', root).onclick = () => loginView(resolve, 'Entre para aceitar o convite de ' + info.escola + '.');
+}
+
+// Depois do login: aceita o convite guardado e abre o quiz de perfil.
+async function aceitarConvitePendente() {
+  const code = conviteAtual(); if (!code) return null;
+  const { data, error } = await auth.client.rpc('accept_invite', { p_code: code, p_user_nome: auth.user?.user_metadata?.nome || null });
+  guardarConvite('');
+  if (error) return { erro: /another email/.test(error.message) ? 'Esse convite foi feito para outro e-mail. Entre com o e-mail convidado ou peça um link novo.' : /expired/.test(error.message) ? 'O convite venceu ou já foi usado. Peça um link novo.' : 'Não foi possível aceitar o convite: ' + tr(error) };
+  try { localStorage.setItem(ORG_KEY, data.id); } catch (e) { /* opcional */ }
+  return { org: data };
+}
+
+function quizView(resolve, escola) {
+  const root = screen('<div id="pq-root"></div>');
+  root.classList.add('quiz-mode');
+  montarQuiz($('#pq-root', root), { nome: auth.user?.user_metadata?.nome || '', escola, onFim: () => { root.classList.remove('quiz-mode'); chooseOrg(resolve, true); } });
 }
 
 function checkEmailView(resolve, email) {
@@ -244,7 +289,12 @@ async function loadOrgs() {
   return auth.client.from('members').select('role, nome, email, org_id, orgs(id, nome, invite_code)').eq('user_id', auth.user.id);
 }
 
-async function chooseOrg(resolve) {
+async function chooseOrg(resolve, depoisDoQuiz = false) {
+  if (!depoisDoQuiz && conviteAtual()) {
+    const r = await aceitarConvitePendente();
+    if (r?.erro) { const root = screen(`<h1>Convite</h1><p class="auth-msg bad">${esc(r.erro)}</p><button class="btn block" id="retry">Continuar</button>`); $('#retry', root).onclick = () => chooseOrg(resolve, true); return; }
+    if (r?.org && !auth.user?.user_metadata?.perfil) return quizView(resolve, r.org.nome);
+  }
   const { data, error } = await loadOrgs();
   if (error) { const root = screen(`<h1>Não foi possível abrir sua escola</h1><p class="auth-msg bad">${esc(tr(error))}</p><p class="muted">Tente de novo em instantes. Se continuar, fale com o suporte.</p><button class="btn block" id="retry">Tentar de novo</button>`); $('#retry', root).onclick = () => chooseOrg(resolve); return; }
   const list = (data || []).filter((m) => m.orgs);
@@ -324,6 +374,7 @@ export function initAuth() {
     const { data } = await auth.client.auth.getSession();
     if (recovering) return;
     if (data.session) { auth.user = data.session.user; chooseOrg(resolve); }
+    else if (conviteAtual()) conviteView(resolve);
     else if (qs.get('cadastro')) signupView(resolve);
     else loginView(resolve);
   });

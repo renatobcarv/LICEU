@@ -1109,7 +1109,7 @@ pre.brief { margin: var(--space-3) var(--space-4) 0; padding: var(--space-4); ba
   --grad-brand: linear-gradient(135deg, #e9ff9c, var(--accent-hex) 35%, #12c48b 100%);
   --grad-fire: linear-gradient(135deg, #ffb36b, #ff7a1a 40%, #c10801 100%);
   --grad-ocean: linear-gradient(135deg, #9fd0ff, #4f8bff 45%, #1e2fa8 100%);
-  --grad-aurora: linear-gradient(135deg, #2ee6d6, #4f8bff 50%, #a46bff 100%);
+  --grad-aurora: linear-gradient(135deg, var(--primary, #C6FF00), #8b00ff 100%);
 }
 /* fundo: aura dupla quente/fria nas bordas, como as referências de vidro */
 :root:not([data-theme="light"]) body {
@@ -1685,3 +1685,84 @@ body.arrastando .cal-day { outline: 1px dashed rgb(var(--lime-rgb) / .25); outli
   .ce-prev .pv-phone { width: min(240px, 70vw); }
 }
 .ce-trilha i { display: contents; } .ce-cel { display: grid; justify-items: center; }
+
+/* ===== Quiz de perfil (cadastro e Meu Arsenal) ===== */
+#auth.quiz-mode { display: block; background: radial-gradient(1200px 600px at 80% -10%, color-mix(in srgb, var(--royal, #8B00FF) 22%, transparent), transparent 60%), radial-gradient(900px 500px at -10% 110%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 60%), var(--bg); min-height: 100dvh; }
+#auth.quiz-mode .auth-brand { display: none; }
+#auth.quiz-mode .auth-card, #auth.quiz-mode main { width: 100%; max-width: none; padding: 0; background: none; }
+.pq-overlay { position: fixed; inset: 0; z-index: 90; overflow: auto; background: color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter: blur(14px); animation: pq-in .25s ease; }
+.pq { width: min(720px, 100%); margin: 0 auto; padding: 40px 24px 56px; display: flex; flex-direction: column; gap: 14px; animation: pq-in .3s ease; }
+@keyframes pq-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.pq-top { display: flex; align-items: center; gap: 14px; font: 600 13px/1 var(--font-sans); color: var(--muted-foreground); margin-bottom: 18px; }
+.pq-top span { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pq-bar { flex: 1; height: 6px; border-radius: 99px; background: color-mix(in srgb, var(--foreground) 10%, transparent); overflow: hidden; }
+.pq-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), color-mix(in srgb, var(--primary) 60%, var(--royal, #8B00FF))); transition: width .4s cubic-bezier(.2,.8,.2,1); box-shadow: 0 0 14px color-mix(in srgb, var(--primary) 50%, transparent); }
+.pq-top .link { background: none; border: 0; color: var(--muted-foreground); cursor: pointer; font: inherit; padding: 6px; }
+.pq-top .link:hover { color: var(--heading-strong, #fff); }
+.pq-ola { margin: 0; padding: 12px 16px; border-radius: 14px; background: color-mix(in srgb, var(--primary) 8%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); color: var(--foreground); font-size: 15px; }
+.pq-h { margin: 6px 0 0; font: 800 clamp(28px, 4.6vw, 42px)/1.08 var(--font-sans); letter-spacing: -.03em; color: var(--heading-strong, #fff); text-wrap: balance; }
+.pq-ajuda { margin: 0 0 10px; color: var(--muted-foreground); font-size: 16px; }
+.pq-ops { display: grid; gap: 10px; }
+.pq-ops.grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pq-op { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; padding: 14px 18px; text-align: left; border-radius: 16px; cursor: pointer; font: 600 16px/1.3 var(--font-sans); color: var(--foreground); background: color-mix(in srgb, var(--card, #111) 80%, transparent); border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent); transition: transform .15s ease, border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+.pq-op:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--primary) 45%, transparent); }
+.pq-op:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.pq-op.on { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, var(--card, #111)); box-shadow: 0 0 0 1px var(--primary), 0 10px 30px -12px color-mix(in srgb, var(--primary) 60%, transparent); }
+.pq-ic { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: color-mix(in srgb, var(--royal, #8B00FF) 18%, transparent); color: var(--primary); }
+.pq-ic svg, .pq-op i svg { width: 20px; height: 20px; }
+.pq-op i { margin-left: auto; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: #060706; }
+.pq-op i svg { width: 15px; height: 15px; }
+.pq-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+.pq-nav .btn svg { width: 16px; height: 16px; }
+.pq-fim { align-items: center; text-align: center; }
+.pq-selo { display: grid; place-items: center; width: 92px; height: 92px; border-radius: 28px; margin-bottom: 6px; color: var(--primary-foreground); background: var(--primary); box-shadow: 0 20px 50px -18px color-mix(in srgb, var(--primary) 80%, transparent); animation: pq-pop .5s cubic-bezier(.2,1.4,.4,1); }
+.pq-selo svg { width: 44px; height: 44px; }
+@keyframes pq-pop { from { transform: scale(.5) rotate(-12deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.pq-k { margin: 0; text-transform: uppercase; letter-spacing: .14em; font: 700 12px/1 var(--font-sans); color: var(--primary); }
+.pq-quests { list-style: none; margin: 8px 0; padding: 0; width: 100%; display: grid; gap: 10px; text-align: left; }
+.pq-quests li { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-radius: 14px; background: color-mix(in srgb, var(--card, #111) 85%, transparent); border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent); }
+.pq-quests li > span { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); }
+.pq-quests svg { width: 18px; height: 18px; }
+.pq-quests b { display: block; color: var(--heading-strong, #fff); }
+.pq-quests small { color: var(--muted-foreground); }
+.pq-fortes { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; align-items: center; color: var(--muted-foreground); margin: 0 0 8px; }
+.pq-fortes span { padding: 5px 10px; border-radius: 99px; background: color-mix(in srgb, var(--royal, #8B00FF) 30%, transparent); border: 1px solid color-mix(in srgb, var(--royal, #8B00FF) 60%, transparent); color: var(--heading-strong, #fff); font-size: 13px; }
+.pq-fim .btn.block { max-width: 360px; }
+@media (max-width: 560px) {
+  .pq { padding: 22px 16px 40px; }
+  .pq-ops.grade { grid-template-columns: 1fr; }
+  .pq-op { min-height: 56px; padding: 12px 14px; font-size: 15px; }
+}
+
+/* Convite: boas-vindas no login */
+.cv-card { display: flex; flex-direction: column; gap: 14px; }
+.cv-k { margin: 0; text-transform: uppercase; letter-spacing: .14em; font: 700 12px/1 var(--font-sans); color: var(--primary); }
+.cv-passos { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 8px; }
+.cv-passos li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent); }
+.cv-passos b { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: #060706; font-size: 13px; }
+
+/* Convite: Configurações › Equipe */
+.inv-cta { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px; margin: 6px 0 10px; border-radius: 16px; background: linear-gradient(120deg, color-mix(in srgb, var(--primary) 10%, transparent), color-mix(in srgb, var(--royal, #8B00FF) 14%, transparent)); border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); }
+.inv-cta b { display: block; color: var(--heading-strong, #fff); } .inv-cta small { color: var(--muted-foreground); }
+.inv-cta .btn svg, .inv-row .btn svg, .inv-link .btn svg { width: 15px; height: 15px; }
+.inv-k { margin: 10px 0 6px; font: 700 12px/1 var(--font-sans); text-transform: uppercase; letter-spacing: .1em; color: var(--muted-foreground); }
+.inv-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent); }
+.inv-row > div { flex: 1; min-width: 0; } .inv-row b { display: block; } .inv-row small { color: var(--muted-foreground); }
+.inv-ok { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.inv-selo { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 20px; background: var(--primary); color: #060706; }
+.inv-selo svg { width: 30px; height: 30px; }
+.inv-link { display: flex; gap: 8px; width: 100%; } .inv-link input { flex: 1; min-width: 0; }
+.inv-share { display: flex; gap: 8px; width: 100%; } .inv-share .btn { flex: 1; justify-content: center; }
+@media (max-width: 560px) { .inv-cta { flex-direction: column; align-items: stretch; } .inv-row { flex-wrap: wrap; } .inv-link { flex-direction: column; } }
+
+/* Quests no Meu Arsenal */
+.qst { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.qst li { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent); }
+.qst li > div { flex: 1; min-width: 0; } .qst b { display: block; } .qst small { color: var(--muted-foreground); }
+.qst-ic { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: color-mix(in srgb, var(--royal, #8B00FF) 18%, transparent); color: var(--primary); }
+.qst-ic svg { width: 18px; height: 18px; }
+.qst li.ok { border-color: color-mix(in srgb, var(--primary) 35%, transparent); }
+.qst li.ok .qst-ic { background: var(--primary); color: #060706; }
+.qst .cq-bar { margin: 6px 0 4px; }
+.qst .cq-bar i { background: linear-gradient(90deg, var(--primary), color-mix(in srgb, var(--primary) 55%, var(--royal, #8B00FF))); }
+@media (max-width: 560px) { .pq-nav { position: sticky; bottom: 0; margin: 8px -16px 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--bg) 35%); } .pq-nav .btn.primary { flex: 1; margin-left: 10px; justify-content: center; } }

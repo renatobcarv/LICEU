@@ -2,6 +2,20 @@
 
 import { esc, num, brl } from '../util.js';
 import { estado, RANKS, conquistas, tituloAtivo, usarTitulo, XP } from '../game.js';
+import { perfil, minhasQuests, marcarEstudo, montarQuiz, NIVEL_NOME } from '../perfil.js';
+import { auth } from '../auth.js';
+import { ICON } from '../ui.js';
+
+function questsCard() {
+  const p = perfil(); const qs = minhasQuests(); const ok = qs.filter((q) => q.ok).length;
+  return `<section class="card quests" id="quests">
+    <div class="card-head"><div><h2>Suas quests</h2><p class="muted">${p ? `Ponto de partida: <b>${esc(NIVEL_NOME[p.nivel] || '')}</b> · ${ok} de ${qs.length} concluídas` : 'Responda 6 perguntas e receba quests feitas para você'}</p></div>
+    <button class="btn sm ${p ? '' : 'primary'}" data-quiz>${p ? 'Refazer perfil' : 'Montar meu perfil'}</button></div>
+    <ul class="qst">${qs.map((q) => `<li class="${q.ok ? 'ok' : ''}"><span class="qst-ic">${q.ok ? ICON.check : q.tipo === 'estudo' ? ICON.ideia : ICON.raio}</span>
+      <div><b>${esc(q.titulo)}</b>${q.tipo === 'estudo' ? '<small>Estudo · marque quando fizer</small>' : `<div class="cq-bar"><i style="width:${Math.max(3, (q.v / q.alvo) * 100)}%"></i></div><small>${q.v} / ${q.alvo}</small>`}</div>
+      ${q.tipo === 'estudo' ? `<button class="btn sm ${q.ok ? 'primary' : ''}" data-estudo="${q.id}">${q.ok ? 'Feito' : 'Marcar'}</button>` : ''}</li>`).join('')}</ul>
+  </section>`;
+}
 
 export function render() {
   const g = estado();
@@ -28,6 +42,8 @@ export function render() {
     </section>
   </div>
 
+  ${questsCard()}
+
   <section class="card">
     <div class="card-head"><div><h2>Hierarquia de patentes</h2><p class="muted">Do iniciante à elite do mercado digital</p></div></div>
     <ol class="ranks">${RANKS.map((r, i) => `<li class="${i < g.rankIdx ? 'past' : i === g.rankIdx ? 'now' : ''}"><span class="rk-n">${String(i + 1).padStart(2, '0')}</span><div><b>${esc(r.nome)}</b><small>${esc(r.sentido)}</small></div><em>nível ${r.min}</em></li>`).join('')}</ol>
@@ -47,5 +63,13 @@ export function render() {
 }
 
 export function mount(root) {
-  root.addEventListener('click', (e) => { const b = e.target.closest('[data-titulo]'); if (b) usarTitulo(b.dataset.titulo); });
+  const redesenhar = () => { const c = root.querySelector('#quests'); if (c) c.outerHTML = questsCard(); };
+  root.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-titulo]'); if (b) usarTitulo(b.dataset.titulo);
+    const est = e.target.closest('[data-estudo]'); if (est) { est.disabled = true; await marcarEstudo(est.dataset.estudo); redesenhar(); }
+    if (e.target.closest('[data-quiz]')) {
+      const ov = document.createElement('div'); ov.className = 'pq-overlay'; document.body.append(ov);
+      montarQuiz(ov, { nome: auth.member?.nome || auth.user?.user_metadata?.nome || '', escola: '', onFim: () => { ov.remove(); redesenhar(); } });
+    }
+  });
 }

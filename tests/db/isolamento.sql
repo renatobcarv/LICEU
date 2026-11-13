@@ -127,4 +127,30 @@ select create_org('Escola Nova');
 select pg_temp.ok('11 cadastro cria teste de 7 dias no plano escolhido', (select (trial_status(id)->>'dias')::int = 7 and trial_status(id)->>'status' = 'teste' and plano = 'pro' from orgs where nome = 'Escola Nova'));
 select pg_temp.ok('11b quem não é membro não vê o teste de outra empresa', (select trial_status('aaaaaaaa-0000-0000-0000-000000000000') is null));
 rollback;
+
+-- 12. Convites: só admin cria, link mostra só escola e função, aceite entra com o perfil e respeita e-mail e uso único
+insert into auth.users values ('d0000000-0000-0000-0000-00000000000d', 'novo@x.com'), ('e0000000-0000-0000-0000-00000000000e', 'outro@x.com');
+begin; select pg_temp.como('50000000-0000-0000-0000-000000000005');
+do $$ begin perform create_invite('aaaaaaaa-0000-0000-0000-000000000000', 'admin'); raise exception 'FAIL 12';
+exception when raise_exception then if sqlerrm like 'FAIL%' then raise; end if; raise notice 'PASS 12 atendimento não cria convite'; end $$;
+rollback;
+begin; select pg_temp.como('a0000000-0000-0000-0000-00000000000a');
+create temp table cv as select code from create_invite('aaaaaaaa-0000-0000-0000-000000000000', 'sales', 'novo@x.com', 'Novo Vendedor');
+do $$ begin perform create_invite('aaaaaaaa-0000-0000-0000-000000000000', 'owner'); raise exception 'FAIL 12b';
+exception when raise_exception then if sqlerrm like 'FAIL%' then raise; end if; raise notice 'PASS 12b ninguém convida para dono'; end $$;
+grant select on cv to anon, authenticated;
+reset role; set local role anon;
+select pg_temp.ok('12c visitante vê só escola e função do convite', (select (invite_info(code)->>'escola') = 'Escola A' and (invite_info(code)->>'role') = 'sales' and not (invite_info(code) ? 'invite_code') from cv));
+reset role;
+select set_config('request.jwt.claims', '{"email":"outro@x.com"}', true); select pg_temp.como('e0000000-0000-0000-0000-00000000000e');
+do $$ begin perform accept_invite((select code from cv)); raise exception 'FAIL 12d';
+exception when raise_exception then if sqlerrm like 'FAIL%' then raise; end if; raise notice 'PASS 12d convite com e-mail não serve para outra pessoa'; end $$;
+reset role;
+select set_config('request.jwt.claims', '{"email":"novo@x.com"}', true); select pg_temp.como('d0000000-0000-0000-0000-00000000000d');
+select accept_invite((select code from cv));
+select pg_temp.ok('12e aceite entra com o perfil do convite', (select role from members where user_id = 'd0000000-0000-0000-0000-00000000000d') = 'sales');
+select pg_temp.ok('12f novo vendedor não vê gasto com anúncio', (select count(*) from records where collection = 'adStats') = 0);
+do $$ begin perform accept_invite((select code from cv)); raise exception 'FAIL 12g';
+exception when raise_exception then if sqlerrm like 'FAIL%' then raise; end if; raise notice 'PASS 12g convite de uso único não serve duas vezes'; end $$;
+rollback;
 \echo FIM2
