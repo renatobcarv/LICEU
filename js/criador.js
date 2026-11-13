@@ -23,7 +23,8 @@ function publicados() {
 
 export function xpConteudo() {
   let xp = 0;
-  for (const p of store.all('pautas')) {
+  const meu = (r) => !store.eu?.id || r.criadoPor === store.eu.id || (!r.criadoPor && store.eu.dono);
+  for (const p of store.all('pautas').filter(meu)) {
     if (p.brain) xp += XP_C.ideia;
     const i = ORDEM.indexOf(p.status);
     if (i >= 1) xp += XP_C.pauta;

@@ -5,6 +5,7 @@ import { store } from './store.js';
 import { today, addDays } from './util.js';
 import { salesStats, matriculasDash, goalProgress, campaignRows } from './metrics.js';
 import { xpConteudo, CONQUISTAS_CONTEUDO } from './criador.js';
+import { minhasQuests } from './perfil.js';
 
 // Patentes: evolução geral. Especialidade fica nas conquistas (não se misturam).
 export const RANKS = [
@@ -37,7 +38,14 @@ export function levelOf(xp) {
 export const rankIdx = (level) => RANKS.reduce((i, r, k) => (level >= r.min ? k : i), 0);
 export const faixaOf = (n) => FAIXAS.reduce((a, f) => (n >= f.min ? f : a), FAIXAS[0]);
 
-const jogo = () => store.settings().jogo || {};
+// Com login, cada pessoa tem o próprio jogo: XP do que ela fez, missões e título dela.
+const eu = () => store.eu;
+const norm2 = (x) => (x || '').trim().toLowerCase();
+export const meu = (l) => !eu()?.id || norm2(l.responsavel) === norm2(eu().nome) || (!l.responsavel && eu().dono);
+export const meuRegistro = (r) => !eu()?.id || r.criadoPor === eu().id || (!r.criadoPor && eu().dono);
+const jogoTodo = () => store.settings().jogo || {};
+const jogo = () => (eu()?.id ? jogoTodo().pessoas?.[eu().id] || {} : jogoTodo());
+const salvarJogo = (j) => { const t = jogoTodo(); store.put('settings', { ...store.settings(), id: 'main', jogo: eu()?.id ? { ...t, pessoas: { ...(t.pessoas || {}), [eu().id]: j } } : j }); };
 const diasFeitos = () => jogo().dias || {}; // { 'AAAA-MM-DD': { feitas: [ids], total: n } }
 
 /** Missões de hoje, tiradas dos dados. Quando não há pendência, entram missões de rotina. */
@@ -54,6 +62,8 @@ export function missoes() {
     { id: 'conteudo', t: 'Publicar a pauta do dia', href: '#pauta' },
     { id: 'numeros', t: 'Conferir custo por matrícula das campanhas', href: '#meta' },
   ];
+  // Quest do perfil (quiz do cadastro) entra como missão do dia até ser concluída.
+  try { const q = minhasQuests().find((x) => !x.ok && x.id !== 'q-perfil'); if (q) m.splice(Math.min(1, m.length), 0, { id: 'quest-' + q.id, t: q.titulo, href: '#arsenal', quest: true }); } catch (e) { /* sem perfil */ }
   for (const r of rotina) { if (m.length >= 3) break; m.push(r); }
   if (!m.some((x) => x.principal)) m[0].principal = true;
   return m.slice(0, 3);
@@ -64,7 +74,7 @@ export function toggleMissao(id, total) {
   const cur = dias[t]?.feitas || [];
   const feitas = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
   dias[t] = { feitas, total };
-  store.put('settings', { ...store.settings(), id: 'main', jogo: { ...jogo(), dias } });
+  salvarJogo({ ...jogo(), dias });
 }
 export const feitasHoje = () => diasFeitos()[today()]?.feitas || [];
 
@@ -96,7 +106,7 @@ export function recorde() {
 /** XP total recalculado dos registros. */
 export function xpTotal() {
   let xp = 0;
-  for (const l of store.all('leads')) {
+  for (const l of store.all('leads').filter(meu)) {
     xp += Math.max(0, (l.historico || []).length - 1) * XP.avanco + (l.contatos || []).filter((c) => c.canal === 'tel').length * XP.ligacao;
     if (l.etapa === 'matriculado') xp += ['Pago', 'Parcial'].includes(l.statusPagamento) ? XP.paga : XP.reserva;
   }
@@ -151,7 +161,7 @@ export function conquistas(level) {
   return [...base, ...lend];
 }
 export const tituloAtivo = () => jogo().titulo || '';
-export function usarTitulo(id) { store.put('settings', { ...store.settings(), id: 'main', jogo: { ...jogo(), titulo: id } }); }
+export function usarTitulo(id) { salvarJogo({ ...jogo(), titulo: id }); }
 
 // ---------- Por pessoa (Time): XP e patente a partir dos leads em que ela é responsável ----------
 const norm = (s) => String(s || '').trim().toLowerCase();

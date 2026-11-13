@@ -6,6 +6,7 @@ import { esc, $ } from './util.js';
 import { LOGO_MARK, TERMS_VERSION, applyBranding } from './brand.js';
 
 import { ROLES } from './access.js';
+import { store } from './store.js';
 import { WHITELABEL } from './config.js';
 import { montarQuiz } from './perfil.js';
 const ORG_KEY = 'liceu.intelligence.org';
@@ -349,6 +350,7 @@ function finish(m, resolve) {
   auth.org = m.orgs;
   if (WHITELABEL) applyBranding(m.orgs.branding || {});
   auth.member = m;
+  store.eu = { id: auth.user?.id, nome: m.nome || auth.user?.user_metadata?.nome || '', dono: ['owner', 'admin'].includes(m.role) };
   try { localStorage.setItem(ORG_KEY, m.org_id); } catch (e) { /* opcional */ }
   $('#auth').hidden = true;
   $('#auth').innerHTML = '';

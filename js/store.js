@@ -126,6 +126,7 @@ export const store = {
   put(coll, rec) {
     const r = { ...rec, id: rec.id || uid(coll.slice(0, 2) + '_'), updatedAt: new Date().toISOString() };
     if (!r.createdAt) r.createdAt = r.updatedAt;
+    if (!r.criadoPor && store.eu?.id) r.criadoPor = store.eu.id;
     mem[coll].set(r.id, r);
     if (mode === 'local') lsSave(); else writeRemote(coll, r);
     notify();
