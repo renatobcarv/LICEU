@@ -4,6 +4,7 @@
 import { store } from './store.js';
 import { today, addDays } from './util.js';
 import { salesStats, matriculasDash, goalProgress, campaignRows } from './metrics.js';
+import { xpConteudo, CONQUISTAS_CONTEUDO } from './criador.js';
 
 // Patentes: evolução geral. Especialidade fica nas conquistas (não se misturam).
 export const RANKS = [
@@ -99,6 +100,7 @@ export function xpTotal() {
     xp += Math.max(0, (l.historico || []).length - 1) * XP.avanco + (l.contatos || []).filter((c) => c.canal === 'tel').length * XP.ligacao;
     if (l.etapa === 'matriculado') xp += ['Pago', 'Parcial'].includes(l.statusPagamento) ? XP.paga : XP.reserva;
   }
+  try { xp += xpConteudo(); } catch (e) { /* sem dados de conteúdo */ }
   for (const r of Object.values(diasFeitos())) { xp += (r.feitas?.length || 0) * XP.missao; if (completo(r)) xp += XP.dia; }
   for (const g of store.all('goals')) { if (g.fim < today()) { try { const p = goalProgress(g); if (p && p.alvo && (p.atual || 0) >= p.alvo) xp += XP.meta; } catch { /* meta sem dado */ } } }
   return xp;
@@ -143,7 +145,7 @@ function fenix() {
 }
 
 export function conquistas(level) {
-  const base = CONQUISTAS.filter((c) => !c.lendaria).map((c) => ({ ...c, ...c.check() }));
+  const base = [...CONQUISTAS.filter((c) => !c.lendaria), ...CONQUISTAS_CONTEUDO].map((c) => ({ ...c, ...c.check() }));
   const n = base.filter((c) => c.ok).length;
   const lend = CONQUISTAS.filter((c) => c.lendaria).map((c) => ({ ...c, ...c.check(n, level) }));
   return [...base, ...lend];
