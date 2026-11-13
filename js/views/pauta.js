@@ -74,6 +74,10 @@ export function render(ctx) {
 
 // ---------- quiz ----------
 const QSTEPS = ['Formato', 'Objetivo', 'Curso e ideia', 'Público', 'Ambiente', 'Quem e tom', 'Ganchos', 'Finalizar'];
+// Modo facilitado: 3 perguntas e o kit sai com o resto no padrão. Avançado: as 8 etapas.
+const MODO_KEY = 'flowclass.pauta.modo';
+const modo = () => { try { return localStorage.getItem(MODO_KEY) === 'avancado' ? 'avancado' : 'facil'; } catch (e) { return 'facil'; } };
+const ordem = () => (modo() === 'facil' ? [0, 2, 1] : [0, 1, 2, 3, 4, 5, 6, 7]);
 const chipsSet = (name, opts) => `<div class="chips">${opts.map(([v, l]) => `<button type="button" class="chip" data-pset="${name}" data-val="${esc(v)}" aria-pressed="${String(draft[name]) === String(v)}">${esc(l)}</button>`).join('')}</div>`;
 const inp = (name, label, ph = '', type = 'text') => `<div class="field"><label for="pq-${name}">${label}</label><input id="pq-${name}" data-pd="${name}" type="${type}" value="${esc(draft[name] ?? '')}" placeholder="${esc(ph)}"></div>`;
 const area = (name, label, ph = '', rows = 3) => `<div class="field"><label for="pq-${name}">${label}</label><textarea id="pq-${name}" data-pd="${name}" rows="${rows}" placeholder="${esc(ph)}">${esc(draft[name] ?? '')}</textarea></div>`;
@@ -97,12 +101,35 @@ function quizStep() {
       <label class="toggle"><input type="checkbox" data-pck="anuncio"${draft.anuncio ? ' checked' : ''}> Esse post também vai virar anúncio pago</label>`],
   ];
   const [q, help, body] = Q[i];
-  return `<div class="quiz">
-    <nav class="steps-nav" aria-label="Etapas">${QSTEPS.map((t, k) => `<button type="button" class="step-pill${k === i ? ' on' : ''}${k < i ? ' done' : ''}" data-qgo="${k}"><span>${k + 1}</span>${esc(t)}</button>`).join('')}</nav>
-    <h2>${esc(q)}</h2><p class="muted">${esc(help)}</p>
-    <div class="quiz-a">${body}</div>
-    <div class="row-actions"><button type="button" class="btn" data-qnav="prev"${i ? '' : ' disabled'}>Voltar</button><span class="grow"></span>${i < QSTEPS.length - 1 ? `<button type="button" class="btn ghost" data-qnav="kit">Pular e gerar</button><button type="button" class="btn primary" data-qnav="next">Próxima ${ICON.arrow}</button>` : `<button type="button" class="btn primary" data-qnav="kit">Gerar kit</button>`}</div>
+  const ord = ordem(); const pos = Math.max(0, ord.indexOf(i)); const total = ord.length; const ultimo = pos === total - 1;
+  return `<div class="editor">
+    <aside class="ed-rail" aria-label="Etapas da pauta">
+      <div class="ed-modo" role="group" aria-label="Modo do editor"><button type="button" data-pmodo="facil" aria-pressed="${modo() === 'facil'}">Facilitado <small>3 perguntas</small></button><button type="button" data-pmodo="avancado" aria-pressed="${modo() === 'avancado'}">Avançado <small>8 etapas</small></button></div>
+      <div class="ed-prog"><span>Etapa ${pos + 1} de ${total}</span><i style="--p:${((pos + 1) / total) * 100}%"></i></div>
+      <ol>${ord.map((k, n) => { const t = QSTEPS[k]; const r = resumo(k); return `<li><button type="button" class="ed-step${k === i ? ' on' : ''}${r ? ' ok' : ''}" data-qgo="${k}" aria-current="${k === i ? 'step' : 'false'}"><span class="ed-n">${r && k !== i ? ICON.check : n + 1}</span><span class="ed-t"><b>${esc(t)}</b><small>${esc(r || (k === i ? 'respondendo agora' : 'a responder'))}</small></span></button></li>`; }).join('')}</ol>
+      ${modo() === 'facil' ? '<p class="ed-hint">Público, ambiente, tom e ganchos saem no padrão. Quer ajustar? Mude para Avançado.</p>' : ''}
+      <button type="button" class="btn ghost block ed-skip" data-qnav="kit">${ICON.raio} Gerar o kit agora</button>
+    </aside>
+    <section class="ed-card quiz">
+      <h2>${esc(q)}</h2><p class="muted">${esc(help)}</p>
+      <div class="quiz-a">${body}</div>
+      <div class="ed-nav"><button type="button" class="btn" data-qnav="prev"${pos ? '' : ' disabled'}>${ICON.left} Voltar</button><span class="grow"></span>${!ultimo ? `<button type="button" class="btn primary" data-qnav="next">Próxima ${ICON.arrow}</button>` : `<button type="button" class="btn primary" data-qnav="kit">${ICON.raio} Gerar kit</button>`}</div>
+    </section>
   </div>`;
+}
+
+// Resposta de cada etapa, mostrada na trilha (some a repetição "Formato" / "Qual formato?").
+function resumo(k) {
+  const d = draft; const curto = (t, n = 38) => (t && t.length > n ? t.slice(0, n - 1) + '…' : t || '');
+  if (k === 0) return d.formato;
+  if (k === 1) return curto(String(d.objetivo || '').split(' (')[0]);
+  if (k === 2) return curto([d.curso, d.ideia].filter(Boolean).join(' · '));
+  if (k === 3) return curto([String(d.consciencia || '').split(' (')[0], d.objecao].filter(Boolean).join(' · '));
+  if (k === 4) return curto(d.ambienteLivre || AMBIENTES.find((a) => a.id === d.ambiente)?.nome || '');
+  if (k === 5) return curto([QUEM.find(([v]) => v === d.quem)?.[1] || d.quem, d.tom, ['Reels', 'Vídeo motion'].includes(d.formato) ? d.duracao + ' s' : ''].filter(Boolean).join(' · '));
+  if (k === 6) return d.picked?.length ? d.picked.length + (d.picked.length === 1 ? ' gancho escolhido' : ' ganchos escolhidos') : '';
+  if (k === 7) return curto([d.palavra && 'palavra ' + d.palavra, d.anuncio && 'vira anúncio', d.publico].filter(Boolean).join(' · '));
+  return '';
 }
 
 // ---------- kit ----------
@@ -112,7 +139,7 @@ function kitView() {
   return `<div class="kit">
     <div class="kit-main">
       <header class="kit-head"><div><p class="eyebrow">${esc(draft.formato)} · ${esc(draft.objetivo.split(' (')[0])}${draft.curso ? ' · ' + esc(draft.curso) : ''}</p><h2>${esc(titleOf(draft))}</h2><p class="muted">Edite à vontade: o texto fica salvo. "Outra versão" troca ganchos, roteiro e legenda.</p></div></header>
-      ${blocos.map((b) => `<section class="card kit-b"><header class="card-head"><h3>${esc(b.titulo)}</h3><div class="row-actions">${draft.kitEdits?.[b.id] !== undefined ? `<button type="button" class="btn sm ghost" data-kreset="${b.id}">Desfazer edição</button>` : ''}<button type="button" class="btn sm" data-kcopy="${b.id}">${ICON.copy} Copiar</button></div></header><textarea class="kit-t" data-kedit="${b.id}" rows="${Math.min(22, Math.max(4, b.texto.split('\n').length + 1))}">${esc(b.texto)}</textarea></section>`).join('')}
+      ${blocos.map((b) => `<section class="card kit-b"><header class="card-head"><h3>${esc(b.titulo)}</h3><div class="row-actions">${draft.kitEdits?.[b.id] !== undefined ? `<button type="button" class="btn sm ghost" data-kreset="${b.id}">Desfazer edição</button>` : ''}<button type="button" class="btn sm" data-kcopy="${b.id}">${ICON.copy} Copiar</button></div></header><textarea class="kit-t" data-kedit="${b.id}" rows="${Math.max(3, b.texto.split('\n').length + 1)}">${esc(b.texto)}</textarea></section>`).join('')}
       <details class="more"><summary>Briefing para o Claude (para ir além no chat)</summary><div class="inner"><pre class="brief" id="p-brief">${esc(brief())}</pre><button type="button" class="btn sm" data-pact="copy">${ICON.copy} Copiar briefing</button></div></details>
     </div>
     <aside class="kit-side card">
@@ -212,11 +239,13 @@ export function mount(root, ctx) {
     if (ds.popen) { const p = store.get('pautas', ds.popen); draft = { ...structuredClone(BLANK), ...p.form, _id: p.id, qstep: 'kit' }; saveDraft(); tab = 'nova'; ctx.refresh(); return; }
     if (ds.pdel) { if (!confirmButton(b, 'Confirmar')) return; store.remove('pautas', ds.pdel); ctx.refresh(); return; }
     if (ds.pset) { draft[ds.pset] = ds.pset === 'duracao' ? Number(ds.val) : ds.val; if (ds.pset === 'ambiente') draft.ambienteLivre = ''; saveDraft(); ctx.refresh(); return; }
+    if (ds.pmodo) { try { localStorage.setItem(MODO_KEY, ds.pmodo); } catch (e) { /* opcional */ } if (!ordem().includes(Number(draft.qstep))) draft.qstep = 0; saveDraft(); ctx.refresh(); return; }
     if (ds.qgo !== undefined) { draft.qstep = Number(ds.qgo); saveDraft(); ctx.refresh(); return; }
     if (ds.qnav) {
       const i = draft.qstep === 'kit' ? 0 : draft.qstep || 0;
-      if (ds.qnav === 'prev') draft.qstep = Math.max(0, i - 1);
-      if (ds.qnav === 'next') draft.qstep = i + 1;
+      const ord = ordem(); const pos = Math.max(0, ord.indexOf(i));
+      if (ds.qnav === 'prev') draft.qstep = ord[Math.max(0, pos - 1)];
+      if (ds.qnav === 'next') draft.qstep = ord[Math.min(ord.length - 1, pos + 1)];
       if (ds.qnav === 'kit') { if (!draft.curso && !draft.ideia) { toast('Diga pelo menos o curso ou a ideia (passo 3).', 'warn'); draft.qstep = 2; } else draft.qstep = 'kit'; }
       saveDraft(); ctx.refresh(); window.scrollTo(0, 0); return;
     }
@@ -237,7 +266,10 @@ export function mount(root, ctx) {
     if (ds.pact === 'clear') { draft = { ...structuredClone(BLANK), picked: [] }; saveDraft(); ctx.refresh(); toast('Pauta nova. Pode começar.'); return; }
     if (ds.pact === 'agendar') scheduleDialog(ctx);
   });
-  root.addEventListener('input', (e) => { if (e.target.matches('[data-pd],[data-kedit]')) readQuiz(root); });
+  // Caixas do kit crescem com o texto (nada fica escondido com barra de rolagem interna).
+  const crescer = (t) => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 2 + 'px'; };
+  root.querySelectorAll('.kit-t').forEach(crescer);
+  root.addEventListener('input', (e) => { if (e.target.matches('.kit-t')) crescer(e.target); if (e.target.matches('[data-pd],[data-kedit]')) readQuiz(root); });
   root.addEventListener('change', (e) => {
     if (e.target.dataset.pstatus) { const p = store.get('pautas', e.target.dataset.pstatus); store.put('pautas', { ...p, status: e.target.value }); toast('Status atualizado.'); }
     if (e.target.matches('[data-pck]')) readQuiz(root);
