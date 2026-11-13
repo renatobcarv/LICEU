@@ -6,6 +6,11 @@ import { esc, num, brl, today } from '../util.js';
 import { openDialog, toast, ICON } from '../ui.js';
 import { estadoPessoa, RANKS } from '../game.js';
 import { myName } from '../leads.js';
+import { auth } from '../auth.js';
+import { isAdminRole } from '../access.js';
+import { convidarDialog } from './config.js';
+const podeConvidar = () => store.mode === 'supabase' && isAdminRole(auth.member?.role);
+const btnConvite = () => (podeConvidar() ? `<button class="btn" data-act="convidar">${ICON.copy} Convidar por link</button>` : '');
 
 export const FUNCOES = {
   lider: { nome: 'Líder', icone: '♛', a: '#c6ff00', b: '#7a9e00', faz: 'Define a direção, cobra o ritmo e destrava o time.' },
@@ -41,10 +46,10 @@ export function render() {
   return `
   <section class="card tm-head">
     <div class="card-head"><div><h2>Seu time</h2><p class="muted">Cada pessoa sobe de patente pelo que registra no Funil. A cor do anel mostra a função.</p></div>
-    <button class="btn primary" data-act="novo">${ICON.plus} Adicionar pessoa</button></div>
+    <div class="row-actions">${btnConvite()}<button class="btn primary" data-act="novo">${ICON.plus} Adicionar pessoa</button></div></div>
     ${pod.length >= 2 ? `<div class="podium">${[pod[1], pod[0], pod[2]].filter(Boolean).map(({ m, g }) => { const pos = pod.indexOf(pod.find((x) => x.m === m)) + 1; const f = FUNCOES[m.funcao] || FUNCOES.sdr; return `<div class="pd p${pos}" style="--a:${f.a};--b:${f.b}"><div class="pd-av">${esc(iniciais(m.nome))}</div><b>${esc(m.nome.split(' ')[0])}</b><small>${num(g.xp)} XP</small><div class="pd-step">${pos}º</div></div>`; }).join('')}</div>` : ''}
   </section>
-  ${time.length ? `<div class="tm-grid">${time.map(card).join('')}</div>` : `<div class="empty"><h3>Monte seu time</h3><p>Adicione cada pessoa com a função dela. O nome precisa ser igual ao "responsável" usado no Funil para o XP contar.</p><button class="btn primary" data-act="novo">${ICON.plus} Adicionar pessoa</button></div>`}
+  ${time.length ? `<div class="tm-grid">${time.map(card).join('')}</div>` : `<div class="empty"><h3>Monte seu time</h3><p>Adicione cada pessoa com a função dela. O nome precisa ser igual ao "responsável" usado no Funil para o XP contar.</p><div class="row-actions" style="justify-content:center">${btnConvite()}<button class="btn primary" data-act="novo">${ICON.plus} Adicionar pessoa</button></div><p class="hint">Convite por link: a pessoa cria a própria conta e entra no time com acesso ao painel.</p></div>`}
   <section class="card"><div class="card-head"><div><h2>Funções e insígnias</h2></div></div>
     <div class="fn-legend">${Object.values(FUNCOES).map((f) => `<span style="--a:${f.a};--b:${f.b}"><i>${f.icone}</i><b>${esc(f.nome)}</b><small>${esc(f.faz)}</small></span>`).join('')}</div>
   </section>`;
@@ -97,6 +102,7 @@ function board(m, ctx) {
 export function mount(root, ctx) {
   root.addEventListener('click', (e) => {
     if (e.target.closest('[data-act="novo"]')) return editar(null, ctx);
+    if (e.target.closest('[data-act="convidar"]')) return convidarDialog(null);
     const c = e.target.closest('[data-membro]'); if (c) board(store.get('team', c.dataset.membro), ctx);
   });
   root.addEventListener('keydown', (e) => { const c = e.target.closest?.('[data-membro]'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); board(store.get('team', c.dataset.membro), ctx); } });

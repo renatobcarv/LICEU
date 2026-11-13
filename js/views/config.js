@@ -140,7 +140,7 @@ async function loadConvites(root) {
   }));
 }
 
-function convidarDialog(root) {
+export function convidarDialog(root) {
   const roles = Object.keys(ROLES).filter((r) => r !== 'owner').map((r) => [r, ROLES[r].nome]);
   const { dlg, err } = openDialog({
     title: 'Convidar pessoa', saveLabel: 'Gerar convite',
@@ -154,7 +154,7 @@ function convidarDialog(root) {
     onSave: (d) => {
       auth.client.rpc('create_invite', { p_org: auth.org.id, p_role: d.role, p_email: d.email || null, p_nome: d.nome || null, p_usos: Number(d.usos), p_dias: Number(d.dias) }).then(({ data, error }) => {
         if (error) { toast(/plan limit/.test(error.message) ? 'Seu plano chegou ao limite de usuários. Mude de plano para convidar mais.' : error.message, 'bad'); return; }
-        conviteGerado(data, d); loadConvites(root);
+        conviteGerado(data, d); if (root) loadConvites(root);
       });
     },
   });
