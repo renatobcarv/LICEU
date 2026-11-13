@@ -6,7 +6,7 @@ import { esc, $, $$, today, monthStart, monthEnd, addMonths, addDays, weekStart,
 import { settings, courseName, STORY_BLOCKS, storiesCount } from '../metrics.js';
 import { openDialog, toast, ICON, badge, confirmButton } from '../ui.js';
 import { slug } from './painel.js';
-import { estudioBar, agendarIdeia, iconFormato, visualizar } from './estudio.js';
+import { estudioBar, agendarIdeia, iconFormato, visualizar, celular } from './estudio.js';
 import { XP_C } from '../criador.js';
 
 export const TIPOS = ['Publicação', 'Gravação', 'Campanha', 'Turma / curso', 'Tarefa', 'Evento'];
@@ -187,6 +187,27 @@ export function editItem(it, ctx, preset = {}) {
     onDelete: isNew ? null : () => { store.remove('calendar', it.id); toast('Item excluído.'); ctx.refresh(); },
   });
   $$('a', dlg).forEach((a) => a.addEventListener('click', () => dlg.close()));
+  // Visual: o post desenhado no celular ao lado do formulário, atualizando enquanto você digita,
+  // e o status como trilha clicável (Ideia → Publicado) em vez de só uma lista.
+  dlg.classList.add('com-previa');
+  const body = dlg.querySelector('.dlg-body');
+  const aside = document.createElement('aside'); aside.className = 'ce-prev'; body.prepend(aside);
+  const val = (n) => dlg.querySelector(`[name="${n}"]`)?.value || '';
+  const ETAPAS = STATUS.filter((x) => x !== 'Cancelado');
+  aside.innerHTML = `<div class="ce-cel"></div><ol class="ce-trilha">${ETAPAS.map((x) => `<li><button type="button" data-ce-st="${esc(x)}"><i></i><span>${esc(x)}</span></button></li>`).join('')}</ol><p class="ce-meta"></p>`;
+  const cel = aside.querySelector('.ce-cel'); const meta = aside.querySelector('.ce-meta');
+  // Redesenha só o celular e o texto; a trilha de status fica no lugar (senão o clique se perde quando um campo perde o foco).
+  const desenhar = () => {
+    const tipo = val('tipo'); const st = val('status');
+    const linhas = val('notas').split('\n').map((l) => l.trim()).filter((l) => l.length > 3);
+    cel.innerHTML = tipo === 'Publicação' ? celular({ formato: val('formato') || 'Reels', titulo: val('titulo') || 'Tema do post', frases: linhas, cta: val('cta') }) : `<div class="ce-outro">${iconFormato('Outro')}<b>${esc(val('titulo') || tipo)}</b><span>${esc(tipo)}</span></div>`;
+    const at = ETAPAS.indexOf(st);
+    aside.querySelectorAll('[data-ce-st]').forEach((btn, i) => { btn.className = i < at ? 'feito' : i === at ? 'on' : ''; btn.querySelector('i').innerHTML = i < at ? ICON.check : ''; });
+    meta.textContent = [fmtDate(val('data') || today()), val('hora'), val('responsavel')].filter(Boolean).join(' · ');
+  };
+  desenhar();
+  dlg.addEventListener('input', desenhar); dlg.addEventListener('change', desenhar);
+  aside.addEventListener('click', (e) => { const b = e.target.closest('[data-ce-st]'); if (!b) return; const sel = dlg.querySelector('[name="status"]'); sel.value = b.dataset.ceSt; desenhar(); });
 }
 
 const CYCLE = ['', 'Feito', 'Pendente', 'Não se aplica'];
