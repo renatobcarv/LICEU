@@ -75,21 +75,30 @@ function frases(p) {
   const linhas = kit.split('\n').map((l) => l.replace(/^[#*\-\d.\s]+/, '').trim()).filter((l) => l.length > 12 && l.length < 120);
   return linhas.length >= 3 ? linhas.slice(0, 5) : [base, 'O que quase ninguém te conta', 'Na prática, na sala de aula', 'Chama no WhatsApp e garanta a vaga'];
 }
+// Celular com o post desenhado. Usado na prévia da ideia e na edição do item do Calendário.
+export function celular({ formato = 'Reels', titulo = '', frases: fr = [], cta = '' }) {
+  const escola = store.settings().unidade || 'sua escola';
+  const insta = (store.settings().instagram || '@suaescola').replace(/^@?/, '@');
+  const f = formato === 'Arte' ? 'Post estático' : formato;
+  const feed = f === 'Carrossel' || f === 'Post estático';
+  const slides = [titulo, ...fr.filter((t) => t && t !== titulo)].slice(0, 5);
+  const tela = f === 'Carrossel'
+    ? `<div class="pv-car">${slides.map((t, i) => `<div class="pv-slide${i === 0 ? ' first' : ''}"><small>${i + 1}/${slides.length}</small><b>${esc(t)}</b>${i === 0 ? '<span>arrasta pro lado →</span>' : ''}</div>`).join('')}</div>`
+    : f === 'Post estático'
+      ? `<div class="pv-post"><b>${esc(titulo)}</b>${cta ? `<em>${esc(cta)}</em>` : ''}<span>${esc(escola)}</span></div>`
+      : `<div class="pv-vert ${f === 'Stories' ? 'story' : ''}">${f === 'Stories' ? '<div class="pv-bars"><i class="on"></i><i></i><i></i></div>' : ''}<p class="pv-hook">${esc(titulo)}</p><p class="pv-sub">${esc(fr[0] || '')}</p>
+          ${f === 'Stories' ? `<span class="pv-sticker">${esc(cta || 'Responder no WhatsApp')}</span>` : `<div class="pv-side"><span>${ICON.fogo}</span><span>${ICON.olho}</span><span>${ICON.agenda}</span></div><p class="pv-cap"><b>${esc(insta)}</b> ${esc(cta || fr[1] || '')}</p>`}</div>`;
+  return `<div class="pv-phone ${feed ? 'feed' : ''}"><div class="pv-top"><span class="pv-av"></span><b>${esc(insta)}</b><small>${f === 'Reels' || f === 'Vídeo motion' ? 'Reels' : 'agora'}</small></div>${tela}</div>`;
+}
+
 export function visualizar(p, ctx) {
   const f = p.form?.formato || p.formato || 'Reels';
   const titulo = p.titulo || p.form?.ideia || '';
-  const escola = store.settings().unidade || 'sua escola';
-  const insta = (store.settings().instagram || '@suaescola').replace(/^@?/, '@');
   const fr = frases(p);
-  const tela = f === 'Carrossel'
-    ? `<div class="pv-car">${fr.slice(0, 4).map((t, i) => `<div class="pv-slide${i === 0 ? ' first' : ''}"><small>${i + 1}/${Math.min(4, fr.length)}</small><b>${esc(i === 0 ? titulo : t)}</b>${i === 0 ? '<span>arrasta pro lado →</span>' : ''}</div>`).join('')}</div>`
-    : f === 'Post estático'
-      ? `<div class="pv-post"><b>${esc(titulo)}</b><span>${esc(escola)}</span></div>`
-      : `<div class="pv-vert ${f === 'Stories' ? 'story' : ''}">${f === 'Stories' ? '<div class="pv-bars"><i class="on"></i><i></i><i></i></div>' : ''}<p class="pv-hook">${esc(titulo)}</p><p class="pv-sub">${esc(fr[1] || '')}</p>
-          ${f === 'Stories' ? '<span class="pv-sticker">Responder no WhatsApp</span>' : `<div class="pv-side"><span>${ICON.fogo}</span><span>${ICON.olho}</span><span>${ICON.agenda}</span></div><p class="pv-cap"><b>${esc(insta)}</b> ${esc(fr[2] || '')}</p>`}</div>`;
+  const telefone = celular({ formato: f, titulo, frases: fr.slice(1) });
   openDialog({ title: 'Prévia · ' + f, wide: true,
     html: `<div class="pv">
-      <div class="pv-phone ${f === 'Carrossel' || f === 'Post estático' ? 'feed' : ''}"><div class="pv-top"><span class="pv-av"></span><b>${esc(insta)}</b><small>${f === 'Reels' || f === 'Vídeo motion' ? 'Reels' : 'agora'}</small></div>${tela}</div>
+      ${telefone}
       <div class="pv-side-info"><span class="idea-f">${iconFormato(f)}<span>${esc(f)}</span></span><h3>${esc(titulo)}</h3>
         <p class="muted">Prévia do jeito que o seguidor vê. O texto vem da ideia${p.kit ? ' e do roteiro da pauta' : ''}; ajuste na pauta antes de gravar.</p>
         <div class="pv-ia"><ol class="pv-steps">${fr.slice(0, 4).map((t) => `<li>${esc(t)}</li>`).join('')}</ol></div>
