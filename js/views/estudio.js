@@ -6,6 +6,7 @@ import { esc, today, fmtDate } from '../util.js';
 import { courseName } from '../metrics.js';
 import { openDialog, toast, ICON } from '../ui.js';
 import { semana, sequenciaSemanas, metaSemana, xpConteudo, FORMATO_ICON, FORMATOS_BRAIN, CONQUISTAS_CONTEUDO, XP_C } from '../criador.js';
+import { pedirIA, iaOnline, roteiroTexto } from '../ia.js';
 
 export const iconFormato = (f) => ICON[FORMATO_ICON[f] || 'f_post'];
 
@@ -43,6 +44,7 @@ export function brainstorm() {
       ${cursos.length ? `<label class="sr" for="brain-curso">Curso</label><select id="brain-curso"><option value="">Qualquer curso</option>${cursos.map((c) => `<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('')}</select>` : ''}
       <button class="btn primary" type="submit">${ICON.plus} Anotar <small>+${XP_C.ideia} XP</small></button>
     </form>
+    <div class="ia-row"><button type="button" class="btn ia-btn" data-ia-ideias>${ICON.ia} Ideias com IA</button><small>${iaOnline() ? 'O Claude sugere ideias com base nos seus cursos. Você escolhe quais entram.' : 'Modo demonstração: sugestões do banco de ganchos, sem IA. Com conta, o Claude gera ideias para os seus cursos.'}</small></div>
     ${list.length ? `<div class="brain-grid">${list.map(cartao).join('')}</div>` : `<div class="empty"><h3>Nenhuma ideia ainda</h3><p>Escreva sem filtro: tema, dúvida que o aluno faz, bastidor, erro comum. Depois vote nas melhores e transforme em pauta.</p></div>`}
   </section>`;
 }
@@ -90,13 +92,54 @@ export function visualizar(p, ctx) {
       <div class="pv-phone ${f === 'Carrossel' || f === 'Post estático' ? 'feed' : ''}"><div class="pv-top"><span class="pv-av"></span><b>${esc(insta)}</b><small>${f === 'Reels' || f === 'Vídeo motion' ? 'Reels' : 'agora'}</small></div>${tela}</div>
       <div class="pv-side-info"><span class="idea-f">${iconFormato(f)}<span>${esc(f)}</span></span><h3>${esc(titulo)}</h3>
         <p class="muted">Prévia do jeito que o seguidor vê. O texto vem da ideia${p.kit ? ' e do roteiro da pauta' : ''}; ajuste na pauta antes de gravar.</p>
-        <ol class="pv-steps">${fr.slice(0, 4).map((t) => `<li>${esc(t)}</li>`).join('')}</ol>
+        <div class="pv-ia"><ol class="pv-steps">${fr.slice(0, 4).map((t) => `<li>${esc(t)}</li>`).join('')}</ol></div>
+        <button type="button" class="btn sm ia-btn" data-ia-roteiro>${ICON.ia} ${p.kit ? 'Refazer roteiro com IA' : 'Roteiro com IA'}</button>
         ${p.calendarId ? '' : `<div class="pv-ag"><label for="pv-data">Agendar para</label><input type="date" id="pv-data" value="${today()}"><button type="button" class="btn sm" data-pv-ag>${ICON.agenda} Agendar</button></div>`}
         <div class="row-actions">${p.brain || p.id ? `<a class="btn sm primary" href="#pauta?ideia=${esc(p.id)}">${ICON.raio} Transformar em pauta</a>` : ''}</div>
       </div></div>`,
     onOpen: (form, dlg) => {
+      dlg.querySelector('[data-ia-roteiro]')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget; btn.disabled = true; btn.classList.add('loading');
+        try {
+          const { resultado: r, demo } = await pedirIA('roteiro', { ideia: titulo, formato: f, curso: p.form?.curso || '' });
+          dlg.querySelector('.pv-ia').innerHTML = `${demo ? '<p class="hint">Modo demonstração: roteiro de exemplo, sem IA.</p>' : ''}<p><b>Gancho:</b> ${esc(r.gancho)}</p><ol class="pv-steps">${r.cenas.map((c) => `<li>${esc(c.fala)}<small> · tela: ${esc(c.tela)}</small></li>`).join('')}</ol><p class="muted"><b>Legenda:</b> ${esc(r.legenda)}<br>${esc((r.hashtags || []).join(' '))}</p><button type="button" class="btn sm primary" data-ia-salvar>${ICON.check} Salvar roteiro na pauta</button>`;
+          dlg.querySelector('.pv-hook') && (dlg.querySelector('.pv-hook').textContent = r.gancho);
+          dlg.querySelector('[data-ia-salvar]').addEventListener('click', () => {
+            const cur = store.get('pautas', p.id); if (!cur) return;
+            store.put('pautas', { ...cur, kit: roteiroTexto(r), status: cur.status === 'Ideia' ? 'Briefing pronto' : cur.status, iaGerado: !demo });
+            toast('Roteiro salvo na pauta.'); dlg.close(); ctx?.refresh?.();
+          });
+        } catch (er) { toast(er.message, 'bad'); }
+        btn.disabled = false; btn.classList.remove('loading');
+      });
       dlg.querySelector('[data-pv-ag]')?.addEventListener('click', () => { const d = dlg.querySelector('#pv-data').value; if (!d) return; agendarIdeia(store.get('pautas', p.id), d, ctx); dlg.close(); });
       dlg.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => dlg.close()));
+    } });
+}
+
+function iaIdeiasDialog(ctx) {
+  const cursos = store.all('courses').filter((c) => c.ativo !== false);
+  const { dlg } = openDialog({ title: 'Ideias com IA', wide: true,
+    fields: [
+      { name: 'cursoId', label: 'Curso', type: 'select', options: [['', 'Todos os cursos'], ...cursos.map((c) => [c.id, c.nome])] },
+      { name: 'tema', label: 'Tema ou momento (opcional)', placeholder: 'ex.: volta às aulas, mito comum, rotina do estágio' },
+      { name: 'quantidade', label: 'Quantas ideias', type: 'number', value: 6 },
+    ],
+    html: '<div id="ia-res"></div>', saveLabel: 'Gerar ideias',
+    onSave: (d) => {
+      const box = dlg.querySelector('#ia-res'); const btn = dlg.querySelector('button[type=submit]');
+      const curso = d.cursoId ? courseName(d.cursoId) : '';
+      btn.disabled = true; btn.classList.add('loading');
+      pedirIA('ideias', { curso, tema: d.tema || '', quantidade: d.quantidade || 6 }).then(({ resultado, demo }) => {
+        box.innerHTML = `${demo ? '<p class="hint">Modo demonstração: sugestões do banco de ganchos, sem IA.</p>' : ''}<ul class="ia-list">${resultado.ideias.map((x, i) => `<li><label><input type="checkbox" data-ia-i="${i}" checked><span class="idea-f">${iconFormato(x.formato)}<span>${esc(x.formato)}</span></span><b>${esc(x.titulo)}</b><small>${esc(x.gancho)}</small></label></li>`).join('')}</ul><button type="button" class="btn primary" data-ia-add>${ICON.plus} Adicionar ao brainstorm</button>`;
+        box.querySelector('[data-ia-add]').addEventListener('click', () => {
+          const sel = [...box.querySelectorAll('[data-ia-i]:checked')].map((c) => resultado.ideias[c.dataset.iaI]);
+          sel.forEach((x) => { const pt = anotar(x.titulo, x.formato, d.cursoId || ''); if (pt) store.put('pautas', { ...pt, gancho: x.gancho, iaGerado: !demo }); });
+          toast(sel.length + (sel.length === 1 ? ' ideia adicionada.' : ' ideias adicionadas.')); dlg.close(); ctx.refresh();
+        });
+      }).catch((er) => { box.innerHTML = `<p class="form-error">${esc(er.message)}</p>`; })
+        .finally(() => { btn.disabled = false; btn.classList.remove('loading'); });
+      return false; // mantém o diálogo aberto para escolher as ideias
     } });
 }
 
@@ -110,6 +153,7 @@ export function bindBrain(root, ctx, agendarFn) {
   root.addEventListener('click', (e) => {
     const b = e.target.closest('button, a'); if (!b) return;
     const d = b.dataset;
+    if (b.matches('[data-ia-ideias]')) return iaIdeiasDialog(ctx);
     if (d.bfmt) { fFormato = d.bfmt; root.querySelectorAll('[data-bfmt]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); return; }
     if (d.fogo) { const p = store.get('pautas', d.fogo); store.put('pautas', { ...p, fogo: (p.fogo || 0) + 1 }); return ctx.refresh(); }
     if (d.ver) return visualizar(store.get('pautas', d.ver), ctx);
