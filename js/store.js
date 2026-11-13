@@ -10,6 +10,7 @@
 import { uid } from './util.js';
 
 export const COLLECTIONS = [
+  'jogo',      // jogo de cada pessoa (missões, sequência, título), id = usuário
   'settings',  // configuração geral (doc único "main")
   'courses',   // cursos e preço
   'campaigns', // campanhas de mídia (Meta, Google)
@@ -124,6 +125,7 @@ export const store = {
   settings() { return mem.settings.get('main') || { id: 'main' }; },
   isEmpty() { return COLLECTIONS.every((c) => mem[c].size === 0); },
   put(coll, rec) {
+    if (store.bloqueado?.(coll)) return rec;
     const r = { ...rec, id: rec.id || uid(coll.slice(0, 2) + '_'), updatedAt: new Date().toISOString() };
     if (!r.createdAt) r.createdAt = r.updatedAt;
     if (!r.criadoPor && store.eu?.id) r.criadoPor = store.eu.id;
@@ -133,6 +135,7 @@ export const store = {
     return r;
   },
   putMany(coll, recs) {
+    if (store.bloqueado?.(coll)) return recs;
     const out = recs.map((rec) => {
       const r = { ...rec, id: rec.id || uid(coll.slice(0, 2) + '_'), updatedAt: new Date().toISOString() };
       if (!r.createdAt) r.createdAt = r.updatedAt;
@@ -153,6 +156,7 @@ export const store = {
     return out;
   },
   remove(coll, id) {
+    if (store.bloqueado?.(coll)) return;
     const r = mem[coll].get(id);
     if (!r) return;
     mem[coll].delete(id);

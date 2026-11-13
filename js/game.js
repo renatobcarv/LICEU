@@ -44,8 +44,8 @@ const norm2 = (x) => (x || '').trim().toLowerCase();
 export const meu = (l) => !eu()?.id || norm2(l.responsavel) === norm2(eu().nome) || (!l.responsavel && eu().dono);
 export const meuRegistro = (r) => !eu()?.id || r.criadoPor === eu().id || (!r.criadoPor && eu().dono);
 const jogoTodo = () => store.settings().jogo || {};
-const jogo = () => (eu()?.id ? jogoTodo().pessoas?.[eu().id] || {} : jogoTodo());
-const salvarJogo = (j) => { const t = jogoTodo(); store.put('settings', { ...store.settings(), id: 'main', jogo: eu()?.id ? { ...t, pessoas: { ...(t.pessoas || {}), [eu().id]: j } } : j }); };
+const jogo = () => (eu()?.id ? store.get('jogo', eu().id) || jogoTodo().pessoas?.[eu().id] || {} : jogoTodo());
+const salvarJogo = (j) => { if (eu()?.id) store.put('jogo', { ...j, id: eu().id }); else store.put('settings', { ...store.settings(), id: 'main', jogo: j }); };
 const diasFeitos = () => jogo().dias || {}; // { 'AAAA-MM-DD': { feitas: [ids], total: n } }
 
 /** Missões de hoje, tiradas dos dados. Quando não há pendência, entram missões de rotina. */

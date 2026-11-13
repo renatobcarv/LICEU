@@ -7,7 +7,7 @@ import { ICON, toast, countUp } from './ui.js';
 import { settings } from './metrics.js';
 import { initAuth, auth, roleLabel, signOut } from './auth.js';
 import { LOGO_MARK, PRODUCT, applyTheme, productName } from './brand.js';
-import { canView, isFull } from './access.js';
+import { canView, isFull, podeEscrever, soVer, AREA } from './access.js';
 import * as painel from './views/painel.js';
 import * as meta from './views/meta.js';
 import * as campanhas from './views/campanhas.js';
@@ -112,6 +112,9 @@ function render() {
   $$('.nav a, .bottom-nav a').forEach((a) => a.setAttribute('aria-current', a.dataset.view === view.id ? 'page' : 'false'));
   const entering = lastView !== view.id;
   document.body.dataset.view = view.id;
+  const papel = auth.member?.role;
+  const ver = auth.member && soVer(papel, view.id);
+  document.body.classList.toggle('so-ver', !!ver);
   if (entering) {
     const h = $('#view-title');
     h.innerHTML = titleHTML(view.title || [view.label]);
@@ -132,6 +135,7 @@ function render() {
   if (entering) { window.scrollTo(0, 0); lastView = view.id; }
   try {
     main.innerHTML = view.mod.render(c);
+    if (ver) main.insertAdjacentHTML('afterbegin', `<div id="so-ver" class="so-ver-bar" role="status">${ICON.olho || ''}<span><b>Só visualização.</b> Sua área é ${AREA[papel].nome}. Aqui você acompanha, quem edita é o coordenador ou a área responsável.</span></div>`);
     view.mod.mount?.(main, c);
     if (entering) { main.classList.add('enter'); stagger(main); countUp(main); }
   } catch (e) {
@@ -220,6 +224,7 @@ async function boot() {
   // Menu por perfil (a trava real é no banco). Perfis parciais não semeiam dados iniciais.
   VIEWS = ALL_VIEWS.filter((v) => canView(session ? auth.member?.role : null, v.id));
   navHTML();
+  if (session) store.bloqueado = (coll) => { if (podeEscrever(auth.member?.role, coll)) return false; toast('Você só pode visualizar esta área. Peça ao coordenador para alterar.', 'warn'); return true; };
   const canWrite = !session || isFull(auth.member?.role);
   // Remove as 3 ideias de exemplo que vinham no início, se ninguém mexeu nelas.
   if (canWrite) ['i_preco', 'i_bot', 'i_form'].forEach((id) => { const i = store.get('ideas', id); if (i && i.status === 'Ideia' && !i.resultado && !i.indicador) store.remove('ideas', id); });

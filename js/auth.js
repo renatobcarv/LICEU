@@ -192,7 +192,7 @@ async function conviteView(resolve) {
       <p class="cv-k">Você foi convidado</p>
       <h1>${esc(info.escola)}</h1>
       <p class="auth-sub">Seu perfil no time: <span class="plan-chip">${esc(ROLE_TXT[info.role] || info.role)}</span></p>
-      <ul class="cv-passos"><li><b>1</b>Crie sua conta</li><li><b>2</b>Responda 6 perguntas rápidas</li><li><b>3</b>Receba suas primeiras quests</li></ul>
+      <ul class="cv-passos"><li><b>1</b>Crie sua conta</li><li><b>2</b>Responda 6 perguntas rápidas</li><li><b>3</b>Receba suas primeiras missões</li></ul>
       <button class="btn primary block" id="cv-novo">Criar minha conta</button>
       <button class="btn block" id="cv-tenho">Já tenho conta</button>
     </div>`);
