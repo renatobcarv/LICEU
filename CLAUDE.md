@@ -22,6 +22,9 @@ Fale com o usuário em **português**, tom de mentor: direto, honesto, sem bajul
 - Roxo = estrutura/destaque (item ativo do menu, bloco da patente). Lima = ação e detalhe (CTAs, ícone ativo, barras).
 - **NUNCA ciano/azul.** Páginas públicas podem ter seções claras "branco tech".
 - Sem "cara de IA": visual premium, ícones SVG (`ICON` em `js/ui.js`). `--muted` é cor de FUNDO, não de texto.
+- **Mascote: águia** (visão de cima do funil). `assets/aguia.webp` (em voo, roxa, seção "Visão de águia" das vendas)
+  e `assets/aguia-rosto.webp` (rosto, olho lima, painel do login/cadastro). Sem brilho verde em volta da águia (pedido do usuário);
+  lima só no olho. Imagens trazidas pelo usuário; tratadas em roxo da marca.
 - Chaves de localStorage continuam `flowclass.*` (não renomear: perderia dados dos usuários).
 
 ## Produto (módulos)
@@ -38,6 +41,11 @@ Metas, Relatórios, Time (quadro gamificado + insígnias), Chat, Configurações
   `soVer`). Social → Pauta/Calendário; Vendas → Funil/Matrículas/Time; Atendimento → Funil/WhatsApp;
   **Coordenador** (`manager`) e Admin/Dono editam tudo. Cliente só vê relatórios/metas/calendário.
 - Teste grátis de 7 dias; planos Escola/Rede/Agência (tabela `plans`).
+
+## Números reais da TEC Mais (usar na copy, nunca arredondar/inventar)
+- Campanha Injetáveis, 26/09 a 25/10/2026: **R$ 797,92** investidos, **240** conversas, **25 matrículas pagas**,
+  **R$ 31,92 por matrícula paga**, **10,4%** das conversas viraram matrícula, ~30,4 mil alcançados.
+- Receita registrada (R$ 2.475) parece só sinal: não prometer ROI com ela.
 
 ## Regras de segurança (sempre)
 - Nunca colar tokens/senhas no chat. Chaves só em **Supabase secrets**, nunca no repo/frontend.

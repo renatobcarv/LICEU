@@ -20,7 +20,7 @@ export function supabaseConfigured() {
 }
 
 const LOGO = `<div class="auth-logo">${LOGO_MARK}</div>`;
-const PLANOS = { local: 'Escola', pro: 'Rede', agencia: 'Agência' };
+const PLANOS = { local: 'Essencial', pro: 'Escola', agencia: 'Rede' };
 const qs = new URLSearchParams(location.search);
 const LAST = 'flowclass.ultimo.email';
 const CONV = 'flowclass.convite';
@@ -40,9 +40,10 @@ function screen(inner) {
       ${LOGO}
       <div class="ab-copy"><p class="ab-eyebrow">Klasso para escolas</p>
         <h2>Saiba quanto custou <span>cada matrícula.</span></h2>
-        <ul><li>Meta Ads com custo por matrícula</li><li>WhatsApp oficial dentro do funil</li><li>Time com missões, patentes e ranking</li></ul></div>
-      <div class="ab-case"><div><b>R$ 800</b><span>em anúncio</span></div><div><b>26</b><span>matrículas</span></div><div><b>R$ 30,80</b><span>por matrícula</span></div></div>
-      <p class="ab-foot">Campanha real da TEC Mais Valparaíso</p>
+        <ul><li>Meta Ads com custo por matrícula paga</li><li>WhatsApp oficial dentro do funil</li><li>Time com missões, patentes e ranking</li></ul></div>
+      <img class="ab-eagle" src="assets/aguia-rosto.webp" width="943" height="828" alt="" aria-hidden="true"><span class="ab-eye" aria-hidden="true"></span>
+      <div class="ab-case"><div><b>R$ 797</b><span>em anúncio</span></div><div><b>25</b><span>matrículas pagas</span></div><div><b>R$ 31,92</b><span>por matrícula</span></div></div>
+      <p class="ab-foot">Campanha real da TEC Mais Valparaíso · 26/09 a 25/10</p>
     </aside>
     <section class="auth-pane"><div class="auth-card">${LOGO}${inner}</div>
       <p class="auth-foot"><a href="/vendas">Conhecer o Klasso</a> · <a href="/planos">Planos</a> · <a href="termos.html" target="_blank" rel="noopener">Termos</a> · <a href="privacidade.html" target="_blank" rel="noopener">Privacidade</a></p></section>`;
