@@ -13,7 +13,7 @@ const sb = () => auth.client;
 const org = () => auth.org || {};
 const admin = () => isAdminRole(auth.member?.role);
 
-const PLANO_NOME = { local: 'Escola', pro: 'Rede', agencia: 'Grupo' };
+const PLANO_NOME = { local: 'Essencial', pro: 'Escola', agencia: 'Rede' };
 
 export function renderPlano() {
   if (!admin()) return '';

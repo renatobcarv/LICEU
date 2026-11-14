@@ -1805,3 +1805,17 @@ body { background: radial-gradient(900px 500px at 100% -10%, rgb(139 0 255 / .14
 :root:not([data-theme="light"]) { --subtle-foreground: #9a9aa6; }
 .cal-day.out .cal-num { color: #8e8e9a; }
 #f-range, footer, .app-foot, #foot-brand, .auth-foot, .auth-sep > span, .col-empty { color: #a4a4b0 !important; }
+
+/* Águia no painel do login e cadastro */
+.auth-brand { isolation: isolate; }
+.ab-eagle { position: absolute; right: -14%; bottom: 8%; width: min(78%, 620px); height: auto; z-index: -1; pointer-events: none; opacity: .95;
+  filter: drop-shadow(0 0 40px rgb(139 0 255 / .7)) drop-shadow(0 30px 60px rgb(0 0 0 / .8));
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%), linear-gradient(180deg, transparent 0%, #000 18%); -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent 0%, #000 22%), linear-gradient(180deg, transparent 0%, #000 18%); mask-composite: intersect;
+  animation: ab-olha 9s ease-in-out infinite; }
+.ab-eye { position: absolute; z-index: -1; pointer-events: none; right: calc(-14% + min(78%, 620px) * .345); bottom: calc(8% + min(78%, 620px) * .878 * .545); width: 64px; height: 64px; translate: 50% 50%; border-radius: 50%;
+  background: radial-gradient(circle, rgb(198 255 0 / .9) 0 10%, rgb(198 255 0 / .35) 35%, transparent 70%); mix-blend-mode: screen; animation: ab-pisca 4s ease-in-out infinite; }
+@keyframes ab-olha { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(-10px, -6px) rotate(-1.5deg); } }
+@keyframes ab-pisca { 0%, 100% { opacity: .55; scale: 1; } 50% { opacity: 1; scale: 1.25; } }
+.auth-brand .ab-copy, .auth-brand .ab-case, .auth-brand .ab-foot, .auth-brand .auth-logo { position: relative; z-index: 1; }
+.ab-case > div { background: rgb(12 12 16 / .72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+@media (prefers-reduced-motion: reduce) { .ab-eagle, .ab-eye { animation: none; } }

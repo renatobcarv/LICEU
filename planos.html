@@ -23,8 +23,8 @@
 <main id="main">
 <section class="hero" style="padding-bottom:40px"><div class="wrap" style="display:grid;grid-template-columns:1fr;gap:20px">
   <p class="label">Planos</p>
-  <h1 class="h1" style="max-width:820px">Todos os planos têm o painel completo.</h1>
-  <p class="lead"><b style="color:var(--lime)">7 dias grátis em qualquer plano, sem cartão.</b> Funil, WhatsApp oficial, Meta Ads, conteúdo e metas do time estão em todos. O que muda é quantas pessoas usam e quantos números de WhatsApp você conecta.</p>
+  <h1 class="h1" style="max-width:860px">Uma matrícula a mais por mês <em>já paga o plano.</em></h1>
+  <p class="lead"><b style="color:var(--lime)">7 dias grátis, sem cartão.</b> Todos os planos têm o painel completo: funil, WhatsApp oficial, Meta Ads com custo por matrícula paga, conteúdo e metas do time. O que muda é o tamanho do time e quantos números de WhatsApp você conecta. É o mesmo sistema que a TEC Mais usa no dia a dia.</p>
   <div class="bill" role="group" aria-label="Forma de cobrança"><button type="button" data-bill="mensal" aria-pressed="true">Mensal</button><button type="button" data-bill="anual" aria-pressed="false">Anual <em>2 meses grátis</em></button></div>
 </div></section>
 
@@ -33,10 +33,26 @@
   <p class="label" style="text-transform:none;letter-spacing:0;margin-top:20px">Mensagens de modelo do WhatsApp são cobradas pela Meta diretamente na sua conta. Responder em até 24h é gratuito.</p>
 </div></section>
 
+<section class="sec roi"><div class="wrap">
+  <div class="sec-head"><p class="label">Simulação</p><h2 class="h2">Quanto o Klasso devolve <em>para a sua escola?</em></h2><p class="lead" style="font-size:16px">Ajuste com os números da sua escola. É uma simulação: o resultado real aparece no seu painel a partir do primeiro dia.</p></div>
+  <div class="roi-box">
+    <div class="roi-in">
+      <label>Valor médio do curso<b id="r-tk-v"></b><input type="range" id="r-tk" min="300" max="6000" step="100" value="1500"></label>
+      <label>Matrículas a mais por mês<b id="r-mt-v"></b><input type="range" id="r-mt" min="1" max="20" step="1" value="3"></label>
+      <label>Plano<select id="r-pl"><option value="197">Essencial · R$ 197</option><option value="497" selected>Escola · R$ 497</option><option value="997">Rede · R$ 997</option></select></label>
+      <p class="roi-ref">Referência real: a TEC Mais teve 25 matrículas pagas em 30 dias, a R$ 31,92 de anúncio cada.</p>
+    </div>
+    <div class="roi-out" aria-live="polite">
+      <small>Receita extra por mês</small><b id="r-rec"></b>
+      <div class="roi-row"><div><span>Retorno sobre o plano</span><b id="r-x"></b></div><div><span>Matrículas para pagar o plano</span><b id="r-pg"></b></div></div>
+    </div>
+  </div>
+</div></section>
+
 <section class="sec light"><div class="wrap">
   <div class="sec-head"><p class="label">Comparativo</p><h2 class="h2">Compare os planos</h2></div>
   <div class="cmp-wrap"><table class="cmp">
-    <thead><tr><th scope="col"><span class="sr">Recurso</span></th><th scope="col">Escola</th><th scope="col" class="hot">Rede</th><th scope="col">Grupo</th></tr></thead>
+    <thead><tr><th scope="col"><span class="sr">Recurso</span></th><th scope="col">Essencial</th><th scope="col" class="hot">Escola</th><th scope="col">Rede</th></tr></thead>
     <tbody>
       <tr class="grp"><td colspan="4">Equipe e limites</td></tr>
       <tr><td>Usuários</td><td>10</td><td>40</td><td>100</td></tr>
@@ -72,7 +88,7 @@
 </div></section>
 
 <section class="sec"><div class="wrap">
-  <div class="cta-final acid"><div><h2 class="h2">Na dúvida, comece pelo Escola.</h2><p class="lead" style="font-size:17px">Suba de plano quando o time crescer. Seus dados vêm junto.</p></div><div class="hero-cta"><a class="btn primary" href="/?cadastro=1&amp;plano=local">Testar 7 dias grátis</a><a class="btn ghost" href="/vendas">Conhecer o produto</a></div></div>
+  <div class="cta-final acid"><div><h2 class="h2">Na dúvida, comece pelo Essencial.</h2><p class="lead" style="font-size:17px">R$ 197 por mês, menos que uma matrícula. Suba de plano quando o time crescer; seus dados vêm junto.</p></div><div class="hero-cta"><a class="btn primary" href="/?cadastro=1&amp;plano=local">Testar 7 dias grátis</a><a class="btn ghost" href="/vendas">Conhecer o produto</a></div></div>
 </div></section>
 </main>
 
@@ -81,6 +97,14 @@
 import { initBilling, reveal } from './js/site.js';
 initBilling([...document.querySelectorAll('[data-bill]')], document.getElementById('plans'));
 reveal();
+
+const brl = (n) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+const tk = document.getElementById('r-tk'), mt = document.getElementById('r-mt'), pl = document.getElementById('r-pl');
+const roi = () => { const t = +tk.value, m = +mt.value, p = +pl.value, rec = t * m;
+  document.getElementById('r-tk-v').textContent = brl(t); document.getElementById('r-mt-v').textContent = m;
+  document.getElementById('r-rec').textContent = brl(rec); document.getElementById('r-x').textContent = (rec / p).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'x';
+  document.getElementById('r-pg').textContent = Math.max(1, Math.ceil(p / t)); };
+[tk, mt, pl].forEach((e) => e.addEventListener('input', roi)); roi();
 </script>
 </body>
 </html>

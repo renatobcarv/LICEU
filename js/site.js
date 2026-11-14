@@ -2,14 +2,15 @@
 // PREÇOS: ajuste aqui. Os limites batem com a tabela "plans" do banco (supabase/migrations/002_saas.sql).
 
 export const PLANOS = [
-  { id: 'local', nome: 'Escola', para: 'Uma escola ou unidade', mensal: 297, cls: '',
-    itens: ['Até 10 usuários', '1 número de WhatsApp oficial', 'Funil, Modo ligação e matrículas', 'Meta Ads com custo por matrícula', 'Pauta Viral, calendário e Ciclo CEC', 'Metas do time, patentes e chat', '500 gerações de IA por mês'],
+  // Ids batem com a tabela "plans" do banco (local, pro, agencia). Limites vêm de lá.
+  { id: 'local', nome: 'Essencial', para: 'Para a escola começar a medir', mensal: 197, cls: '',
+    itens: ['Até 10 usuários', '1 número de WhatsApp oficial', 'Funil, Modo ligação e matrículas', 'Meta Ads com custo por matrícula paga', 'Pauta Viral, calendário e Ciclo CEC', 'Missões, patentes e chat do time', '500 gerações de IA por mês'],
     nao: ['Suporte prioritário'] },
-  { id: 'pro', nome: 'Rede', para: 'Escolas com mais de um time comercial', mensal: 697, cls: 'hot', tag: 'Mais escolhido',
-    itens: ['Até 40 usuários', '5 números de WhatsApp', 'Tudo do plano Escola', '5.000 gerações de IA por mês', 'Perfis por função: vendas, atendimento, social', 'Relatórios por consultor e por curso', 'Suporte prioritário'],
+  { id: 'pro', nome: 'Escola', para: 'Para o comercial que quer bater meta', mensal: 497, cls: 'hot', tag: 'Mais escolhido',
+    itens: ['Até 40 usuários', '5 números de WhatsApp oficial', 'Tudo do Essencial', '5.000 gerações de IA por mês', 'Relatórios por consultor e por curso', 'Perfis por área: vendas, atendimento, social', 'Suporte prioritário no WhatsApp'],
     nao: [] },
-  { id: 'agencia', nome: 'Grupo', para: 'Grupos educacionais com várias unidades', mensal: 1497, cls: 'ag',
-    itens: ['Até 100 usuários', '30 números de WhatsApp', 'Tudo do plano Rede', '30.000 gerações de IA por mês', 'Implantação junto com o seu time', 'Gerente de conta dedicado'],
+  { id: 'agencia', nome: 'Rede', para: 'Para grupos com várias unidades', mensal: 997, cls: 'ag',
+    itens: ['Até 100 usuários', '30 números de WhatsApp oficial', 'Tudo do Escola', '30.000 gerações de IA por mês', 'Implantação junto com o seu time', 'Gerente de conta dedicado'],
     nao: [] },
 ];
 export const ANUAL_MESES = 10; // anual = paga 10, usa 12
