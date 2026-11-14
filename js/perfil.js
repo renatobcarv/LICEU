@@ -12,10 +12,10 @@ export const PERGUNTAS = [
     ['gestao', 'Coordenação do time', 'medalha'], ['financeiro', 'Financeiro e matrículas', 'check'], ['aluno', 'Estou começando agora', 'ideia']] },
   { id: 'nivel', titulo: 'Quanto de experiência você tem nisso?', ajuda: 'Sem resposta certa. É só o seu ponto de partida.', tipo: 'um', opcoes: [
     ['0', 'Começando agora', 'ideia'], ['1', 'Menos de 1 ano', 'raio'], ['2', 'De 1 a 3 anos', 'fogo'], ['3', 'Mais de 3 anos', 'medalha']] },
-  { id: 'objetivos', titulo: 'O que você quer melhorar primeiro?', ajuda: 'Escolha até 3. Suas quests saem daqui.', tipo: 'varios', max: 3, opcoes: [
+  { id: 'objetivos', titulo: 'O que você quer melhorar primeiro?', ajuda: 'Escolha até 3. Suas missões saem daqui.', tipo: 'varios', max: 3, opcoes: [
     ['fechar', 'Atender e fechar mais matrículas', 'check'], ['telefone', 'Falar ao telefone com segurança', 'f_live'], ['conteudo', 'Criar conteúdo que engaja', 'f_reels'],
     ['numeros', 'Entender os números', 'raio'], ['rotina', 'Ter rotina e organização', 'agenda'], ['lideranca', 'Liderar e treinar o time', 'medalha'], ['estudo', 'Estudar para o curso ou certificação', 'ideia']] },
-  { id: 'tempo', titulo: 'Quanto tempo por semana para evoluir?', ajuda: 'As quests cabem no seu tempo.', tipo: 'um', opcoes: [
+  { id: 'tempo', titulo: 'Quanto tempo por semana para evoluir?', ajuda: 'As missões cabem no seu tempo.', tipo: 'um', opcoes: [
     ['1', 'Até 1 hora', 'agenda'], ['3', 'Umas 3 horas', 'agenda'], ['5', '5 horas ou mais', 'fogo']] },
   { id: 'aprende', titulo: 'Como você aprende melhor?', ajuda: 'A gente sugere do jeito que funciona para você.', tipo: 'um', opcoes: [
     ['exemplo', 'Vendo um exemplo pronto', 'olho'], ['pratica', 'Praticando direto', 'raio'], ['lendo', 'Lendo com calma', 'ideia'], ['junto', 'Com alguém do lado', 'f_live']] },
@@ -109,7 +109,7 @@ export function montarQuiz(root, { nome = '', escola = '', onFim }) {
     root.innerHTML = `<div class="pq pq-fim">
       <div class="pq-selo"><span>${ICON.medalha}</span></div>
       <p class="pq-k">Seu ponto de partida</p><h1 class="pq-h">${NIVEL_NOME[n]}</h1>
-      <p class="pq-ajuda">Você começa com ${qs.length} quests feitas para você. Cada uma concluída sobe o seu nível no time.</p>
+      <p class="pq-ajuda">Você começa com ${qs.length} missões feitas para você. Cada uma concluída sobe o seu nível no time.</p>
       <ul class="pq-quests">${qs.map((q) => `<li><span>${q.tipo === 'estudo' ? ICON.ideia : ICON.raio}</span><div><b>${esc(q.titulo)}</b><small>${q.tipo === 'estudo' ? 'Estudo · você marca quando fizer' : 'Trabalho · o painel conta sozinho'}</small></div></li>`).join('')}</ul>
       ${(r.fortes || []).length ? `<p class="pq-fortes">Pontos fortes: ${r.fortes.map((f) => `<span>${esc(PERGUNTAS[5].opcoes.find(([v]) => v === f)?.[1] || f)}</span>`).join('')}</p>` : ''}
       <button type="button" class="btn primary block" data-pq-entrar>Entrar no painel ${ICON.arrow}</button>

@@ -1,6 +1,6 @@
-# Design do FLOWCLASS Intelligence
+# Design do Klasso
 
-O app segue a estrutura do modelo **Gateway System**, um design system de painel de pagamentos, com a identidade **FLOWCLASS** (Tech Premium): grafite profundo, branco e verde-lima. O grafite sustenta a identidade; o lima chama atenção para o que importa e nunca é fundo predominante. Logotipo em `assets/flowclass-logo.png` (símbolo: `assets/flowclass-mark.png`). Tudo está em `css/app.css`. Este guia é a regra para qualquer tela ou componente novo.
+O app segue a estrutura do modelo **Gateway System**, um design system de painel de pagamentos, com a identidade **Klasso** (Tech Premium): grafite profundo, branco e verde-lima. O grafite sustenta a identidade; o lima chama atenção para o que importa e nunca é fundo predominante. Logotipo em `assets/klasso-logo.png` (símbolo: `assets/klasso-mark.png`). Tudo está em `css/app.css`. Este guia é a regra para qualquer tela ou componente novo.
 
 Referência visual: https://claude.ai/artifact/8EZK22DY94scZVebE8dTmk
 

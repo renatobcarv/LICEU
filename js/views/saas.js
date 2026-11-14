@@ -37,7 +37,7 @@ export function render() {
   <section class="card saas"><header class="card-head"><div><h2>Marca (white-label)</h2><p class="muted">Nome, logotipo e cores que a sua equipe e seus clientes veem</p></div><button class="btn sm" data-saas="marca">Editar marca</button></header>
     <div class="wl-prev" style="--p:${esc(o.branding?.primaria || '#c6ff00')};--s:${esc(o.branding?.secundaria || '#8b00ff')}">
       ${o.branding?.logo ? `<img src="${esc(o.branding.logo)}" alt="" class="wl-logo">` : '<span class="wl-dot"></span>'}
-      <div><b>${esc(o.branding?.nome || 'FLOWCLASS')}</b><small>${o.branding?.primaria ? 'Cores próprias aplicadas' : 'Usando a marca padrão'}</small></div>
+      <div><b>${esc(o.branding?.nome || 'Klasso')}</b><small>${o.branding?.primaria ? 'Cores próprias aplicadas' : 'Usando a marca padrão'}</small></div>
     </div></section>
   <section class="card saas"><header class="card-head"><div><h2>Domínio próprio</h2><p class="muted">Ex.: painel.suaescola.com.br</p></div><button class="btn sm" data-saas="dominio">${ICON.plus} Adicionar domínio</button></header>
     <div id="saas-dom"><p class="empty-sm">Carregando…</p></div></section>
@@ -127,7 +127,7 @@ function marcaDialog() {
   const b = org().branding || {};
   openDialog({ title: 'Marca da plataforma', saveLabel: 'Aplicar marca',
     fields: [
-      { name: 'nome', label: 'Nome do produto', value: b.nome || '', placeholder: 'FLOWCLASS Intelligence', full: true },
+      { name: 'nome', label: 'Nome do produto', value: b.nome || '', placeholder: 'Klasso', full: true },
       { name: 'logo', label: 'Logotipo (link https, fundo transparente)', value: b.logo || '', full: true },
       { name: 'simbolo', label: 'Símbolo pequeno (link https)', value: b.simbolo || '' },
       { name: 'favicon', label: 'Ícone da aba (link https)', value: b.favicon || '' },

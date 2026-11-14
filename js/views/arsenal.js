@@ -9,7 +9,7 @@ import { ICON } from '../ui.js';
 function questsCard() {
   const p = perfil(); const qs = minhasQuests(); const ok = qs.filter((q) => q.ok).length;
   return `<section class="card quests" id="quests">
-    <div class="card-head"><div><h2>Suas quests</h2><p class="muted">${p ? `Ponto de partida: <b>${esc(NIVEL_NOME[p.nivel] || '')}</b> · ${ok} de ${qs.length} concluídas` : 'Responda 6 perguntas e receba quests feitas para você'}</p></div>
+    <div class="card-head"><div><h2>Suas missões</h2><p class="muted">${p ? `Ponto de partida: <b>${esc(NIVEL_NOME[p.nivel] || '')}</b> · ${ok} de ${qs.length} concluídas` : 'Responda 6 perguntas e receba missões feitas para você'}</p></div>
     <button class="btn sm ${p ? '' : 'primary'}" data-quiz>${p ? 'Refazer perfil' : 'Montar meu perfil'}</button></div>
     <ul class="qst">${qs.map((q) => `<li class="${q.ok ? 'ok' : ''}"><span class="qst-ic">${q.ok ? ICON.check : q.tipo === 'estudo' ? ICON.ideia : ICON.raio}</span>
       <div><b>${esc(q.titulo)}</b>${q.tipo === 'estudo' ? '<small>Estudo · marque quando fizer</small>' : `<div class="cq-bar"><i style="width:${Math.max(3, (q.v / q.alvo) * 100)}%"></i></div><small>${q.v} / ${q.alvo}</small>`}</div>

@@ -1,4 +1,4 @@
-/* FLOWCLASS · páginas públicas (vendas, planos).
+/* Klasso · páginas públicas (vendas, planos).
    Paleta "Graphite": canvas quase-preto levemente esverdeado (não preto puro), neutros tingidos com a
    mesma matiz, lima só no que é ação ou dado-chave (menos de 5% da tela). Cores de apoio são para
    dados e categorias, nunca decoração. Sem texto em degradê, sem brilho em todo cartão, ícones em linha. */
@@ -196,8 +196,8 @@ h1, h2, h3 { margin: 0; color: var(--text); }
 .rv.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .rv { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
 
-/* Paletas: Toxic Luxury (padrão) e Acid Royal ([data-paleta="acid"]). */
-:root, :root[data-paleta="toxic"] {
+/* Paleta única Klasso: preto, lima e roxo royal. */
+:root {
   --bg: #0b1d15; --bg-2: #0e2219; --surface: #102a1e; --raised: #163324; --line: #1f3d2f; --line-2: #2a4d3c;
   --text: #f4f0e8; --text-2: #d3d6cc; --muted: #a2b2a5; --dim: #6f8373;
   --accent-hex: #a3ff12; --lime-rgb: 163 255 18; --lime-ink: #0b1d15; --iris: #b98bec; --royal: #7b2cbf; --royal-rgb: 123 44 191;
@@ -218,7 +218,6 @@ h1, h2, h3 { margin: 0; color: var(--text); }
   --text: #f5f5f5; --text-2: #d4d7d4; --muted: #9fa79f; --dim: #687068;
   --accent-hex: #c6ff00; --lime-rgb: 198 255 0; --lime-ink: #060706; --iris: #b56bff; --royal: #8b00ff; --royal-rgb: 139 0 255; --forest: #142d16;
 }
-:root[data-paleta="toxic"] { --bg: #060807; --forest: #102b20; }
 .shot { background: linear-gradient(180deg, color-mix(in srgb, var(--forest) 60%, var(--surface)), var(--surface) 55%); }
 /* seção clara: off-white técnico com grade sutil; texto escuro; lima vira tinta escura sobre fundo verde-ácido */
 .sec.light { --bg: #f2f3ef; --bg-2: #e9ebe5; --surface: #ffffff; --raised: #eceee8; --line: #d9ddd3; --line-2: #c7ccc0;
