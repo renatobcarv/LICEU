@@ -620,3 +620,4 @@ body.site { background: radial-gradient(1100px 600px at 50% -10%, rgb(139 0 255 
 @media (max-width: 900px) { .pl-eagle { position: relative; right: auto; top: auto; width: 86%; margin: -10px auto -40px; display: block; } }
 @media (prefers-reduced-motion: reduce) { .pl-eagle, .pl-eye { animation: none; } }
 @media (min-width: 901px) { .pl-hero .h1 { max-width: 720px !important; } }
+.soon { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 99px; font: 600 11px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: #d6b0ff; background: rgb(139 0 255 / .18); border: 1px solid rgb(139 0 255 / .45); vertical-align: middle; }
