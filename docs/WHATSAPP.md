@@ -22,6 +22,18 @@
 - Fora da janela de 24h o app avisa e só deixa enviar **modelo aprovado**.
 - Cada mensagem enviada conta como contato do lead (tempo de primeira resposta, missões e XP).
 
+## Conexão assistida (MVP, antes da aprovação de Tech Provider)
+Enquanto a Meta não aprova o Klasso para o cadastro em um clique, o time Klasso conecta o número de cada escola:
+1. **Secrets no Supabase** (Edge Functions › Secrets), uma vez só:
+   - `WA_ENC_KEY`: gere com `openssl rand -base64 32` (cifra dos tokens).
+   - `WA_VERIFY_TOKEN`: uma senha longa que você inventa (verificação do webhook).
+   - `WA_APP_SECRET`: App da Meta › Configurações › Básico › Chave secreta (confere a assinatura de cada mensagem).
+   - `PLATFORM_ADMINS`: e-mails do time Klasso separados por vírgula (só eles usam a conexão assistida).
+   - Opcional `WA_PIN`: 6 dígitos para registrar números.
+2. **Publicar as funções**: `whatsapp-connect`, `whatsapp-send` e `whatsapp-webhook` (esta com `--no-verify-jwt`).
+3. **Webhook no app da Meta**: URL `https://kqaqccjsoqdpbnnyyemw.supabase.co/functions/v1/whatsapp-webhook`, token = `WA_VERIFY_TOKEN`, assinar **messages**.
+4. **Para cada escola**: no Gerenciador de Negócios, adicione o número à conta WhatsApp (WABA) e dê acesso ao usuário do sistema. Depois, logado no Klasso **na empresa da escola**, vá em Configurações › Integrações › **Conexão assistida** e informe WABA, ID do número e o token permanente. A função valida na Meta, inscreve o webhook, registra o número e grava o token cifrado. O funil passa a usar o WhatsApp oficial sozinho.
+
 ## Como ligar (uma vez)
 1. Em business.facebook.com crie um **App** (tipo Business) e adicione o produto **WhatsApp**. Registre o número da escola (ele sai do app comum do WhatsApp).
 2. Gere um **token permanente** de usuário do sistema com `whatsapp_business_messaging` e `whatsapp_business_management`.

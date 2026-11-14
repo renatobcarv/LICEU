@@ -8,6 +8,7 @@ import { auth } from '../auth.js';
 import { applyBranding } from '../brand.js';
 import { isAdminRole } from '../access.js';
 import { META_APP_ID, WA_CONFIG_ID, WHITELABEL } from '../config.js';
+import { store } from '../store.js';
 
 const sb = () => auth.client;
 const org = () => auth.org || {};
@@ -25,7 +26,7 @@ export function renderPlano() {
 
 export function renderWhatsApp() {
   if (!admin()) return '';
-  return `<section class="card saas"><header class="card-head"><div><h2>WhatsApp oficial</h2><p class="muted">Conecte o número da escola pela Meta. As conversas caem direto no Funil, com o anúncio de origem</p></div><button class="btn sm primary" data-saas="wa">Conectar WhatsApp</button></header>
+  return `<section class="card saas"><header class="card-head"><div><h2>WhatsApp oficial</h2><p class="muted">Conecte o número da escola pela Meta. As conversas caem direto no Funil, com o anúncio de origem</p></div><div class="row-actions"><button class="btn sm ghost" data-saas="wa-assistida">Conexão assistida</button><button class="btn sm primary" data-saas="wa">Conectar WhatsApp</button></div></header>
     <div id="saas-wa"><p class="empty-sm">Carregando…</p></div></section>`;
 }
 
@@ -81,7 +82,33 @@ async function whatsapp(root) {
   if (error) { box.innerHTML = `<p class="hint">Rode a migração 002 no Supabase para conectar números.</p>`; return; }
   const st = { conectado: 'good', pendente: 'warn', erro: 'bad', desconectado: '' };
   box.innerHTML = (data.length ? data.map((c) => `<div class="member-row"><div class="who"><b>${esc(c.telefone || c.phone_number_id)}</b><small>${esc(c.nome_verificado || '')}${c.qualidade ? ' · qualidade ' + esc(c.qualidade) : ''}${c.erro ? ' · ' + esc(c.erro) : ''}</small></div><span class="badge ${st[c.status] || ''}">${esc(c.status)}</span><button class="btn sm ghost" data-warm="${esc(c.id)}">Desconectar</button></div>`).join('') : '<p class="empty-sm">Nenhum número conectado.</p>')
-    + (!META_APP_ID ? '<p class="hint">A conexão pelo painel está sendo liberada pela Meta. Enquanto isso, nosso time conecta o seu número com você: fale com o suporte.</p>' : '');
+    + (!META_APP_ID ? '<p class="hint">A conexão pelo painel está sendo liberada pela Meta. Enquanto isso, nosso time conecta o seu número com você pela conexão assistida.</p>' : '');
+  // Com número conectado, o funil passa a usar o WhatsApp oficial (conversa dentro do app).
+  const ligado = data.some((c) => c.status === 'conectado');
+  const st0 = store.settings();
+  if (ligado !== !!st0.whatsappApi && isAdminRole(auth.member?.role)) store.put('settings', { ...st0, id: 'main', whatsappApi: ligado });
+}
+
+// Conexão assistida (MVP): o time Klasso conecta o número com o token de usuário do sistema.
+// O token vai do navegador direto para a função (HTTPS), é validado na Meta e gravado cifrado. A função só aceita administradores da plataforma.
+function conexaoAssistida(root) {
+  openDialog({
+    title: 'Conexão assistida do WhatsApp', saveLabel: 'Validar e conectar',
+    fields: [
+      { name: 'wabaId', label: 'ID da conta do WhatsApp Business (WABA)', required: true, placeholder: 'só números', full: true },
+      { name: 'phoneNumberId', label: 'ID do número de telefone', required: true, placeholder: 'só números', full: true, hint: 'Meta › WhatsApp › Configuração da API' },
+      { name: 'token', label: 'Token permanente do usuário do sistema', type: 'password', required: true, full: true, hint: 'Vai direto para o servidor e fica cifrado. Nunca cole em chat.' },
+    ],
+    onSave: (d) => {
+      toast('Validando com a Meta…');
+      sb().functions.invoke('whatsapp-connect', { body: { orgId: org().id, manual: true, wabaId: d.wabaId.replace(/\D/g, ''), phoneNumberId: d.phoneNumberId.replace(/\D/g, ''), token: d.token.trim() } })
+        .then(async ({ data, error }) => {
+          let msg = data?.error; if (!msg && error) { try { msg = (await error.context?.json?.())?.error; } catch { /* sem corpo */ } }
+          if (msg || error) return toast(msg || 'Falha ao conectar.', 'bad');
+          toast('WhatsApp conectado: ' + (data.telefone || '') + '.'); whatsapp(root);
+        });
+    },
+  });
 }
 
 async function clientes(root) {
@@ -152,6 +179,7 @@ export function mount(root, ctx) {
     const a = e.target.closest('[data-saas]')?.dataset.saas;
     if (a === 'marca') return marcaDialog();
     if (a === 'wa') return conectarWhatsApp(root);
+    if (a === 'wa-assistida') return conexaoAssistida(root);
     if (a === 'dominio') return openDialog({ title: 'Domínio próprio', saveLabel: 'Adicionar', fields: [{ name: 'host', label: 'Endereço (sem https)', placeholder: 'painel.suaescola.com.br', required: true, full: true }],
       onSave: async (d) => { const { error } = await sb().from('org_domains').insert({ host: d.host.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, ''), org_id: org().id }); if (error) return toast(/row-level|policy/i.test(error.message) ? 'Seu plano não inclui mais domínios.' : error.message, 'bad'); dominios(root); } });
     if (a === 'cliente') return openDialog({ title: 'Novo cliente', saveLabel: 'Criar cliente', fields: [{ name: 'nome', label: 'Nome do cliente', required: true, full: true }, { name: 'slug', label: 'Subdomínio (opcional)', placeholder: 'escola-centro' }],
