@@ -10,6 +10,7 @@ import { initAuth, auth, roleLabel, signOut } from './auth.js';
 import { LOGO_MARK, PRODUCT, applyTheme, productName } from './brand.js';
 import { canView, isFull, podeEscrever, soVer, AREA } from './access.js';
 import * as painel from './views/painel.js';
+import * as hoje from './views/hoje.js';
 import * as meta from './views/meta.js';
 import * as campanhas from './views/campanhas.js';
 import { skeleton } from './views/mat/secoes.js';
@@ -25,20 +26,24 @@ import * as config from './views/config.js';
 import * as arsenal from './views/arsenal.js';
 
 const ALL_VIEWS = [
-  { id: 'painel', label: 'Painel', title: ['Visão', '*geral'], kicker: 'Do anúncio à matrícula', mod: painel, group: 'Acompanhar' },
-  { id: 'meta', label: 'Meta Ads', title: ['Meta', '*Ads'], kicker: 'Mídia paga', mod: meta, group: 'Acompanhar' },
-  { id: 'campanhas', label: 'Campanhas', title: ['Planejar', 'campanha'], kicker: 'Do quiz à matrícula', mod: campanhas, group: 'Acompanhar', noPeriod: true },
-  { id: 'funil', label: 'Funil', title: ['Funil', '*comercial'], kicker: 'Do WhatsApp à matrícula', mod: funil, group: 'Acompanhar' },
-  { id: 'matriculas', label: 'Matrículas', title: ['*Matrículas'], kicker: 'Quem comprou', mod: matriculas, group: 'Acompanhar' },
-  { id: 'arsenal', label: 'Meu Arsenal', title: ['Meu', '*Arsenal'], kicker: 'Patente, conquistas e títulos', mod: arsenal, group: 'Acompanhar', noPeriod: true },
-  { id: 'pauta', label: 'Pauta Viral', title: ['Pauta', '*Viral'], kicker: 'Criação de conteúdo', mod: pauta, group: 'Produzir', noPeriod: true },
-  { id: 'calendario', label: 'Calendário', title: ['*Calendário', 'editorial'], kicker: 'Planejamento', mod: calendario, group: 'Produzir', noPeriod: true },
-  { id: 'metas', label: 'Metas e estratégias', title: ['Metas', 'e', '*estratégias'], kicker: 'Direção', mod: metas, group: 'Decidir', noPeriod: true },
-  { id: 'time', label: 'Time', title: ['Seu', '*time'], kicker: 'Quem faz acontecer', mod: time, group: 'Time', noPeriod: true },
-  { id: 'chat', label: 'Chat', title: ['Chat do', '*time'], kicker: 'Conversa da equipe', mod: chat, group: 'Time', noPeriod: true },
-  { id: 'relatorios', label: 'Relatórios', title: ['*Relatórios', 'gerenciais'], kicker: 'Prestação de contas', mod: relatorios, group: 'Decidir' },
+  // Menu organizado pelo trabalho (Vender, Divulgar, Gerir), não pelo módulo. "Hoje" é a tela inicial.
+  { id: 'hoje', label: 'Hoje', title: ['O que importa', '*hoje'], kicker: 'Sua fila do dia', mod: hoje, group: '', noPeriod: true },
+  { id: 'funil', label: 'Funil', title: ['Funil', '*comercial'], kicker: 'Do WhatsApp à matrícula', mod: funil, group: 'Vender' },
+  { id: 'matriculas', label: 'Matrículas', title: ['*Matrículas'], kicker: 'Quem comprou', mod: matriculas, group: 'Vender' },
+  { id: 'pauta', label: 'Pauta Viral', title: ['Pauta', '*Viral'], kicker: 'Criação de conteúdo', mod: pauta, group: 'Divulgar', noPeriod: true },
+  { id: 'calendario', label: 'Calendário', title: ['*Calendário', 'editorial'], kicker: 'Planejamento', mod: calendario, group: 'Divulgar', noPeriod: true },
+  { id: 'campanhas', label: 'Campanhas', title: ['Planejar', 'campanha'], kicker: 'Do quiz à matrícula', mod: campanhas, group: 'Divulgar', noPeriod: true },
+  { id: 'meta', label: 'Meta Ads', title: ['Meta', '*Ads'], kicker: 'Mídia paga', mod: meta, group: 'Divulgar' },
+  { id: 'painel', label: 'Números', title: ['Visão', '*geral'], kicker: 'Do anúncio à matrícula', mod: painel, group: 'Gerir' },
+  { id: 'metas', label: 'Metas', title: ['Metas', 'e', '*estratégias'], kicker: 'Direção', mod: metas, group: 'Gerir', noPeriod: true },
+  { id: 'relatorios', label: 'Relatórios', title: ['*Relatórios', 'gerenciais'], kicker: 'Prestação de contas', mod: relatorios, group: 'Gerir' },
+  { id: 'time', label: 'Time', title: ['Seu', '*time'], kicker: 'Quem faz acontecer', mod: time, group: 'Equipe', noPeriod: true },
+  { id: 'arsenal', label: 'Meu Arsenal', title: ['Meu', '*Arsenal'], kicker: 'Patente, conquistas e títulos', mod: arsenal, group: 'Equipe', noPeriod: true },
+  { id: 'chat', label: 'Chat', title: ['Chat do', '*time'], kicker: 'Conversa da equipe', mod: chat, group: 'Equipe', noPeriod: true },
   { id: 'config', label: 'Configurações', title: ['*Configurações'], kicker: 'Sistema', mod: config, group: 'Sistema', noPeriod: true },
 ];
+// Grupos que cada perfil vê abertos; os outros ficam em "Mais áreas" (continua tudo acessível).
+const FOCO = { sales: ['Vender', 'Equipe'], support: ['Vender', 'Equipe'], social: ['Divulgar', 'Equipe'], client: ['Gerir', 'Divulgar'] };
 let VIEWS = ALL_VIEWS;
 
 // Título com as palavras dentro de máscaras; a palavra com * vira serifada itálica em degradê.
@@ -180,10 +185,19 @@ function renderStatus() {
 }
 
 function navHTML() {
+  const foco = FOCO[auth.member?.role];
+  const link = (v) => `<a href="#${v.id}" data-view="${v.id}"><span class="ni">${ICON[v.id] || ICON.painel}</span><span>${esc(v.label)}</span></a>`;
+  const grupo = (g) => (g ? `<p class="nav-group">${esc(g)}</p>` : '') + VIEWS.filter((v) => v.group === g).map(link).join('');
   const groups = [...new Set(VIEWS.map((v) => v.group))];
-  $('#nav').innerHTML = groups.map((g) => `<p class="nav-group">${esc(g)}</p>` + VIEWS.filter((v) => v.group === g).map((v) => `<a href="#${v.id}" data-view="${v.id}"><span class="ni">${ICON[v.id]}</span><span>${esc(v.label)}</span></a>`).join('')).join('');
-  const atalhos = [['painel', 'Painel'], ['funil', 'Funil'], ['matriculas', 'Matrículas'], ['campanhas', 'Campanhas'], ['chat', 'Chat'], ['pauta', 'Pauta'], ['relatorios', 'Relatórios']].filter(([id]) => VIEWS.some((v) => v.id === id)).slice(0, 4);
-  $('#bottom-nav').innerHTML = atalhos.map(([id, l]) => `<a href="#${id}" data-view="${id}">${ICON[id]}<span>${l}</span></a>`).join('') + `<button type="button" id="bn-menu">${ICON.menu}<span>Menu</span></button>`;
+  const abertos = groups.filter((g) => !foco || g === '' || g === 'Sistema' || foco.includes(g));
+  const mais = groups.filter((g) => !abertos.includes(g));
+  $('#nav').innerHTML = abertos.filter((g) => g !== 'Sistema').map(grupo).join('')
+    + (mais.length ? `<details class="nav-mais"><summary>Mais áreas</summary>${mais.map(grupo).join('')}</details>` : '')
+    + (abertos.includes('Sistema') ? grupo('Sistema') : '');
+  const porPapel = { social: ['hoje', 'pauta', 'calendario', 'chat'], sales: ['hoje', 'funil', 'matriculas', 'chat'], support: ['hoje', 'funil', 'matriculas', 'chat'] };
+  const atalhos = (porPapel[auth.member?.role] || ['hoje', 'funil', 'painel', 'pauta']).filter((id) => VIEWS.some((v) => v.id === id)).slice(0, 4);
+  const nomeCurto = (id) => ({ hoje: 'Hoje', funil: 'Funil', matriculas: 'Matrículas', painel: 'Números', pauta: 'Pauta', calendario: 'Agenda', chat: 'Chat' }[id] || id);
+  $('#bottom-nav').innerHTML = atalhos.map((id) => `<a href="#${id}" data-view="${id}">${ICON[id] || ICON.painel}<span>${nomeCurto(id)}</span></a>`).join('') + `<button type="button" id="bn-menu">${ICON.menu}<span>Menu</span></button>`;
   $('#bn-menu').addEventListener('click', () => $('#app').classList.toggle('nav-open'));
 }
 
