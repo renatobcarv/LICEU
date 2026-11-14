@@ -20,7 +20,7 @@ export function supabaseConfigured() {
 }
 
 const LOGO = `<div class="auth-logo">${LOGO_MARK}</div>`;
-const PLANOS = { local: 'Essencial', pro: 'Escola', agencia: 'Rede' };
+const PLANOS = { start: 'Start', local: 'Essencial', pro: 'Escola', agencia: 'Rede' };
 const qs = new URLSearchParams(location.search);
 const LAST = 'flowclass.ultimo.email';
 const CONV = 'flowclass.convite';

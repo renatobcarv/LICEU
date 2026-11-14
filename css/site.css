@@ -600,3 +600,11 @@ body.site { background: radial-gradient(1100px 600px at 50% -10%, rgb(139 0 255 
 .roi-row > div { padding: 14px; border-radius: 14px; background: rgb(0 0 0 / .28); }
 .roi-row span { display: block; font-size: 13px; color: rgb(255 255 255 / .75); } .roi-row b { font-size: 26px; }
 @media (max-width: 800px) { .roi-box, .roi-row { grid-template-columns: 1fr; } }
+/* 4 planos */
+@media (min-width: 961px) { .plans { grid-template-columns: .85fr 1fr 1.1fr 1fr; } }
+.plan.mini h3 { color: #d6b0ff; }
+@media (min-width: 961px) and (max-width: 1180px) { .plans { grid-template-columns: 1fr 1fr; } }
+/* águia completa */
+.eg-bird { width: min(620px, 100%); }
+.eg-eye { left: 16.7%; top: 61.5%; width: 6%; }
+.eg-chip.c2 { left: 30%; top: 4%; } .eg-chip.c1 { left: -12%; top: 74%; } .eg-chip.c3 { left: 52%; bottom: -2%; }

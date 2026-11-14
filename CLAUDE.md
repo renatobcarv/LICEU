@@ -64,3 +64,6 @@ Metas, Relatórios, Time (quadro gamificado + insígnias), Chat, Configurações
 ## Estado (14/11/2026)
 - Migrações 001–004 aplicadas em produção; `ia-criar` ativa com `ANTHROPIC_API_KEY`.
 - PR #29 (jogo individual + acesso por área) aguarda a migração **005_ver_tudo.sql** em produção.
+
+- Painel usa a mesma linguagem visual das vendas (`js/app-motion.js`: fundo líquido, cards de vidro, entrada ao rolar).
+- **Pendente:** rodar `supabase/migrations/006_plano_start.sql` em produção (sem ela, quem escolhe Start cai no Essencial).
