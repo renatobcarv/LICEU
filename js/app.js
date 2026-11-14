@@ -4,6 +4,7 @@ import { estado } from './game.js';
 import { store, initStore, seedIfEmpty } from './store.js';
 import { $, $$, esc, today, monthStart, monthEnd, addMonths, addDays, fmtRange, weekStart } from './util.js';
 import { ICON, toast, countUp } from './ui.js';
+import { appMotion } from './app-motion.js';
 import { settings } from './metrics.js';
 import { initAuth, auth, roleLabel, signOut } from './auth.js';
 import { LOGO_MARK, PRODUCT, applyTheme, productName } from './brand.js';
@@ -231,6 +232,7 @@ async function boot() {
   const seeded = canWrite ? await seedIfEmpty() : false;
   try { lastXp = estado(); } catch { /* sem dados */ }
   render();
+  appMotion();
   if (session) trialBar();
   if (seeded) toast('Tudo pronto. Comece cadastrando seus cursos em Configurações.');
   if (session && auth.member?.role === 'leitura') toast('Você tem acesso só de leitura.', 'warn');

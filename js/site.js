@@ -2,7 +2,10 @@
 // PREÇOS: ajuste aqui. Os limites batem com a tabela "plans" do banco (supabase/migrations/002_saas.sql).
 
 export const PLANOS = [
-  // Ids batem com a tabela "plans" do banco (local, pro, agencia). Limites vêm de lá.
+  // Ids batem com a tabela "plans" do banco (start, local, pro, agencia). Limites vêm de lá.
+  { id: 'start', nome: 'Start', para: 'Para quem atende sozinho', mensal: 97, cls: 'mini',
+    itens: ['Até 2 usuários', '1 número de WhatsApp oficial', 'Funil, Modo ligação e matrículas', 'Meta Ads com custo por matrícula paga', 'Missões e patentes', '100 gerações de IA por mês'],
+    nao: ['Relatórios por consultor', 'Suporte prioritário'] },
   { id: 'local', nome: 'Essencial', para: 'Para a escola começar a medir', mensal: 197, cls: '',
     itens: ['Até 10 usuários', '1 número de WhatsApp oficial', 'Funil, Modo ligação e matrículas', 'Meta Ads com custo por matrícula paga', 'Pauta Viral, calendário e Ciclo CEC', 'Missões, patentes e chat do time', '500 gerações de IA por mês'],
     nao: ['Suporte prioritário'] },
