@@ -40,7 +40,7 @@ function screen(inner) {
       ${LOGO}
       <div class="ab-copy"><p class="ab-eyebrow">Klasso para escolas</p>
         <h2>Saiba quanto custou <span>cada matrícula.</span></h2>
-        <ul><li>Meta Ads com custo por matrícula paga</li><li>WhatsApp oficial dentro do funil</li><li>Time com missões, patentes e ranking</li></ul></div>
+        <ul><li>Meta Ads com custo por matrícula paga</li><li>Funil, ligação e matrículas no mesmo lugar</li><li>Time com missões, patentes e ranking</li></ul></div>
       <img class="ab-eagle" src="assets/aguia-rosto.webp" width="943" height="828" alt="" aria-hidden="true"><span class="ab-eye" aria-hidden="true"></span>
       <div class="ab-case"><div><b>R$ 797</b><span>em anúncio</span></div><div><b>25</b><span>matrículas pagas</span></div><div><b>R$ 31,92</b><span>por matrícula</span></div></div>
       <p class="ab-foot">Campanha real da TEC Mais Valparaíso · 26/09 a 25/10</p>
