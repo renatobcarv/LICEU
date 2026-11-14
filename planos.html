@@ -21,7 +21,7 @@
 </div></header>
 
 <main id="main">
-<section class="hero" style="padding-bottom:40px"><div class="wrap" style="display:grid;grid-template-columns:1fr;gap:20px">
+<section class="hero pl-hero" style="padding-bottom:40px"><div class="pl-eagle" aria-hidden="true"><img src="assets/aguia-ataque.webp" width="1230" height="1177" alt=""><span class="pl-eye"></span></div><div class="wrap" style="display:grid;grid-template-columns:1fr;gap:20px;position:relative;z-index:1">
   <p class="label">Planos</p>
   <h1 class="h1" style="max-width:860px">Uma matrícula a mais por mês <em>já paga o plano.</em></h1>
   <p class="lead"><b style="color:var(--lime)">7 dias grátis, sem cartão.</b> Todos os planos têm o painel completo: funil, WhatsApp oficial, Meta Ads com custo por matrícula paga, conteúdo e metas do time. O que muda é o tamanho do time e quantos números de WhatsApp você conecta. É o mesmo sistema que a TEC Mais usa no dia a dia.</p>
@@ -94,6 +94,7 @@
 
 <footer class="s-foot"><div class="wrap"><img src="assets/klasso-logo.png" alt="Klasso" width="104" height="22"><nav aria-label="Rodapé"><a href="/vendas">Produto</a><a href="/">Entrar</a><a href="termos.html">Termos de uso</a><a href="privacidade.html">Privacidade</a></nav><span>© 2026 Klasso</span></div></footer>
 <script type="module">
+import { motion } from './js/motion.js'; motion();
 import { initBilling, reveal } from './js/site.js';
 initBilling([...document.querySelectorAll('[data-bill]')], document.getElementById('plans'));
 reveal();
