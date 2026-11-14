@@ -1,4 +1,4 @@
-# FLOWCLASS — Próximas implementações
+# Klasso — Próximas implementações
 
 ## Feito nesta rodada
 - [x] Fila offline: alterações sem internet ficam no aparelho e sobem sozinhas (status no topo)

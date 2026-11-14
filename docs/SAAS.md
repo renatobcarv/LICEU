@@ -1,4 +1,4 @@
-# FLOWCLASS · Arquitetura SaaS em níveis
+# Klasso · Arquitetura SaaS em níveis
 
 A ideia: começar como ferramenta de uma escola, mas com a fundação de um SaaS que outras empresas e agências possam comprar, sem reescrever nada no caminho. Cada nível reaproveita o anterior.
 

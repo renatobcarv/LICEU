@@ -120,7 +120,7 @@ function render() {
     h.innerHTML = titleHTML(view.title || [view.label]);
     h.setAttribute('aria-label', view.label);
     h.classList.remove('enter-title'); void h.offsetWidth; h.classList.add('enter-title');
-    $('#view-kicker').textContent = view.kicker || 'FLOWCLASS Intelligence';
+    $('#view-kicker').textContent = view.kicker || 'Klasso';
   }
   document.title = view.label + ' · ' + productName();
   $('#filters').hidden = !!view.noPeriod;
@@ -188,7 +188,7 @@ function navHTML() {
 
 function shell() {
   navHTML();
-  $('#brand').innerHTML = '<span class="brand-text">' + LOGO_MARK + '<span class="brand-sub">Intelligence</span></span>';
+  $('#brand').innerHTML = '<span class="brand-text">' + LOGO_MARK + '</span>';
   $('#menu-btn').innerHTML = ICON.menu;
   $('#menu-btn').addEventListener('click', () => $('#app').classList.toggle('nav-open'));
   $('#scrim').addEventListener('click', () => $('#app').classList.remove('nav-open'));

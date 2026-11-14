@@ -1,10 +1,10 @@
-// Identidade FLOWCLASS Intelligence: logotipo, nome do produto e versão dos termos.
+// Identidade Klasso: logotipo, nome do produto e versão dos termos.
 
-// Logotipo FLOWCLASS (recortado da arte oficial, fundo transparente).
-export const LOGO_MARK = '<img class="logo-full" src="assets/flowclass-logo.png" alt="FLOWCLASS" width="180" height="17">';
-export const LOGO_SYMBOL = '<img class="logo-mark" src="assets/flowclass-mark.png" alt="" width="28" height="21">';
+// Logotipo Klasso (recortado da arte oficial, fundo transparente).
+export const LOGO_MARK = '<img class="logo-full" src="assets/klasso-logo.png" alt="Klasso" width="130" height="27">';
+export const LOGO_SYMBOL = '<img class="logo-mark" src="assets/klasso-mark.png" alt="" width="28" height="28">';
 
-export const PRODUCT = 'FLOWCLASS Intelligence';
+export const PRODUCT = 'Klasso';
 
 // Mude a versão quando o texto dos termos ou da política mudar. Ela fica gravada no aceite de cada pessoa.
 export const TERMS_VERSION = '2026-10-26';
@@ -17,7 +17,7 @@ export function applyTheme() {
 }
 
 // ---------- White-label: marca de cada empresa (orgs.branding) aplicada no app inteiro ----------
-// Campos: nome, logo, simbolo, favicon, primaria, secundaria, destaque, rodape. Tudo opcional: o que faltar fica FLOWCLASS.
+// Campos: nome, logo, simbolo, favicon, primaria, secundaria, destaque, rodape. Tudo opcional: o que faltar fica Klasso.
 let atual = {};
 const COR = /^#[0-9a-f]{6}$/i;
 const URL_OK = (u) => /^https:\/\/[^\s"'<>]+$/i.test(String(u || ''));
@@ -40,11 +40,10 @@ export function applyBranding(b = {}) {
 
 // ---------- Paleta (Toxic Luxury padrão, Acid Royal alternativa) ----------
 export const PALETAS = {
-  acid: { nome: 'Acid Royal', cores: ['#060706', '#C6FF00', '#8B00FF', '#142D16'] },
-  toxic: { nome: 'Toxic Luxury', cores: ['#070908', '#A3FF12', '#7B2CBF', '#102B20'] },
+  acid: { nome: 'Klasso', cores: ['#050506', '#C6FF00', '#8B00FF', '#FFFFFF'] },
 };
 const PK = 'flowclass.paleta';
-export const paletaAtual = () => { try { return PALETAS[localStorage.getItem(PK)] ? localStorage.getItem(PK) : 'acid'; } catch (e) { return 'acid'; } };
+export const paletaAtual = () => 'acid'; // uma paleta só: Klasso
 export function applyPaleta(id = paletaAtual()) {
   document.documentElement.dataset.paleta = PALETAS[id] ? id : 'acid';
   try { localStorage.setItem(PK, document.documentElement.dataset.paleta); } catch (e) { /* opcional */ }

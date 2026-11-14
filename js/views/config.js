@@ -5,7 +5,7 @@ import { esc, $, $$, today, addDays, brl, uid, weekStart, monthStart } from '../
 import { settings, STAGES } from '../metrics.js';
 import { openDialog, toast, downloadFile, readFileText, ICON, confirmButton, copyText } from '../ui.js';
 import { auth, roleLabel, signOut, switchOrg } from '../auth.js';
-import { TERMS_VERSION, PALETAS, paletaAtual, applyPaleta } from '../brand.js';
+import { TERMS_VERSION } from '../brand.js';
 import { productDialog, pipeDialog, pipelines, leadPipeId } from '../leads.js';
 import { loadTestData } from '../demoData.js';
 import { courseName } from '../metrics.js';
@@ -14,7 +14,7 @@ import { ROLES, isAdminRole } from '../access.js';
 import { FERRAMENTAS_IA, iaOnline } from '../ia.js';
 
 
-// Abas das Configurações, do ponto de vista de quem assina o FLOWCLASS.
+// Abas das Configurações, do ponto de vista de quem assina o Klasso.
 const ABAS = [['conta', 'Conta'], ['escola', 'Escola'], ['vendas', 'Vendas'], ['equipe', 'Equipe'], ['plano', 'Plano'], ['integracoes', 'Integrações'], ['dados', 'Dados e privacidade']];
 let aba = 'conta';
 
@@ -31,10 +31,7 @@ export function render(ctx = {}) {
   ${isSb ? `<section class="card"><header class="card-head"><div><h2>Minha conta</h2><p class="muted">${esc(auth.member?.nome || '')} · ${esc(auth.user?.email || '')}</p></div></header>
     <dl class="stats"><div><dt>Escola</dt><dd>${esc(auth.org?.nome || '')}</dd></div><div><dt>Seu perfil</dt><dd>${esc(roleLabel(auth.member?.role))}</dd></div></dl>
     <div class="row-actions"><button class="btn" data-cfg="pass">Trocar senha</button><button class="btn" data-cfg="switch">Trocar de escola</button><button class="btn" data-cfg="logout">Sair</button></div></section>`
-  : `<section class="card"><header class="card-head"><div><h2>Modo de demonstração</h2></div></header><p class="note">Você está usando o FLOWCLASS sem login: os dados ficam só neste navegador. <a href="/?cadastro=1">Crie sua conta</a> para salvar na nuvem e convidar o time.</p></section>`}
-  <section class="card"><header class="card-head"><div><h2>Aparência</h2><p class="muted">Paleta do painel neste aparelho</p></div></header>
-    <div class="paletas">${Object.entries(PALETAS).map(([id, p]) => `<button type="button" class="paleta" data-paleta="${id}" aria-pressed="${paletaAtual() === id}"><span class="sw">${p.cores.map((c) => `<i style="background:${c}"></i>`).join('')}</span>${esc(p.nome)}<small>${p.cores.join(' · ')}</small></button>`).join('')}</div>
-  </section>
+  : `<section class="card"><header class="card-head"><div><h2>Modo de demonstração</h2></div></header><p class="note">Você está usando o Klasso sem login: os dados ficam só neste navegador. <a href="/?cadastro=1">Crie sua conta</a> para salvar na nuvem e convidar o time.</p></section>`}
   ${isSb ? `<section class="card"><header class="card-head"><div><h2>Encerrar conta</h2><p class="muted">Remove seu acesso. Se você for a única pessoa da escola, a escola e todos os dados dela também são apagados</p></div><button class="btn danger" data-cfg="delete-me">Excluir minha conta</button></header></section>` : ''}`;
 
   P.escola = `
@@ -74,13 +71,13 @@ export function render(ctx = {}) {
   P.plano = isSb ? saas.renderPlano() : `<section class="card"><header class="card-head"><div><h2>Plano</h2></div></header><p class="note">Teste grátis por 7 dias, sem cartão. <a href="/planos" target="_blank" rel="noopener">Ver planos</a></p></section>`;
 
   P.integracoes = `${isSb ? saas.renderWhatsApp() : ''}
-  <section class="card"><header class="card-head"><div><h2>Ferramentas de IA</h2><p class="muted">O que a IA já faz no FLOWCLASS e o que vem por aí. Marque o que você quer usar: isso define a nossa fila de integrações</p></div></header>
+  <section class="card"><header class="card-head"><div><h2>Ferramentas de IA</h2><p class="muted">O que a IA já faz no Klasso e o que vem por aí. Marque o que você quer usar: isso define a nossa fila de integrações</p></div></header>
     <div class="ia-cat">${FERRAMENTAS_IA.map((f) => { const quer = (s.iaInteresse || []).includes(f.id); return `<div class="ia-tool ${f.status}"><span class="ia-ic">${ICON[f.id === 'claude' ? 'ia' : f.id === 'higgsfield' ? 'f_motion' : f.id === 'imagem' ? 'f_post' : f.id === 'voz' ? 'f_live' : f.id === 'canva' ? 'f_arte' : 'raio']}</span><div><b>${esc(f.nome)}</b><small>${esc(f.faz)}</small></div>${f.status === 'ativo' ? `<span class="badge good">${iaOnline() ? 'Ativo' : 'Com conta'}</span>` : `<button type="button" class="btn sm ${quer ? 'primary' : ''}" data-ia-quero="${f.id}">${quer ? 'Na sua lista' : 'Quero usar'}</button>`}</div>`; }).join('')}</div>
   </section>
   <section class="card">
     <header class="card-head"><div><h2>Meta Ads</h2><p class="muted">Gasto, alcance e conversas por anúncio, todo dia, sem importar planilha</p></div></header>
     <label class="check-field"><input type="checkbox" data-cfg-toggle="metaSync"${s.metaSync ? ' checked' : ''}${isSb ? '' : ' disabled'}> Sincronização automática com o Meta Ads</label>
-    <p class="hint">${isSb ? 'Ao ligar, o FLOWCLASS busca os números da sua conta de anúncios. Enquanto a conexão não é ativada pelo nosso time, você pode importar o relatório do Meta em Meta Ads › Importar.' : 'Disponível com conta criada.'}</p>
+    <p class="hint">${isSb ? 'Ao ligar, o Klasso busca os números da sua conta de anúncios. Enquanto a conexão não é ativada pelo nosso time, você pode importar o relatório do Meta em Meta Ads › Importar.' : 'Disponível com conta criada.'}</p>
   </section>
   <section class="card">
     <header class="card-head"><div><h2>WhatsApp no Funil</h2><p class="muted">Abrir as conversas dentro do app em vez do WhatsApp do celular</p></div></header>
@@ -164,7 +161,7 @@ export function convidarDialog(root) {
 function conviteGerado(inv, d) {
   const url = linkConvite(inv.code);
   const papel = ROLES[inv.role]?.nome || inv.role;
-  const msg = `Oi${d.nome ? ' ' + d.nome.split(' ')[0] : ''}! Te convidei para o time da ${auth.org?.nome || 'escola'} no FLOWCLASS como ${papel}. Crie sua conta por este link: ${url}`;
+  const msg = `Oi${d.nome ? ' ' + d.nome.split(' ')[0] : ''}! Te convidei para o time da ${auth.org?.nome || 'escola'} no Klasso como ${papel}. Crie sua conta por este link: ${url}`;
   const { dlg } = openDialog({
     title: 'Convite pronto',
     html: `<div class="inv-ok"><div class="inv-selo">${ICON.check}</div><p>Envie para ${esc(d.nome || d.email || 'a pessoa')}. Perfil: <b>${esc(papel)}</b>.</p>
@@ -231,14 +228,13 @@ function courseDialog(c, ctx) {
 export function mount(root, ctx) {
   root.addEventListener('click', (e) => { const b = e.target.closest('[data-ia-quero]'); if (!b) return; const st = store.settings(); const l = new Set(st.iaInteresse || []); l.has(b.dataset.iaQuero) ? l.delete(b.dataset.iaQuero) : l.add(b.dataset.iaQuero); store.put('settings', { ...st, id: 'main', iaInteresse: [...l] }); toast(l.has(b.dataset.iaQuero) ? 'Anotado. Avisamos quando estiver disponível.' : 'Removido da sua lista.'); });
   root.addEventListener('click', (e) => { const t = e.target.closest('[data-aba]'); if (!t) return; aba = t.dataset.aba; root.querySelectorAll('[data-aba]').forEach((x) => x.setAttribute('aria-selected', String(x === t))); root.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== aba; }); history.replaceState(null, '', '#config?aba=' + aba); });
-  root.addEventListener('click', (e) => { const b = e.target.closest('button[data-paleta]'); if (!b) return; applyPaleta(b.dataset.paleta); root.querySelectorAll('[data-paleta]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); toast('Paleta ' + PALETAS[b.dataset.paleta].nome + ' aplicada.'); });
   if (store.mode === 'supabase') { loadMembers(root); loadConvites(root); saas.mount(root, ctx); }
   root.addEventListener('change', (e) => { const k = e.target.dataset?.cfgToggle; if (!k) return; store.put('settings', { ...store.settings(), id: 'main', [k]: e.target.checked }); toast(e.target.checked ? 'Ligado.' : 'Desligado.'); });
   $('#cfg-import', root)?.addEventListener('change', async (e) => {
     const f = e.target.files[0]; if (!f) return;
     try {
       const data = JSON.parse(await readFileText(f));
-      if (!data || !COLLECTIONS.some((c) => Array.isArray(data[c]))) throw new Error('Arquivo não parece um backup do FLOWCLASS Intelligence.');
+      if (!data || !COLLECTIONS.some((c) => Array.isArray(data[c]))) throw new Error('Arquivo não parece um backup do Klasso.');
       openDialog({ title: 'Restaurar backup?', saveLabel: 'Substituir tudo', html: `<p>O backup tem ${COLLECTIONS.map((c) => (data[c]?.length || 0)).reduce((a, b) => a + b, 0)} registros. Os dados atuais da escola serão substituídos por ele.</p>`, onSave: () => { store.replaceAll(data); toast('Backup restaurado.'); ctx.refresh(); } });
     } catch (er) { toast(er.message, 'bad'); }
     e.target.value = '';
@@ -258,7 +254,7 @@ export function mount(root, ctx) {
     const a = ds.cfg;
     if (a === 'unit') unitDialog(ctx);
     if (a === 'course') courseDialog(null, ctx);
-    if (a === 'export') downloadFile('flowclass-backup-' + today() + '.json', JSON.stringify({ app: 'FLOWCLASS Intelligence', exportedAt: new Date().toISOString(), ...dump() }, null, 1), 'application/json');
+    if (a === 'export') downloadFile('flowclass-backup-' + today() + '.json', JSON.stringify({ app: 'Klasso', exportedAt: new Date().toISOString(), ...dump() }, null, 1), 'application/json');
     if (a === 'demo-off') { COLLECTIONS.forEach((c) => store.removeWhere(c, (r) => r.demo)); toast('Dados de exemplo removidos.'); ctx.refresh(); }
     if (a === 'anon') {
       if (!confirmButton(b, 'Confirmar anonimização')) return;

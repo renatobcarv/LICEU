@@ -17,7 +17,7 @@ const css = readFileSync(join(root, 'css/app.css'), 'utf8');
 const body = html.slice(html.indexOf('<body>') + 6, html.indexOf('<script src="https://cdn.jsdelivr.net'));
 const fonts = html.match(/<link rel="stylesheet" href="https:\/\/fonts[^>]+>/)[0];
 const bundle = readFileSync(join(out, 'bundle.js'), 'utf8').replace(/<\/script/gi, '<\\/script');
-const page = `<title>FLOWCLASS Intelligence</title>
+const page = `<title>Klasso</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 ${fonts}
 <style>${css}</style>
@@ -37,5 +37,5 @@ for (const f of ['termos.html', 'privacidade.html']) {
   writeFileSync(join(out, f), src);
 }
 copyFileSync(join(root, 'data/seed.json'), join(out, 'data/seed.json'));
-copyFileSync(join(root, 'assets/favicon.svg'), join(out, 'assets/favicon.svg'));
+copyFileSync(join(root, 'assets/favicon.png'), join(out, 'assets/favicon.png'));
 console.log('Prévia gerada em', out);

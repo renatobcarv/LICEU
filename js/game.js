@@ -1,4 +1,4 @@
-// Jogo da FLOWCLASS: patentes, sequência e missões. O XP sai só de registro real
+// Jogo da Klasso: patentes, sequência e missões. O XP sai só de registro real
 // (avanço de lead, reserva, matrícula paga, missão cumprida, meta batida). Nada de ponto por clique vazio.
 
 import { store } from './store.js';

@@ -1,4 +1,4 @@
-# WhatsApp oficial na FLOWCLASS
+# WhatsApp oficial na Klasso
 
 ## Por que a API oficial (Cloud API da Meta)
 - **Risco de banimento.** As reclamações de número banido no Reclame Aqui subiram 152% em 2026 (jan–ago). A maioria vem de ferramentas que simulam o WhatsApp Web (Baileys, extensões, disparadores). Banimento permanente quase nunca é revertido.
@@ -14,7 +14,7 @@
 | Z-API, Evolution API (modo WhatsApp Web) | API não oficial | Barato, fácil | Risco alto de banimento, sem `ctwa_clid` |
 | Chatwoot | Open source | Gratuito, omnichannel | Exige servidor e manutenção |
 
-**Escolha da FLOWCLASS:** conectar direto na Cloud API (sem mensalidade de terceiro). Quem já usa Convergefy ou Kommo pode continuar lá; aí o caminho é importar os negócios pela planilha (Funil › Importar) ou integrar por webhook do provedor.
+**Escolha da Klasso:** conectar direto na Cloud API (sem mensalidade de terceiro). Quem já usa Convergefy ou Kommo pode continuar lá; aí o caminho é importar os negócios pela planilha (Funil › Importar) ou integrar por webhook do provedor.
 
 ## O que já funciona no app
 - Mensagem nova de número desconhecido **cria o lead** no Funil (origem "Meta Ads" quando veio de anúncio, com nome do anúncio).
@@ -32,7 +32,7 @@
    npx supabase functions deploy whatsapp-send --project-ref kqaqccjsoqdpbnnyyemw
    ```
 5. No app da Meta › WhatsApp › Configuração › Webhook: URL `https://kqaqccjsoqdpbnnyyemw.supabase.co/functions/v1/whatsapp-webhook`, token de verificação = `WA_VERIFY_TOKEN`. Assine o campo **messages**.
-6. Na FLOWCLASS, Configurações › Integrações › marque **WhatsApp oficial**.
+6. Na Klasso, Configurações › Integrações › marque **WhatsApp oficial**.
 
 ## Próximos passos
 - Modelos aprovados com variáveis (nome, curso) e disparo de retomada para reservas paradas.

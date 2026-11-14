@@ -1,5 +1,5 @@
-/* FLOWCLASS Intelligence · design system
-   Estrutura do modelo "Gateway System" com a identidade FLOWCLASS (Tech Premium): grafite sustenta a
+/* Klasso · design system
+   Estrutura do modelo "Gateway System" com a identidade Klasso (Tech Premium): grafite sustenta a
    marca, carbono nas superfícies, verde-lima só como assinatura (ação, item ativo, dado que importa).
    Camadas sem sombra, pílulas para ações e filtros, abas sublinhadas, card mestre por página.
    Regras completas e como usar em telas novas: docs/DESIGN.md. */
@@ -1385,11 +1385,11 @@ pre.brief { margin: var(--space-3) var(--space-4) 0; padding: var(--space-4); ba
 body:has(#auth:not([hidden])) .bottom-nav { display: none; }
 
 /* ==========================================================================
-   Paletas da marca (nov/2026). Padrão: Toxic Luxury. Alternativa: Acid Royal (data-paleta="acid").
+   Paleta única Klasso: preto, lima #C6FF00 e roxo royal #8B00FF.
    Base verde profunda (nunca preto puro), lima ácido só para ação e dado-chave,
    violeta como complementar (gráficos, conquistas, segundo destaque), texto em off-white.
    ========================================================================== */
-:root, :root[data-paleta="toxic"] {
+:root {
   --background: #0b1d15; --card: #0f251b; --surface: #143023; --muted: #1a3a2b; --disabled: #142c21; --border: #234636;
   --foreground: #f4f0e8; --heading: #f4f0e8; --heading-strong: #fffdf8;
   --muted-foreground-strong: #d3d6cc; --muted-foreground: #a9b8ab; --subtle-foreground: #7d8f81; --disabled-foreground: #56685a;
@@ -1433,7 +1433,6 @@ body:has(#auth:not([hidden])) .bottom-nav { display: none; }
   --royal: #8b00ff; --royal-text: #b56bff; --royal-rgb: 139 0 255; --forest: #142d16;
   --c-lime: #c6ff00; --c-violet: #b56bff; --chart-1: #c6ff00; --chart-2: #a640ff; --chart-grid: #1e231e;
 }
-:root[data-paleta="toxic"] { --background: #070908; --card: #0e1411; --forest: #102b20; }
 :root:not([data-theme="light"]) .side { background: linear-gradient(180deg, color-mix(in srgb, var(--forest) 85%, transparent), var(--card) 70%); }
 /* Sem ciano: tudo que era ciano/esmeralda vira violeta ou lima da paleta. */
 :root, :root[data-paleta] { --c-cyan: var(--royal-text); --c-emerald: #9fd100; --c-blue: var(--royal-text);
@@ -1771,3 +1770,33 @@ body.arrastando .cal-day { outline: 1px dashed rgb(var(--lime-rgb) / .25); outli
 .so-ver-bar svg { flex: none; width: 20px; height: 20px; color: var(--primary); }
 .so-ver-bar b { color: var(--heading-strong, #fff); }
 body.so-ver #main .btn.primary:not(.keep), body.so-ver #main [data-act="novo"], body.so-ver #main .btn.danger { display: none !important; }
+
+/* ===== Klasso: preto puro + roxo royal na estrutura, lima só no destaque ===== */
+:root:not([data-theme="light"]), :root[data-paleta="acid"]:not([data-theme="light"]) {
+  --background: #050506; --bg: #050506; --card: #0c0c10; --surface: #121217; --muted: #17171d; --disabled: #111115; --border: #22222a;
+  --muted-foreground: #a4a4b0; --subtle-foreground: #75757f; --muted-foreground-strong: #d6d6de;
+  --forest: #120a1f; --chart-grid: #1c1c24;
+}
+body { background: radial-gradient(900px 500px at 100% -10%, rgb(139 0 255 / .14), transparent 60%), radial-gradient(700px 420px at -10% 110%, rgb(198 255 0 / .05), transparent 60%), var(--background); background-attachment: fixed; }
+:root:not([data-theme="light"]) .side { background: linear-gradient(180deg, #0f0b17 0%, #0b0b0f 45%, #09090c 100%); border: 1px solid #1d1a26; box-shadow: 0 20px 60px -30px rgb(139 0 255 / .35); }
+.side .nav-group { color: #6e6a7c; text-transform: uppercase; font-size: 11px; letter-spacing: .14em; margin-top: 22px; }
+.nav a { color: #b8b6c4; height: 42px; position: relative; }
+.nav a .ni { color: #8a86a0; }
+.nav a:not([aria-current="page"]):hover, :root:not([data-theme="light"]) .nav a:not([aria-current="page"]):hover { background: rgb(139 0 255 / .10); color: #fff; }
+.nav a:not([aria-current="page"]):hover .ni { color: var(--primary); }
+.nav a[aria-current="page"] { background: linear-gradient(90deg, rgb(139 0 255 / .95), rgb(110 0 210 / .85)); color: #fff; box-shadow: 0 8px 24px -10px rgb(139 0 255 / .8), inset 0 1px 0 rgb(255 255 255 / .12); }
+.nav a[aria-current="page"] .ni { color: var(--primary); }
+.nav a[aria-current="page"]::before { content: ""; position: absolute; left: -16px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--primary); box-shadow: 0 0 12px var(--primary); }
+.side-foot { border-top-color: #1d1a26; }
+.bottom-nav a[aria-current="page"] { background: rgb(139 0 255 / .9) !important; color: #fff !important; }
+.bottom-nav a[aria-current="page"] svg { color: var(--primary); }
+/* Patente: bloco roxo royal com lima no detalhe (antes era lima chapado) */
+.game-hero { background: radial-gradient(120% 140% at 100% 0%, rgb(198 255 0 / .18), transparent 45%), linear-gradient(135deg, #8b00ff 0%, #5b00b8 55%, #2a0a52 100%) !important; color: #fff !important; box-shadow: 0 30px 70px -30px rgb(139 0 255 / .7) !important; border: 1px solid rgb(255 255 255 / .1); }
+.game-hero .gh-rank, .game-hero h2, .game-hero p, .game-hero .gh-kicker, .game-hero .gh-next, .game-hero .gh-lema { color: #fff !important; }
+.game-hero .gh-kicker { color: var(--primary) !important; }
+.game-hero .gh-lema, .game-hero .gh-next { color: rgb(255 255 255 / .78) !important; }
+.game-hero .gh-next b { color: var(--primary) !important; }
+.game-hero .gh-chip { background: rgb(255 255 255 / .14) !important; color: #fff !important; }
+.game-hero .gh-chip.dark { background: var(--primary) !important; color: #050506 !important; }
+.game-hero .gh-bar { background: rgb(0 0 0 / .35) !important; }
+.game-hero .gh-bar i { background: var(--primary) !important; box-shadow: 0 0 14px rgb(198 255 0 / .7); }

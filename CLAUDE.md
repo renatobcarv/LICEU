@@ -1,6 +1,6 @@
-# FLOWCLASS Intelligence — memória do projeto
+# Klasso — memória do projeto
 
-App próprio do Renato (não white-label por enquanto): marketing e matrículas para escolas,
+**Klasso** (antes FLOWCLASS Intelligence; o nome mudou em 14/11/2026). App próprio do Renato (não white-label por enquanto): marketing e matrículas para escolas,
 do anúncio à matrícula. Primeiro cliente: **TEC Mais Valparaíso de Goiás**.
 Produção: https://liceuinteligence.vercel.app (Vercel, deploy ao dar merge em `main`).
 Fale com o usuário em **português**, tom de mentor: direto, honesto, sem bajulação.
@@ -15,16 +15,14 @@ Fale com o usuário em **português**, tom de mentor: direto, honesto, sem bajul
   `whatsapp-send`, `whatsapp-connect`; helpers em `_shared/wa.ts` (AES-GCM com `WA_ENC_KEY`).
 - `js/config.js`: `WHITELABEL=false`.
 
-## Paleta (decidida pelo usuário — não mudar sem pedir)
-- Padrão **Acid Royal** (`data-paleta="acid"`): fundo `#060706` (black profundo), lima ácido `#C6FF00`,
-  roxo royal `#8B00FF` (`--royal`), verde escuro `#142D16`. Texto escuro sobre lima: `--primary-foreground`.
-- Alternativa **Toxic Luxury** (`toxic`): `#070908`, `#A3FF12`, `#7B2CBF`, `#102B20`.
-- Definidas em `js/brand.js` (`PALETAS`) e variáveis CSS em `css/app.css`.
-- **NUNCA ciano/azul** ("esse ciano nada haver"). `--grad-aurora` = lima → royal.
-- Páginas públicas (vendas, planos) podem ter seções claras "branco tech" — o usuário gostou.
-- Sem "cara de IA": visual premium, ícones SVG (`ICON` em `js/ui.js`), gráficos limpos, emojis com moderação.
-- Use sempre os tokens (`--primary`, `--royal`, `--foreground`, `--muted-foreground`, `--card`, `--bg`).
-  Atenção: `--muted` é cor de FUNDO, não de texto.
+## Marca e paleta (decididas pelo usuário — não mudar sem pedir)
+- Nome **Klasso**. Logo: `assets/klasso-logo.png` (K lima+roxo com seta + "klasso" branco), símbolo `assets/klasso-mark.png`.
+- **Paleta única** (Toxic Luxury foi removida a pedido): preto `#050506`, lima `#C6FF00` (`--primary`),
+  roxo royal `#8B00FF` (`--royal`), branco. Superfícies neutras (`--card #0c0c10`), sem tom verde-floresta.
+- Roxo = estrutura/destaque (item ativo do menu, bloco da patente). Lima = ação e detalhe (CTAs, ícone ativo, barras).
+- **NUNCA ciano/azul.** Páginas públicas podem ter seções claras "branco tech".
+- Sem "cara de IA": visual premium, ícones SVG (`ICON` em `js/ui.js`). `--muted` é cor de FUNDO, não de texto.
+- Chaves de localStorage continuam `flowclass.*` (não renomear: perderia dados dos usuários).
 
 ## Produto (módulos)
 Painel, Meta Ads, Campanhas, Funil (WhatsApp + modo ligação), Matrículas, Meu Arsenal,

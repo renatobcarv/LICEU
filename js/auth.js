@@ -19,7 +19,7 @@ export function supabaseConfigured() {
   return !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase?.createClient);
 }
 
-const LOGO = `<div class="auth-logo">${LOGO_MARK}<span class="brand-sub">Intelligence</span></div>`;
+const LOGO = `<div class="auth-logo">${LOGO_MARK}</div>`;
 const PLANOS = { local: 'Escola', pro: 'Rede', agencia: 'Agência' };
 const qs = new URLSearchParams(location.search);
 const LAST = 'flowclass.ultimo.email';
@@ -38,14 +38,14 @@ function screen(inner) {
   root.innerHTML = `
     <aside class="auth-brand" aria-hidden="true">
       ${LOGO}
-      <div class="ab-copy"><p class="ab-eyebrow">FLOWCLASS para escolas</p>
+      <div class="ab-copy"><p class="ab-eyebrow">Klasso para escolas</p>
         <h2>Saiba quanto custou <span>cada matrícula.</span></h2>
         <ul><li>Meta Ads com custo por matrícula</li><li>WhatsApp oficial dentro do funil</li><li>Time com missões, patentes e ranking</li></ul></div>
       <div class="ab-case"><div><b>R$ 800</b><span>em anúncio</span></div><div><b>26</b><span>matrículas</span></div><div><b>R$ 30,80</b><span>por matrícula</span></div></div>
       <p class="ab-foot">Campanha real da TEC Mais Valparaíso</p>
     </aside>
     <section class="auth-pane"><div class="auth-card">${LOGO}${inner}</div>
-      <p class="auth-foot"><a href="/vendas">Conhecer o FLOWCLASS</a> · <a href="/planos">Planos</a> · <a href="termos.html" target="_blank" rel="noopener">Termos</a> · <a href="privacidade.html" target="_blank" rel="noopener">Privacidade</a></p></section>`;
+      <p class="auth-foot"><a href="/vendas">Conhecer o Klasso</a> · <a href="/planos">Planos</a> · <a href="termos.html" target="_blank" rel="noopener">Termos</a> · <a href="privacidade.html" target="_blank" rel="noopener">Privacidade</a></p></section>`;
   return root;
 }
 function msg(root, text, kind = 'bad') { const el = $('.auth-msg', root); el.textContent = text; el.className = 'auth-msg ' + kind; el.hidden = !text; }
@@ -98,7 +98,7 @@ const FORCA = ['Muito curta', 'Fraca', 'Razoável', 'Boa', 'Forte'];
 
 function loginView(resolve, notice = '') {
   const root = screen(`
-    <div class="auth-glyph" aria-hidden="true"><img src="assets/flowclass-mark.png" alt=""></div><h1>Entrar</h1><p class="auth-sub">Bom te ver de novo.</p>
+    <div class="auth-glyph" aria-hidden="true"><img src="assets/klasso-mark.png" alt=""></div><h1>Entrar</h1><p class="auth-sub">Bom te ver de novo.</p>
     <form id="a-form" class="auth-form" novalidate>
       <div class="field"><label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" inputmode="email" required value="${esc(lastEmail())}"><p class="hint" id="a-email-hint" hidden></p></div>
       ${passField('a-pass', 'Senha', 'current-password')}
@@ -181,14 +181,14 @@ async function conviteView(resolve) {
   const code = conviteAtual();
   const { data: info } = await auth.client.rpc('invite_info', { p_code: code });
   if (!info || !info.valido) {
-    const root = screen(`<div class="auth-glyph" aria-hidden="true"><img src="assets/flowclass-mark.png" alt=""></div><h1>Convite indisponível</h1><p class="auth-sub">${info ? 'Esse convite já foi usado ou venceu.' : 'Não encontramos esse convite.'} Peça um link novo para quem te convidou.</p><button class="btn block" id="cv-login">Entrar com minha conta</button>`);
+    const root = screen(`<div class="auth-glyph" aria-hidden="true"><img src="assets/klasso-mark.png" alt=""></div><h1>Convite indisponível</h1><p class="auth-sub">${info ? 'Esse convite já foi usado ou venceu.' : 'Não encontramos esse convite.'} Peça um link novo para quem te convidou.</p><button class="btn block" id="cv-login">Entrar com minha conta</button>`);
     guardarConvite('');
     $('#cv-login', root).onclick = () => loginView(resolve);
     return;
   }
   const root = screen(`
     <div class="cv-card">
-      <div class="auth-glyph" aria-hidden="true"><img src="assets/flowclass-mark.png" alt=""></div>
+      <div class="auth-glyph" aria-hidden="true"><img src="assets/klasso-mark.png" alt=""></div>
       <p class="cv-k">Você foi convidado</p>
       <h1>${esc(info.escola)}</h1>
       <p class="auth-sub">Seu perfil no time: <span class="plan-chip">${esc(ROLE_TXT[info.role] || info.role)}</span></p>
