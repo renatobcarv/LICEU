@@ -87,10 +87,12 @@ async function whatsapp(root) {
   const { data, error } = await sb().from('wa_connections').select('*').eq('org_id', org().id).order('created_at');
   if (error) { box.innerHTML = `<p class="hint">Rode a migração 002 no Supabase para conectar números.</p>`; return; }
   const st = { conectado: 'good', pendente: 'warn', erro: 'bad', desconectado: '' };
-  box.innerHTML = (data.length ? data.map((c) => `<div class="member-row"><div class="who"><b>${esc(c.telefone || c.phone_number_id)}</b><small>${esc(c.nome_verificado || '')}${c.qualidade ? ' · qualidade ' + esc(c.qualidade) : ''}${c.erro ? ' · ' + esc(c.erro) : ''}</small></div>${c.tipo === 'qr' ? '<span class="badge warn">QR</span>' : ''}<span class="badge ${st[c.status] || ''}">${esc(c.status)}</span>${c.tipo === 'qr' && c.status !== 'conectado' ? '<button class="btn sm" data-saas="wa-qr-novo">Ler QR</button>' : ''}<button class="btn sm ghost" ${c.tipo === 'qr' ? 'data-waqrrm="1"' : `data-warm="${esc(c.id)}"`}>Desconectar</button></div>`).join('') : '<p class="empty-sm">Nenhum número conectado.</p>')
+  box.innerHTML = (data.length ? data.map((c) => `<div class="member-row"><div class="who"><b>${esc(c.telefone || c.phone_number_id)}</b><small>${esc(c.nome_verificado || '')}${c.qualidade ? ' · qualidade ' + esc(c.qualidade) : ''}${c.erro ? ' · ' + esc(c.erro) : ''}</small></div>${c.tipo === 'qr' ? '<span class="badge warn">QR</span>' : ''}<span class="badge ${st[c.status] || ''}">${esc(c.status)}</span>${c.tipo === 'qr' && c.status !== 'conectado' ? '<button class="btn sm" data-saas="wa-qr-novo">Ler QR</button>' : ''}${c.tipo === 'qr' && c.status === 'conectado' ? `<button class="btn sm ghost" data-saas="wa-qr-sync" title="${c.ultima_sync ? 'Última busca: ' + esc(new Date(c.ultima_sync).toLocaleString('pt-BR')) : ''}">Buscar conversas perdidas</button>` : ''}<button class="btn sm ghost" ${c.tipo === 'qr' ? 'data-waqrrm="1"' : `data-warm="${esc(c.id)}"`}>Desconectar</button></div>`).join('') : '<p class="empty-sm">Nenhum número conectado.</p>')
     + (!META_APP_ID ? '<p class="hint">A conexão pelo painel está sendo liberada pela Meta. Enquanto isso, nosso time conecta o seu número com você pela conexão assistida.</p>' : '');
   // Com número conectado, o funil passa a usar o WhatsApp oficial (conversa dentro do app).
   const ligado = data.some((c) => c.status === 'conectado');
+  // QR: ao abrir, confere sozinho se ficou mensagem para trás (servidor desligado, internet caiu).
+  if (data.some((c) => c.tipo === 'qr' && c.status === 'conectado') && !whatsapp.sincronizado) { whatsapp.sincronizado = true; sincronizarQr(root, true); }
   const st0 = store.settings();
   if (ligado !== !!st0.whatsappApi && isAdminRole(auth.member?.role)) store.put('settings', { ...st0, id: 'main', whatsappApi: ligado });
 }
@@ -124,6 +126,12 @@ async function qrCall(acao, extra = {}) {
   if (msg || error) throw new Error(msg || 'Falha no QR Code.');
   return data;
 }
+async function sincronizarQr(root, silencioso = false) {
+  try {
+    const r = await qrCall('sincronizar');
+    if (r.msgs || !silencioso) toast(r.msgs ? `Recuperadas ${r.msgs} mensagem(ns)${r.novos ? `, ${r.novos} lead(s) novo(s) no Funil` : ''}.` : 'Nada perdido: tudo já estava no Funil.');
+  } catch (e) { if (!silencioso) toast(e.message, 'bad'); }
+}
 function conectarQr(root, jaAceito = false) {
   if (jaAceito) return mostrarQr(root, 'qr');
   openDialog({
@@ -145,7 +153,7 @@ async function mostrarQr(root, acao) {
   const gerar = async (a) => { try { pinta((await qrCall(a, a === 'conectar' ? { aceiteRisco: true } : {})).qr); } catch (e) { box.innerHTML = `<p class="hint">${esc(e.message)}</p>`; } };
   const checa = async () => {
     if (!vivo) return;
-    try { const r = await qrCall('status'); if (r.conectado) { st.textContent = 'Conectado!'; toast('WhatsApp conectado por QR Code.'); return setTimeout(fim, 800); } } catch { /* tenta de novo */ }
+    try { const r = await qrCall('status'); if (r.conectado) { st.textContent = 'Conectado! Buscando conversas recentes…'; toast('WhatsApp conectado por QR Code.'); whatsapp.sincronizado = true; sincronizarQr(root, true); return setTimeout(fim, 900); } } catch { /* tenta de novo */ }
     timer = setTimeout(checa, 3000);
   };
   dlg.addEventListener('click', (e) => { const q = e.target.closest('[data-q]')?.dataset.q; if (q === 'fechar') fim(); if (q === 'novo') gerar('qr'); });
@@ -224,6 +232,7 @@ export function mount(root, ctx) {
     if (a === 'wa-assistida') return conexaoAssistida(root);
     if (a === 'wa-qr') return conectarQr(root);
     if (a === 'wa-qr-novo') return conectarQr(root, true);
+    if (a === 'wa-qr-sync') return sincronizarQr(root);
     const rmQ = e.target.closest('[data-waqrrm]'); if (rmQ) { if (!confirmButton(rmQ, 'Confirmar')) return; try { await qrCall('desconectar'); toast('WhatsApp (QR) desconectado.'); } catch (er) { toast(er.message, 'bad'); } return whatsapp(root); }
     if (a === 'dominio') return openDialog({ title: 'Domínio próprio', saveLabel: 'Adicionar', fields: [{ name: 'host', label: 'Endereço (sem https)', placeholder: 'painel.suaescola.com.br', required: true, full: true }],
       onSave: async (d) => { const { error } = await sb().from('org_domains').insert({ host: d.host.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, ''), org_id: org().id }); if (error) return toast(/row-level|policy/i.test(error.message) ? 'Seu plano não inclui mais domínios.' : error.message, 'bad'); dominios(root); } });

@@ -2,10 +2,11 @@
 // Conexão de WhatsApp por QR Code (Evolution API, NÃO oficial), ao lado da API oficial.
 // Riscos (mostrados ao cliente e aceitos explicitamente): o número pode ser banido pela Meta e
 // não chega a origem do anúncio (ctwa_clid). Recomendado usar um número secundário.
-// Ações (body.acao): 'conectar' (cria a instância e devolve o QR), 'qr' (QR novo), 'status', 'desconectar'.
+// Ações (body.acao): 'conectar' (cria a instância e devolve o QR), 'qr' (QR novo), 'status', 'sincronizar'
+// (recupera conversas perdidas enquanto o servidor estava fora), 'desconectar'.
 // Só dono/administrador da empresa. Segredos: EVO_URL, EVO_KEY, EVO_WEBHOOK_TOKEN.
 
-import { cors, json, adminClient, userClient, evo, instanciaDa } from '../_shared/wa.ts';
+import { cors, json, adminClient, userClient, evo, instanciaDa, recuperarEvo } from '../_shared/wa.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -50,7 +51,11 @@ Deno.serve(async (req) => {
         try { const f = await evo(`/instance/fetchInstances?instanceName=${inst}`); const o = Array.isArray(f) ? f[0] : f; tel = String(o?.ownerJid || o?.instance?.owner || '').split('@')[0] || tel; } catch { /* opcional */ }
         await admin.from('wa_connections').update({ status: 'conectado', telefone: tel, nome_verificado: 'QR Code (não oficial)', conectado_em: new Date().toISOString(), erro: null }).eq('id', cx.id);
       }
-      return json({ ok: true, estado: st, conectado: st === 'open' });
+      return json({ ok: true, estado: st, conectado: st === 'open', ultimaSync: cx.ultima_sync });
+    }
+    if (acao === 'sincronizar') {
+      const r = await recuperarEvo(admin, cx);
+      return json({ ok: true, ...r });
     }
     if (acao === 'desconectar') {
       try { await evo(`/instance/logout/${inst}`, 'DELETE'); } catch { /* já estava fora */ }

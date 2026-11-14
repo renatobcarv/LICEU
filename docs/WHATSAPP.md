@@ -65,14 +65,38 @@ então o custo por matrícula fica menos preciso; não há modelos aprovados (s�
 - `wa-qr-webhook` (sem JWT): autentica por `?k=EVO_WEBHOOK_TOKEN`; cria lead e grava `wamsg` (entrada e o que foi enviado pelo celular).
 - `whatsapp-send`: quando a conexão é `tipo='qr'`, envia pela Evolution (sem a regra das 24h, que é da API oficial).
 
-**Servidor Evolution API** (VPS de ~R$ 30–60/mês, 1 GB RAM basta para poucos números):
-```bash
-docker run -d --name evolution --restart always -p 8080:8080 \
-  -e AUTHENTICATION_API_KEY=<gere com: openssl rand -hex 32> \
-  -e DATABASE_ENABLED=false -e CACHE_LOCAL_ENABLED=true \
-  -v evolution_instances:/evolution/instances atendai/evolution-api:v2.2.3
+**Leads que chegaram com o servidor fora do ar (recuperação automática)**
+- Quando o servidor volta, o celular reenvia as mensagens pendentes e o webhook as recebe normalmente.
+- Além disso, ao reconectar (`CONNECTION_UPDATE` = open), o `wa-qr-webhook` busca no servidor tudo desde `ultima_sync`
+  (folga de 10 min) e grava o que faltou. Duplicadas são ignoradas (`wa_events`).
+- O painel confere sozinho ao abrir Integrações e tem o botão **Buscar conversas perdidas**.
+- Para isso a Evolution precisa guardar mensagens: rodar **com Postgres**.
+
+**Servidor Evolution API** (no seu PC com Docker Desktop, ou VPS de ~R$ 30–60/mês). `docker-compose.yml`:
+```yaml
+services:
+  evolution:
+    image: atendai/evolution-api:v2.2.3
+    restart: always
+    ports: ["8080:8080"]
+    environment:
+      AUTHENTICATION_API_KEY: ${EVO_KEY}   # senha forte num arquivo .env ao lado (nunca no Git)
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evo:${PG_PASS}@db:5432/evolution
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
+      CACHE_LOCAL_ENABLED: "true"
+    volumes: [evolution_instances:/evolution/instances]
+    depends_on: [db]
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment: { POSTGRES_USER: evo, POSTGRES_PASSWORD: "${PG_PASS}", POSTGRES_DB: evolution }
+    volumes: [pg:/var/lib/postgresql/data]
+volumes: { evolution_instances: {}, pg: {} }
 ```
-Coloque HTTPS na frente (Caddy/Nginx com domínio, ex.: `wa.klasso.com.br`).
+`docker compose up -d`. HTTPS público: Cloudflare Tunnel (`cloudflared tunnel --url http://localhost:8080`; para endereço
+fixo, túnel nomeado com domínio). No PC: Docker Desktop iniciando com o sistema e suspensão desligada.
 
 **Segredos no Supabase** (nunca no repositório nem no chat):
 - `EVO_URL` = `https://wa.seudominio.com.br`

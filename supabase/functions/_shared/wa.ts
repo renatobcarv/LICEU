@@ -50,3 +50,49 @@ export async function evo(path: string, method = 'GET', body?: unknown) {
   if (!r.ok) throw new Error(j?.response?.message?.toString?.() || j?.message || `Evolution ${r.status}`);
   return j;
 }
+
+// Grava mensagens da Evolution (webhook ou recuperação): cria lead novo e a conversa. Idempotente por wa_events.
+const chaveTel = (t: string) => String(t || '').replace(/\D/g, '').replace(/^55/, '').slice(-11);
+const textoEvo = (m: any = {}) => m.conversation || m.extendedTextMessage?.text || m.imageMessage?.caption || m.buttonsResponseMessage?.selectedDisplayText
+  || (m.imageMessage ? '📷 Imagem' : m.audioMessage ? '🎤 Áudio' : m.documentMessage ? '📄 Documento' : m.videoMessage ? '🎬 Vídeo' : m.locationMessage ? '📍 Localização' : m.stickerMessage ? 'Figurinha' : '[mensagem]');
+export async function ingerirEvo(admin: SupabaseClient, orgId: string, lista: any[], connId?: string) {
+  const now = new Date().toISOString(); const out: any[] = []; let ls: any[] | null = null; let novos = 0, msgs = 0;
+  const ord = [...lista].sort((a, b) => Number(a?.messageTimestamp || 0) - Number(b?.messageTimestamp || 0));
+  for (const d of ord) {
+    const jid = String(d?.key?.remoteJid || '');
+    if (!jid.endsWith('@s.whatsapp.net') || !d?.key?.id) continue; // ignora grupos, status e listas
+    const { error: dup } = await admin.from('wa_events').insert({ id: 'evo_' + d.key.id, org_id: orgId });
+    if (dup) continue;
+    const num = jid.split('@')[0]; const k = chaveTel(num); const fromMe = !!d.key.fromMe;
+    if (!ls) ls = (await admin.from('records').select('id,data').match({ org_id: orgId, collection: 'leads' })).data || [];
+    let lead = ls.find((r: any) => chaveTel(r.data?.telefone) === k);
+    const em = d.messageTimestamp ? new Date(Number(d.messageTimestamp) * 1000).toISOString() : now;
+    if (!lead) {
+      if (fromMe) continue; // mensagem que a escola mandou para quem não é lead: não cria lead
+      const dia = em.slice(0, 10), id = 'wa_' + k;
+      const data = { id, nome: d.pushName || num, telefone: num, entrada: dia, etapa: 'novo', etapaFunil: 'novo', funilId: 'principal', etapaMax: 0,
+        origem: 'WhatsApp', historico: [{ data: dia, etapa: 'novo', col: 'novo' }], viaApi: true, viaQr: true, createdAt: now, updatedAt: now };
+      lead = { id, data }; ls.push(lead); novos++; out.push({ org_id: orgId, collection: 'leads', id, data, updated_at: now });
+    }
+    const mid = 'wm_' + String(d.key.id).replace(/[^a-zA-Z0-9]/g, '').slice(-40);
+    out.push({ org_id: orgId, collection: 'wamsg', id: mid, data: { id: mid, leadId: lead.id, dir: fromMe ? 'out' : 'in', texto: textoEvo(d.message), em, waId: d.key.id, ...(fromMe ? { por: 'Celular', status: 'sent' } : {}), createdAt: now, updatedAt: now }, updated_at: now });
+    msgs++;
+  }
+  if (out.length) { const { error } = await admin.from('records').upsert(out); if (error) throw new Error(error.message); }
+  if (connId) await admin.from('wa_connections').update({ ultima_sync: now }).eq('id', connId);
+  return { novos, msgs };
+}
+
+/** Recuperação: busca no servidor do QR as mensagens desde a última sincronização (com folga de 10 min) e grava o que faltou.
+ *  Cobre o tempo em que o servidor ou o webhook ficou fora do ar. Exige a Evolution com banco (DATABASE_ENABLED=true). */
+export async function recuperarEvo(admin: SupabaseClient, cx: { id: string; org_id: string; instancia: string; ultima_sync?: string | null; conectado_em?: string | null }) {
+  const desde = Math.floor(new Date(cx.ultima_sync || cx.conectado_em || Date.now() - 7 * 864e5).getTime() / 1000) - 600;
+  const achadas: any[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const j = await evo(`/chat/findMessages/${cx.instancia}`, 'POST', { where: { messageTimestamp: { gte: desde } }, page, offset: 100 });
+    const recs = j?.messages?.records || (Array.isArray(j) ? j : []);
+    achadas.push(...recs.filter((m: any) => Number(m?.messageTimestamp || 0) >= desde));
+    if (!recs.length || page >= Number(j?.messages?.pages || 1)) break;
+  }
+  return ingerirEvo(admin, cx.org_id, achadas, cx.id);
+}
