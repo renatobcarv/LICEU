@@ -188,7 +188,7 @@ function jogo() {
       <p class="gh-kicker">Sua patente</p>
       <h2 class="gh-rank">${esc(g.rank.nome)}</h2>
       <p class="gh-lema">“${esc(g.rank.lema)}”</p>
-      <div class="gh-bar" role="progressbar" aria-valuenow="${Math.round(g.progress * 100)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.max(3, g.progress * 100)}%"></i></div>
+      <div class="gh-bar" role="progressbar" aria-label="Progresso para o próximo nível" aria-valuenow="${Math.round(g.progress * 100)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.max(3, g.progress * 100)}%"></i></div>
       <p class="gh-next">${g.need - g.into} XP para o nível ${g.level + 1}${g.prox ? ` · próxima patente: <b>${esc(g.prox.nome)}</b> (nível ${g.prox.min})` : ''}</p>
     </section>
     <section class="missoes card" aria-label="Missões do dia">

@@ -31,7 +31,7 @@ export function render() {
       <h2 class="gh-rank">${esc(g.rank.nome)}</h2>
       ${tit ? `<p class="gh-title">Título: <b>${esc(tit.nome)}</b></p>` : ''}
       <p class="gh-lema">${esc(g.rank.sentido)}</p>
-      <div class="gh-bar"><i style="width:${Math.max(3, g.progress * 100)}%"></i></div>
+      <div class="gh-bar" role="progressbar" aria-label="Progresso para o próximo nível" aria-valuenow="${Math.round(g.progress * 100)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.max(3, g.progress * 100)}%"></i></div>
       <p class="gh-next">${g.need - g.into} XP para o nível ${g.level + 1}${g.prox ? ` · próxima: <b>${esc(g.prox.nome)}</b>` : ''}</p>
     </section>
     <section class="card ars-stats">

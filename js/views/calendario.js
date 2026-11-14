@@ -56,14 +56,14 @@ function monthView() {
   <p class="note">${pub.filter((i) => i.status === 'Publicado').length} de ${pub.filter((i) => i.status !== 'Cancelado').length} publicações do mês já publicadas.</p>
   <div class="cal" role="grid" aria-label="Calendário de ${esc(monthName(month))}">
     <div class="cal-head" role="row">${DOW_HEAD.map((x) => `<span role="columnheader">${x}</span>`).join('')}</div>
-    <div class="cal-body">${cells.map((c) => {
+    <div class="cal-body" role="rowgroup">${cells.map((c, ci) => {
       const its = list.filter((i) => i.data === c);
       const out = c.slice(0, 7) !== month.slice(0, 7);
-      return `<div class="cal-day${out ? ' out' : ''}${c === t ? ' today' : ''}" role="gridcell" data-dia="${c}">
+      return `${ci % 7 === 0 ? `${ci ? '</div>' : ''}<div class="cal-row" role="row">` : ''}<div class="cal-day${out ? ' out' : ''}${c === t ? ' today' : ''}" role="gridcell" data-dia="${c}">
         <button type="button" class="cal-num" data-cadd="${c}" aria-label="Adicionar em ${fmtDate(c)}">${toDate(c).getDate()}</button>
         ${its.map((i) => `<div class="cal-it-wrap"><button type="button" class="cal-item st-${slug(i.status)}" data-cedit="${esc(i.id)}">${i.tipo === 'Publicação' && i.formato ? `<span class="ci-ic">${iconFormato(i.formato)}</span>` : `<span class="type-dot t-${slug(i.tipo)}" aria-hidden="true"></span>`}<span class="ci-t">${esc(i.titulo || i.tipo)}</span></button>${i.tipo === 'Publicação' && !['Publicado', 'Cancelado'].includes(i.status) ? `<button type="button" class="ci-pub" data-publicar="${esc(i.id)}" title="Marcar como publicado (+${XP_C.publicado} XP)" aria-label="Marcar como publicado">${ICON.check}</button>` : ''}</div>`).join('')}
       </div>`;
-    }).join('')}</div>
+    }).join('')}</div></div>
   </div>
   <div class="cal-mobile">${list.length ? agenda(list) : '<p class="empty-sm">Nada neste mês.</p>'}</div>`;
 }
