@@ -34,6 +34,10 @@
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
   <symbol id="i-meta" viewBox="0 0 24 24"><path d="M3 15c0-4 2-8 4.5-8 3 0 5.5 10 9 10 2 0 4-2 4-5s-2-5-4-5c-3.5 0-6 10-9 10C5 17 3 16 3 15Z"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24"><path d="M4.5 19.5l1.2-3.6A8 8 0 1 1 8.4 18.6Z"/><path d="M9.2 8.6c.3-.6.9-.6 1.1-.1l.7 1.6c.1.3 0 .6-.2.8l-.5.5c.6 1.2 1.6 2.2 2.8 2.8l.5-.5c.2-.2.5-.3.8-.2l1.6.7c.5.2.5.8-.1 1.1-1.1.7-2.6.6-4.4-.7-1.9-1.4-3-3.2-2.6-4.6Z"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="16.8" cy="7.2" r=".6"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.5l1.8 5.2 5.2 1.8-5.2 1.8L12 17.5l-1.8-5.2L5 10.5l5.2-1.8Z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7Z"/></symbol>
+  <symbol id="i-pix" viewBox="0 0 24 24"><path d="M12 3.5l8.5 8.5-8.5 8.5L3.5 12Z"/><path d="M8 8l4 4 4-4M8 16l4-4 4 4"/></symbol>
   <symbol id="i-sheet" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9.5h16M4 14.5h16M10 4v16"/></symbol>
 </defs></svg>
 
@@ -41,23 +45,23 @@
 <header class="s-nav"><div class="wrap">
   <a class="s-logo" href="/vendas" aria-label="Klasso, início"><img src="assets/klasso-logo.png" alt="Klasso" width="110" height="23"></a>
   <nav class="s-links" aria-label="Seções"><a href="#produto">Produto</a><a href="#resultado">Resultado</a><a href="/planos">Planos</a><a href="#faq">Dúvidas</a></nav>
-  <a class="btn ghost" href="/">Entrar</a><a class="btn primary" href="/?cadastro=1">Teste grátis</a>
+  <a class="btn ghost" href="/">Entrar</a><a class="btn primary shine" href="/?cadastro=1">Teste grátis</a>
 </div></header>
 
 <main id="main">
-<section class="hero"><div class="wrap">
-  <div class="hero-copy">
-    <p class="label">Para escolas e cursos que vendem pelo WhatsApp</p>
-    <h1 class="h1">Saiba quanto custou <em>cada matrícula.</em></h1>
-    <p class="lead">O Meta mostra custo por conversa. O Klasso liga o anúncio à conversa no WhatsApp e à matrícula paga, e diz ao seu time o que fazer hoje para fechar mais.</p>
-    <div class="hero-cta"><a class="btn primary" href="/?cadastro=1">Testar 7 dias grátis <svg class="ico"><use href="#i-arrow"/></svg></a><a class="btn ghost" href="/planos">Ver planos</a></div>
-    <ul class="hero-meta"><li><svg class="ico"><use href="#i-check"/></svg>7 dias grátis, sem cartão</li><li><svg class="ico"><use href="#i-check"/></svg>WhatsApp pela API oficial</li><li><svg class="ico"><use href="#i-check"/></svg>Importa sua planilha atual</li><li><svg class="ico"><use href="#i-check"/></svg>Funciona no celular</li></ul>
+<section class="hero hero-k"><div class="wrap hk">
+  <span class="hk-badge"><svg class="ico"><use href="#i-shield"/></svg>Do anúncio à matrícula paga, com dado real</span>
+  <h1 class="h1 hk-h">Saiba quanto custou <em>cada matrícula.</em></h1>
+  <p class="lead hk-lead">O Meta mostra custo por conversa. O Klasso liga o anúncio à conversa no WhatsApp e à matrícula paga, e diz ao seu time o que fazer hoje para fechar mais.</p>
+  <div class="hero-cta hk-cta"><a class="btn primary shine" href="/?cadastro=1">Testar 7 dias grátis <svg class="ico"><use href="#i-arrow"/></svg></a><a class="btn ghost" href="/planos">Ver planos</a></div>
+  <ul class="hero-meta hk-meta"><li><svg class="ico"><use href="#i-check"/></svg>7 dias grátis, sem cartão</li><li><svg class="ico"><use href="#i-check"/></svg>WhatsApp pela API oficial</li><li><svg class="ico"><use href="#i-check"/></svg>Importa sua planilha atual</li></ul>
+  <div class="hk-stage">
+    <figure class="real hk-shot">
+      <div class="shot-bar"><i></i><i></i><i></i><span>klasso · painel</span></div>
+      <img src="assets/produto/painel.jpg" width="1600" height="1000" alt="Painel do Klasso: patente do time, missões do dia, matrículas pagas, custo por matrícula, investimento e conversão" fetchpriority="high">
+    </figure>
+    <div class="hk-fade" aria-hidden="true"></div>
   </div>
-
-  <figure class="real">
-    <div class="shot-bar"><i></i><i></i><i></i><span>klasso · painel</span></div>
-    <img src="assets/produto/painel.jpg" width="1600" height="1000" alt="Painel do Klasso: patente do time, missões do dia, matrículas pagas, custo por matrícula, investimento e conversão" fetchpriority="high">
-  </figure>
 </div>
 <div class="wrap pills-wrap">
   <p class="label" style="text-align:center;margin-bottom:18px">O funil que o seu time já entende</p>
@@ -76,11 +80,8 @@
 
 <section class="sec"><div class="wrap">
   <div class="sec-head"><p class="label">Integrações</p><h2 class="h2">Conecta com o que a escola já usa</h2></div>
-  <div class="integr">
-    <article class="icard"><svg class="ico"><use href="#i-meta"/></svg><h3>Meta Ads</h3><p>Gasto, alcance e conversas por anúncio, todo dia, pela API de Marketing.</p></article>
-    <article class="icard v"><svg class="ico"><use href="#i-chat"/></svg><h3>WhatsApp Cloud API</h3><p>Número oficial da escola. Cada conversa vira lead com o anúncio de origem.</p></article>
-    <article class="icard w"><svg class="ico"><use href="#i-sheet"/></svg><h3>Planilhas de CRM</h3><p>Traga o histórico de negócios com etapa, valor, responsável e UTMs.</p></article>
-  </div>
+  <div class="gt-grid"><article class="gt-card"><div class="glass g0" aria-hidden="true"><svg class="ico"><use href="#i-meta"/></svg></div><h3>Meta Ads</h3><p>Gasto, alcance e conversas por anúncio, todo dia, pela API de Marketing.</p></article><article class="gt-card"><div class="glass g1" aria-hidden="true"><svg class="ico"><use href="#i-wa"/></svg></div><h3>WhatsApp Cloud API</h3><p>Número oficial da escola. Cada conversa vira lead com o anúncio de origem.</p></article><article class="gt-card"><div class="glass g2" aria-hidden="true"><svg class="ico"><use href="#i-ig"/></svg></div><h3>Instagram</h3><p>Pauta, calendário e prévia do post antes de publicar.</p></article><article class="gt-card"><div class="glass g3" aria-hidden="true"><svg class="ico"><use href="#i-spark"/></svg></div><h3>IA de criação</h3><p>Ideias, roteiros e ganchos que aprendem com o que já deu resultado.</p></article><article class="gt-card"><div class="glass g4" aria-hidden="true"><svg class="ico"><use href="#i-sheet"/></svg></div><h3>Planilhas e CRM</h3><p>Traga o histórico de negócios com etapa, valor, responsável e UTMs.</p></article></div>
+  <div class="marquee" aria-hidden="true"><div><span><svg class="ico"><use href="#i-meta"/></svg>Meta Ads</span><span><svg class="ico"><use href="#i-wa"/></svg>WhatsApp Cloud API</span><span><svg class="ico"><use href="#i-ig"/></svg>Instagram</span><span><svg class="ico"><use href="#i-spark"/></svg>IA de criação</span><span><svg class="ico"><use href="#i-sheet"/></svg>Planilhas e CRM</span><span><svg class="ico"><use href="#i-meta"/></svg>Meta Ads</span><span><svg class="ico"><use href="#i-wa"/></svg>WhatsApp Cloud API</span><span><svg class="ico"><use href="#i-ig"/></svg>Instagram</span><span><svg class="ico"><use href="#i-spark"/></svg>IA de criação</span><span><svg class="ico"><use href="#i-sheet"/></svg>Planilhas e CRM</span><span><svg class="ico"><use href="#i-meta"/></svg>Meta Ads</span><span><svg class="ico"><use href="#i-wa"/></svg>WhatsApp Cloud API</span><span><svg class="ico"><use href="#i-ig"/></svg>Instagram</span><span><svg class="ico"><use href="#i-spark"/></svg>IA de criação</span><span><svg class="ico"><use href="#i-sheet"/></svg>Planilhas e CRM</span></div></div>
 </div></section>
 
 <section class="sec" id="resultado"><div class="wrap">
@@ -108,15 +109,15 @@
 <section class="sec" id="produto"><div class="wrap">
   <div class="sec-head"><p class="label">Produto</p><h2 class="h2">Tudo que o comercial de uma escola usa, no mesmo lugar</h2></div>
   <div class="features">
-    <div class="feat" style="--c:var(--iris)"><svg class="ico"><use href="#i-chat"/></svg><h3>WhatsApp oficial</h3><p>Conversa dentro do funil, respostas prontas, entregue e lido. Avisa quando a janela de 24h fecha.</p></div>
-    <div class="feat" style="--c:#6aa8ff"><svg class="ico"><use href="#i-phone"/></svg><h3>Modo ligação</h3><p>Fila com retorno atrasado primeiro, roteiro na tela e resultado em um toque. Não atendeu agenda a próxima tentativa.</p></div>
-    <div class="feat"><svg class="ico"><use href="#i-funnel"/></svg><h3>Funil e matrículas</h3><p>Vários funis, produtos, reserva e pagamento parcial. Importa sua planilha sem duplicar contato.</p></div>
-    <div class="feat" style="--c:#6aa8ff"><svg class="ico"><use href="#i-chart"/></svg><h3>Meta Ads</h3><p>Gasto, conversas e custo por matrícula por campanha e anúncio, sincronizado pela API.</p></div>
-    <div class="feat" style="--c:#f2b552"><svg class="ico"><use href="#i-target"/></svg><h3>Campanhas · Ciclo CEC</h3><p>Planejamento com 5W3H e verba projetada pelo seu custo e conversão reais.</p></div>
-    <div class="feat" style="--c:var(--iris)"><svg class="ico"><use href="#i-pen"/></svg><h3>Pauta Viral</h3><p>Roteiro, cenário, legendas e prompt de imagem a partir de um questionário. Vai direto para o calendário.</p></div>
-    <div class="feat" style="--c:#f2b552"><svg class="ico"><use href="#i-trophy"/></svg><h3>Time com metas</h3><p>Missões do dia, sequência, 11 patentes e conquistas que só liberam com dado comprovado.</p></div>
-    <div class="feat" style="--c:var(--iris)"><svg class="ico"><use href="#i-users"/></svg><h3>Perfis e chat</h3><p>Vendas, atendimento, social media, analista e cliente. Cada um vê só o que precisa.</p></div>
-    <div class="feat"><svg class="ico"><use href="#i-doc"/></svg><h3>Relatórios</h3><p>Relatório do período com investimento, matrículas, custo e conversão por curso e por consultor.</p></div>
+    <div class="feat" style="--c:var(--iris)"><span class="fnum">001</span><svg class="ico"><use href="#i-chat"/></svg><h3>WhatsApp oficial</h3><p>Conversa dentro do funil, respostas prontas, entregue e lido. Avisa quando a janela de 24h fecha.</p></div>
+    <div class="feat" style="--c:var(--royal-t)"><span class="fnum">002</span><svg class="ico"><use href="#i-phone"/></svg><h3>Modo ligação</h3><p>Fila com retorno atrasado primeiro, roteiro na tela e resultado em um toque. Não atendeu agenda a próxima tentativa.</p></div>
+    <div class="feat"><span class="fnum">003</span><svg class="ico"><use href="#i-funnel"/></svg><h3>Funil e matrículas</h3><p>Vários funis, produtos, reserva e pagamento parcial. Importa sua planilha sem duplicar contato.</p></div>
+    <div class="feat" style="--c:var(--royal-t)"><span class="fnum">004</span><svg class="ico"><use href="#i-chart"/></svg><h3>Meta Ads</h3><p>Gasto, conversas e custo por matrícula por campanha e anúncio, sincronizado pela API.</p></div>
+    <div class="feat" style="--c:#f2b552"><span class="fnum">005</span><svg class="ico"><use href="#i-target"/></svg><h3>Campanhas · Ciclo CEC</h3><p>Planejamento com 5W3H e verba projetada pelo seu custo e conversão reais.</p></div>
+    <div class="feat" style="--c:var(--iris)"><span class="fnum">006</span><svg class="ico"><use href="#i-pen"/></svg><h3>Pauta Viral</h3><p>Roteiro, cenário, legendas e prompt de imagem a partir de um questionário. Vai direto para o calendário.</p></div>
+    <div class="feat" style="--c:#f2b552"><span class="fnum">007</span><svg class="ico"><use href="#i-trophy"/></svg><h3>Time com metas</h3><p>Missões do dia, sequência, 11 patentes e conquistas que só liberam com dado comprovado.</p></div>
+    <div class="feat" style="--c:var(--iris)"><span class="fnum">008</span><svg class="ico"><use href="#i-users"/></svg><h3>Perfis e chat</h3><p>Vendas, atendimento, social media, analista e cliente. Cada um vê só o que precisa.</p></div>
+    <div class="feat"><span class="fnum">009</span><svg class="ico"><use href="#i-doc"/></svg><h3>Relatórios</h3><p>Relatório do período com investimento, matrículas, custo e conversão por curso e por consultor.</p></div>
   </div>
 </div></section>
 
