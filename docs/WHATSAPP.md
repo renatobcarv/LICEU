@@ -50,3 +50,38 @@ Enquanto a Meta não aprova o Klasso para o cadastro em um clique, o time Klasso
 - Modelos aprovados com variáveis (nome, curso) e disparo de retomada para reservas paradas.
 - Caixa de entrada única (todas as conversas sem resposta) com distribuição por consultor.
 - Chatbot de triagem (curso de interesse, horário, cidade) antes de chegar no closer.
+
+## Conexão por QR Code (não oficial, opcional)
+
+Ao lado da API oficial, em Configurações › Integrações. Só dono/admin; exige aceite explícito do risco
+(gravado em `wa_connections.aceite_risco_em`).
+
+**Riscos (ditos ao cliente):** a Meta pode bloquear o número; o lead chega sem o anúncio de origem (`ctwa_clid`),
+então o custo por matrícula fica menos preciso; não há modelos aprovados (só texto). Recomendar número secundário.
+
+**Peças**
+- Migração `007_whatsapp_qr.sql` (colunas `tipo`, `instancia`, `aceite_risco_em`).
+- `wa-qr`: ações `conectar` (cria instância + QR), `qr`, `status`, `desconectar`.
+- `wa-qr-webhook` (sem JWT): autentica por `?k=EVO_WEBHOOK_TOKEN`; cria lead e grava `wamsg` (entrada e o que foi enviado pelo celular).
+- `whatsapp-send`: quando a conexão é `tipo='qr'`, envia pela Evolution (sem a regra das 24h, que é da API oficial).
+
+**Servidor Evolution API** (VPS de ~R$ 30–60/mês, 1 GB RAM basta para poucos números):
+```bash
+docker run -d --name evolution --restart always -p 8080:8080 \
+  -e AUTHENTICATION_API_KEY=<gere com: openssl rand -hex 32> \
+  -e DATABASE_ENABLED=false -e CACHE_LOCAL_ENABLED=true \
+  -v evolution_instances:/evolution/instances atendai/evolution-api:v2.2.3
+```
+Coloque HTTPS na frente (Caddy/Nginx com domínio, ex.: `wa.klasso.com.br`).
+
+**Segredos no Supabase** (nunca no repositório nem no chat):
+- `EVO_URL` = `https://wa.seudominio.com.br`
+- `EVO_KEY` = a `AUTHENTICATION_API_KEY` do servidor
+- `EVO_WEBHOOK_TOKEN` = `openssl rand -hex 24`
+
+**Deploy**
+```bash
+npx supabase functions deploy wa-qr --project-ref kqaqccjsoqdpbnnyyemw
+npx supabase functions deploy wa-qr-webhook --no-verify-jwt --project-ref kqaqccjsoqdpbnnyyemw
+npx supabase functions deploy whatsapp-send --project-ref kqaqccjsoqdpbnnyyemw
+```

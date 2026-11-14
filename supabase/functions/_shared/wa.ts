@@ -28,7 +28,8 @@ export async function decifrar(s: string) {
 
 /** Número e token da empresa. Sem conexão própria, usa o número único das variáveis (modo escola local). */
 export async function credenciaisDaEmpresa(admin: SupabaseClient, orgId: string) {
-  const { data: c } = await admin.from('wa_connections').select('id, phone_number_id').match({ org_id: orgId, status: 'conectado' }).order('created_at').limit(1).maybeSingle();
+  const { data: c } = await admin.from('wa_connections').select('id, phone_number_id, tipo, instancia').match({ org_id: orgId, status: 'conectado' }).order('created_at').limit(1).maybeSingle();
+  if (c?.tipo === 'qr') return { tipo: 'qr' as const, instancia: c.instancia as string, connectionId: c.id as string, phoneId: '', token: '' };
   if (c) {
     const { data: cr } = await admin.from('wa_credentials').select('token_cifrado').eq('connection_id', c.id).maybeSingle();
     if (cr) return { phoneId: c.phone_number_id as string, token: await decifrar(cr.token_cifrado), connectionId: c.id as string };
@@ -36,4 +37,16 @@ export async function credenciaisDaEmpresa(admin: SupabaseClient, orgId: string)
   const token = Deno.env.get('WA_TOKEN'), phoneId = Deno.env.get('WA_PHONE_ID');
   if (token && phoneId && orgId === Deno.env.get('ORG_ID')) return { phoneId, token, connectionId: null };
   return null;
+}
+
+// ---------- Evolution API (conexão por QR Code, não oficial) ----------
+// Servidor próprio (Docker numa VPS). Segredos: EVO_URL (https://...), EVO_KEY (apikey global), EVO_WEBHOOK_TOKEN.
+export const instanciaDa = (orgId: string) => 'klasso_' + orgId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 40);
+export async function evo(path: string, method = 'GET', body?: unknown) {
+  const base = (Deno.env.get('EVO_URL') || '').replace(/\/$/, ''), key = Deno.env.get('EVO_KEY');
+  if (!base || !key) throw new Error('Servidor do QR Code não configurado (EVO_URL/EVO_KEY).');
+  const r = await fetch(base + path, { method, headers: { apikey: key, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j?.response?.message?.toString?.() || j?.message || `Evolution ${r.status}`);
+  return j;
 }

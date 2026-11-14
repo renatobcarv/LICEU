@@ -4,7 +4,7 @@
 // fora disso, só modelo aprovado. Quem chama precisa ter permissão de escrita em "wamsg" naquela empresa.
 // Segredos: WA_ENC_KEY. Modo número único (escola local, sem Embedded Signup): WA_TOKEN, WA_PHONE_ID, ORG_ID.
 
-import { GRAPH, cors, json, adminClient, userClient, credenciaisDaEmpresa } from '../_shared/wa.ts';
+import { GRAPH, cors, json, adminClient, userClient, credenciaisDaEmpresa, evo } from '../_shared/wa.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -26,7 +26,10 @@ Deno.serve(async (req) => {
   if (!tel) return json({ error: 'Lead sem telefone.' }, 400);
   const to = tel.length <= 11 ? '55' + tel : tel;
 
-  if (!template) {
+  const qr = cred.tipo === 'qr';
+  if (qr && template) return json({ error: 'Modelos aprovados só existem na API oficial. No QR Code, envie texto.' }, 400);
+  if (qr && !String(texto || '').trim()) return json({ error: 'Mensagem vazia.' }, 400);
+  if (!template && !qr) {
     const { data: ult } = await admin.from('records').select('data').match({ org_id: orgId, collection: 'wamsg' }).eq('data->>leadId', leadId).eq('data->>dir', 'in').order('updated_at', { ascending: false }).limit(1);
     const em = ult?.[0]?.data?.em;
     if (!em || Date.now() - new Date(em).getTime() > 24 * 3600e3) return json({ error: 'Passou de 24h desde a última mensagem do cliente. A Meta só permite enviar um modelo aprovado agora.', janela: false }, 409);
@@ -34,13 +37,20 @@ Deno.serve(async (req) => {
   }
   if (lr?.data?.optOut) return json({ error: 'Este contato pediu para não receber mensagens.' }, 409);
 
+  let waId: string;
+  if (qr) {
+    try { const j = await evo(`/message/sendText/${cred.instancia}`, 'POST', { number: to, text: String(texto).slice(0, 4096) }); waId = j?.key?.id || crypto.randomUUID();
+      await admin.from('wa_events').insert({ id: 'evo_' + waId, org_id: orgId }); } // o eco do envio no webhook é ignorado
+    catch (e) { return json({ error: 'WhatsApp (QR): ' + (e as Error).message }, 502); }
+  } else {
   const payload = template
     ? { messaging_product: 'whatsapp', to, type: 'template', template: { name: template, language: { code: 'pt_BR' } } }
     : { messaging_product: 'whatsapp', to, type: 'text', text: { body: String(texto).slice(0, 4096) } };
   const r = await fetch(`${GRAPH}/${cred.phoneId}/messages`, { method: 'POST', headers: { Authorization: 'Bearer ' + cred.token, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   const j = await r.json();
   if (j.error) return json({ error: 'WhatsApp: ' + j.error.message }, 502);
-  const waId = j.messages?.[0]?.id || crypto.randomUUID();
+  waId = j.messages?.[0]?.id || crypto.randomUUID();
+  }
   const id = 'wm_' + String(waId).replace(/[^a-zA-Z0-9]/g, '').slice(-40); const now = new Date().toISOString();
   const { data: mem } = await admin.from('members').select('nome').match({ org_id: orgId, user_id: u.user?.id }).maybeSingle();
   const data = { id, leadId, dir: 'out', texto: template ? `[modelo] ${template}` : texto, em: now, por: mem?.nome || u.user?.email, status: 'sent', waId, createdAt: now, updatedAt: now };

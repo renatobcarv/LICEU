@@ -1911,3 +1911,17 @@ body { background: radial-gradient(900px 500px at 100% -10%, rgb(139 0 255 / .14
 .quick h2 { justify-content: flex-start; flex-wrap: wrap; }
 .quick h2 em { margin-left: .3em; }
 .quick h2::after { margin-left: auto; }
+
+/* WhatsApp: oficial (recomendado) x QR Code (rápido, não oficial) */
+.wa-opcoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+.wa-op { display: flex; flex-direction: column; gap: 6px; padding: var(--space-4); border: 1px solid var(--border); border-radius: 18px; background: rgb(255 255 255 / .02); }
+.wa-op.rec { border-color: rgb(139 0 255 / .55); background: linear-gradient(160deg, rgb(139 0 255 / .14), rgb(255 255 255 / .02)); }
+.wa-op .badge { align-self: flex-start; }
+.wa-op small { color: #a4a4b0; }
+.wa-op .row-actions { margin-top: auto; padding-top: 8px; flex-wrap: wrap; }
+dialog.wa-qr-dlg { width: min(400px, calc(100vw - 32px)); padding: var(--space-6); border: 1px solid var(--border); border-radius: 24px; background: var(--card); color: var(--foreground); text-align: center; }
+.wa-qr-dlg h3 { margin: 0 0 6px; }
+.wa-qr-box { margin: var(--space-4) auto; width: 264px; min-height: 264px; display: grid; place-items: center; background: #fff; border-radius: 16px; padding: 12px; }
+.wa-qr-box img { width: 240px; height: 240px; image-rendering: pixelated; }
+.wa-qr-box .hint, .wa-qr-box .empty-sm { color: #333; }
+.wa-qr-dlg .row-actions { justify-content: center; }
