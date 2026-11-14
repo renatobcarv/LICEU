@@ -27,6 +27,13 @@ Fale com o usuário em **português**, tom de mentor: direto, honesto, sem bajul
   lima só no olho. Imagens trazidas pelo usuário; tratadas em roxo da marca.
 - Chaves de localStorage continuam `flowclass.*` (não renomear: perderia dados dos usuários).
 
+## Design system (resumo — completo em `docs/DESIGN.md`)
+- Preto #050506 · lima #C6FF00 (ação/detalhe) · roxo #8B00FF (estrutura/destaque) · branco. Nunca azul/ciano.
+- Linguagem "glow": fundo líquido roxo/lima + granulado, vidro com backdrop-blur, luz nascendo de baixo, ícones de vidro 3D, retícula lima, vidro canelado, anel de luz.
+- Movimento: títulos palavra a palavra, cascata, contadores, cenas ligadas à rolagem, cards 3D com luz do mouse, botões magnéticos; sempre com `prefers-reduced-motion`.
+- Águia: voo (`aguia.webp`), ataque (`aguia-ataque.webp`), rosto (`aguia-rosto.webp`); corpo roxo, lima só no olho, sem glow verde em volta.
+- UX: tela "Hoje" por papel, menu pelo trabalho (Vender/Divulgar/Gerir/Equipe), revelar aos poucos, 1 ação principal por tela. O usuário aprovou o visual; excesso de informação é o que cansa.
+
 ## Produto (módulos)
 Painel, Meta Ads, Campanhas, Funil (WhatsApp + modo ligação), Matrículas, Meu Arsenal,
 Pauta Viral (brainstorm, editor modo facilitado/avançado, IA), Calendário (prévia visual do post),

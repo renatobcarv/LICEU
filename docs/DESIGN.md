@@ -1,118 +1,74 @@
-# Design do Klasso
+# Design system Klasso (v2 · nov/2026)
 
-O app segue a estrutura do modelo **Gateway System**, um design system de painel de pagamentos, com a identidade **Klasso** (Tech Premium): grafite profundo, branco e verde-lima. O grafite sustenta a identidade; o lima chama atenção para o que importa e nunca é fundo predominante. Logotipo em `assets/klasso-logo.png` (símbolo: `assets/klasso-mark.png`). Tudo está em `css/app.css`. Este guia é a regra para qualquer tela ou componente novo.
+Fonte da verdade visual do Klasso. Vale para o app (`css/app.css`) e para as páginas públicas (`css/site.css`).
+Decisões do usuário marcadas com 🔒 não mudam sem ele pedir.
 
-Referência visual: https://claude.ai/artifact/8EZK22DY94scZVebE8dTmk
+## 1. Marca
+- 🔒 Nome **Klasso**. Logo `assets/klasso-logo.png` (K lima+roxo com seta + "klasso" branco); símbolo `assets/klasso-mark.png`; favicon `assets/favicon.png`.
+- 🔒 **Mascote: águia** = "visão de águia sobre o funil". Arquivos (tratados em roxo, fundo transparente, WebP):
+  - `assets/aguia.webp` — em voo, completa (vendas, seção "Visão de águia", entra voando com a rolagem).
+  - `assets/aguia-ataque.webp` — em ataque, garras à frente (topo da página de Planos).
+  - `assets/aguia-rosto.webp` — rosto com olho lima (login/cadastro e fundo do card da patente, inteira, sem cortar).
+  - Regras: corpo sempre roxo; **lima só no olho** (pequeno brilho pulsando); 🔒 **sem brilho verde em volta da águia**; brilho em volta só roxo.
+  - Tratamento de imagem nova: recorte com alfa real → mapa de cor (preto-roxo → #8B00FF → lilás) a ~80% + contraste 1.15 → WebP q82–84.
 
-## Princípios
-
-1. **Lima é assinatura.** `--primary` (Flow Lime) aparece só no botão principal, no item ativo do menu, em dados que importam e nos gráficos. Se tudo é lima, nada se destaca.
-2. **Hierarquia por luz, nunca por sombra.** As camadas são `--background` → `--card` → `--surface` → `--muted`, com borda de 1px (`--border`). Não existe `box-shadow` no sistema.
-3. **Uma ação principal por tela** (`.btn.primary`), no topo à direita do conteúdo. As outras ações usam `.btn` (contorno) ou `.btn.ghost`.
-4. **O raio segue o tamanho:**
-
-   | Raio | Onde |
-   | --- | --- |
-   | 8 | Itens pequenos e de menu |
-   | 12 | Inputs |
-   | 16 | Cards internos |
-   | 32 | Sidebar e card mestre |
-   | Pílula | Botões, filtros e badges |
-
-5. **O número é o protagonista.** KPI com rótulo 14/600 em `--muted-foreground` e valor grande em 700 `--heading-strong`.
-6. **Previsibilidade.** Toda página tem o mesmo molde.
-
-## Molde de página
-
-```
-Sidebar (card, raio 32, 264px)   │  Breadcrumb (kicker /) e título 24/600 · filtros de período e curso
-  Logo                           │  ┌ Card mestre <main> (card, raio 32, padding 24) ─────────────┐
-  Grupos do menu                 │  │ [abas sublinhadas ou filtros em pílula]      [ação primária] │
-  Item ativo = bloco lima sólido │  │ KPIs                                                        │
-  Unidade · status               │  │ Cards internos (borda 1px, raio 16) · tabelas · estado vazio │
-                                 │  └─────────────────────────────────────────────────────────────┘
-```
-
-Cada view devolve só o conteúdo do card mestre. A casca (`index.html` e `js/app.js`) monta o resto.
-
-## Tokens
-
+## 2. Cor
 | Token | Valor | Uso |
 | --- | --- | --- |
-| `--background` | #101214 Graphite Black | Fundo da aplicação e identidade; colunas do Kanban |
-| `--card` | #1a1d20 | Sidebar, card mestre, diálogos |
-| `--surface` | #252a2e Carbon Gray | Inputs, painéis internos, estado vazio |
-| `--muted` | #2e3439 | Hover, badge neutro, trilho de barras. **É fundo, não texto** |
-| `--border` | #353c41 | Toda borda (1px) |
-| `--foreground` / `--heading-strong` | #ffffff Pure White | Texto principal, valores, aba ativa |
-| `--muted-foreground` | #a7b0b5 Steel Gray | Rótulos, menu inativo, texto de apoio |
-| `--subtle-foreground` | #8f989e | Metadados, placeholders |
-| `--primary` | #c4f15a Flow Lime | Assinatura: CTA, item ativo, gráficos |
-| `--primary-foreground` | #101214 | Texto sobre o lima |
-| `--brand-deep` | #d6f78a | Links, filtro ativo |
-| `--soft-lime` | #eaf4d5 Soft Lime | Fundos suaves e selecionados (tema claro) |
-| `--success` / `--delta-positive` | #6fe0a0 / #c4f15a | Ganho, meta atingida, variação boa |
-| `--destructive` | #ff6b5e | Erro, perda, variação ruim |
-| `--*-subtle` + `--*-foreground` | | Fundo e texto de badges e avisos |
-| `--chart-1..4` | lima, azul, verde, aço | Séries de gráfico, nessa ordem |
+| fundo | `#050506` | Preto profundo de tudo |
+| `--card` | `#0c0c10` | Superfície neutra (sem tom verde) |
+| `--primary` (lima) | `#C6FF00` | Ação e detalhe: CTA, ícone ativo, barras, número-herói, olho da águia |
+| `--royal` (roxo) | `#8B00FF` (texto: `#b56bff`/`#d6b0ff`) | Estrutura e destaque: item ativo do menu, card da patente, brilhos, horizonte |
+| branco | `#fff` / texto apoio `#a4a4b0`, `#9a9aa6` | Títulos e texto |
+- 🔒 **Paleta única** (Toxic Luxury removida). 🔒 **Nunca azul/ciano** — nem em gráfico, gradiente ou badge.
+- Regra de proporção: roxo estrutura, lima aponta. Se tudo é lima, nada se destaca.
+- Contraste AA: texto secundário nunca abaixo de `#9a9aa6` sobre o preto (axe-core = 0 violações).
+- WhatsApp pode usar o verde próprio só no botão "WhatsApp" (ação de marca de terceiro).
 
-A escala de espaço é `--space-1/2/3/4/6/8` (4 a 32px). A de raio é `--radius-sm/md/lg/xl/2xl/pill`. As transições são `--t-fast` (150ms, abas e bordas) e `--t-base` (300ms, botões), e só mudam cor e borda: nada de deslizar, quicar ou girar.
+## 3. Tipografia
+- Fustat (Google Fonts) em tudo; Geist Mono só para rótulos/kickers em caixa alta e números de cards (`001`).
+- Títulos: peso 700–800, tracking negativo (-0.02 a -0.035em). Palavra-chave do título em lima (`<em>`).
+- Kicker: mono, 11–13px, uppercase, letter-spacing .14em, lima.
+- Copy: segunda pessoa, frases curtas, benefício primeiro ("Responda antes do concorrente"), números exatos.
 
-O tema claro já existe só como troca de tokens (`<html data-theme="light">`). Componente nenhum usa cor literal; por isso os dois temas funcionam.
+## 4. Superfícies e efeitos (linguagem "glow")
+- **Fundo líquido**: manchas roxas/lima desfocadas (blur 70–90px) animando devagar + granulado (feTurbulence) em overlay.
+- **Vidro**: `linear-gradient(135deg, rgb(255 255 255/.12), rgb(255 255 255/.03))` + `backdrop-filter: blur(14–18px)` + borda branca 10–18% + highlight inset no topo.
+- **Luz que nasce de baixo** nos cards (radial roxo/lima/lilás alternando), **horizonte roxo** enorme sob grades.
+- **Ícones de vidro 3D** (`.glass`): quadrado arredondado preto brilhante, levemente girado, ícone em traço lima ou lilás com drop-shadow, flutuando.
+- Texturas para dar personalidade a blocos: retícula de pontos lima (halftone), vidro canelado (listras verticais), anel de luz.
+- No celular: troca vidro por fundo sólido (performance).
 
-## Tipografia
+## 5. Movimento (`js/motion.js` páginas públicas · `js/app-motion.js` app)
+- Títulos entram palavra por palavra (blur → nítido, sobe); blocos em cascata (90ms); números contam até o valor real.
+- Ligados à rolagem: painel endireita (rotateX 18°→0), águia entra voando, mito×fato voam para o lugar, horizonte cresce, barra de progresso lima→roxo no topo.
+- Interação: cards inclinam em 3D e recebem luz seguindo o mouse; botões primários magnéticos com reflexo.
+- App: fundo líquido, cards de vidro com luz do mouse, entrada ao rolar, barra de leitura.
+- **Sempre** respeitar `prefers-reduced-motion` (tudo visível e parado) e nunca deixar conteúdo oculto sem JS.
 
-Uma família só: **Fustat** (Google Fonts). O logotipo é imagem; Geist Mono só no briefing da Pauta.
-
-| Estilo | Tamanho/linha | Peso |
+## 6. Componentes-chave
+| Componente | Onde | Regra |
 | --- | --- | --- |
-| Valor de KPI | 40/52 (24 no compacto) | 700 |
-| Título de página (`h1`) | 24/32 | 600 |
-| Título de card (`h2`) | 20/28 | 600 |
-| Corpo, botão | 15–16/24 | 400 / 600 |
-| Rótulo | 14/20 | 600 |
-| Legenda | 12/18 | 400 |
+| Botão primário | `.btn.primary` (+ `.shine` nas públicas) | Pílula lima, texto preto; **um por tela/bloco** |
+| Card da patente | `.game-hero` | Bloco roxo royal com detalhes lima; águia ao fundo inteira |
+| KPI | `.kpi` / `.hj-kpis` | Número grande; 3–4 por vez, o resto em "ver todos" |
+| Card numerado | `.feat .fnum` | `001`… em pílula mono |
+| Cartão mito×fato | `.mvf-card` | Vidro fosco inclinado, etiqueta "Mito" cinza / "Fato" lima |
+| Item de fila | `.hj-item` | Avatar roxo, nome, motivo, seta lima |
+| Menu | `.side` | Item ativo roxo com ícone lima e filete lima à esquerda; grupos em mono cinza |
 
-Não use `font-variant-numeric: tabular-nums`: na Fustat esse recurso também alarga o espaço entre as palavras.
+## 7. UX (regras de arquitetura — o design é aprovado; o que cansa é excesso de informação)
+1. **Tela inicial "Hoje" por papel** (`js/views/hoje.js`): responde "o que eu faço agora?". Vendas = fila (retornos atrasados, sem 1º contato, reservas sem pagamento); Social = conteúdo do dia; Coordenação = 3 números + quem precisa de ajuda.
+2. **Menu pelo trabalho**: Vender · Divulgar · Gerir · Equipe · Sistema. Áreas fora do perfil recolhidas em "Mais áreas" (continua tudo acessível).
+3. **Revelar aos poucos**: formulários atrás de botão ("+ Novo lead"), 4 indicadores + "ver todos", ações secundárias em "Mais ações".
+4. **Uma ação principal por tela.**
+5. **Cada informação mora num lugar só**; nos outros, resumo com link.
+6. Página pública pode "gritar"; o app trabalha 8h por dia — intensidade com propósito, o dado é protagonista.
 
-## Componentes (classes prontas)
-
-| Componente | Classe | Regra |
-| --- | --- | --- |
-| Botão | `.btn`, `.btn.primary`, `.btn.sm`, `.btn.ghost`, `.btn.danger`, `.btn.win` | Pílula de 48px (36 no `.sm`). Só um `.primary` por tela |
-| Botão de ícone | `.icon-btn`, `.icon-btn.sm` | Redondo, com borda |
-| Abas | `.tabs` > `.tab[aria-selected]` | Sublinhadas; a ativa tem sublinhado lima de 2px |
-| Filtro | `.chip`, `.seg-b`, `.pipe-tab`, `.chip-radio` | Pílula de 38px; a ativa usa lima a 12% e texto `--brand-deep` |
-| Badge | `.badge` + `.good` `.bad` `.warn` `.info` | Mini pílula semântica |
-| Card | `.card` + `.card-head` | Borda de 1px, raio 16, sem fundo próprio |
-| KPI | `.kpis` > `.kpi` > `h3` + `.kpi-v` + `.kpi-d` | `.kpis.compact` para fileiras de 4 a 8 |
-| Estado vazio | `empty(título, texto)` em `js/ui.js` | O texto fala do ganho, não da falta |
-| Tabela | `.table-wrap` > `.tbl` | Sempre dentro de `.table-wrap` (rolagem no celular) |
-| Formulário | `openDialog({ fields })` em `js/ui.js` | Use `{ type: 'section' }` para separar grupos |
-| Kanban | `.board` > `.col` > `.lead` | Colunas em `--background`, cartões em `--card` |
-
-## Voz
-
-- Português coloquial, em segunda pessoa: "Você ainda não tem matrículas neste período".
-- O estado vazio fala do benefício: "Registre cada conversa **pra saber qual anúncio traz aluno**".
-- Rótulos curtos de ação: "Registrar matrícula", "Importar lista", "Ver detalhes".
-
-## Ícones
-
-São de linha, com 18px e traço de 1,6, na cor do texto (estilo Lucide), e ficam em `ICON` em `js/ui.js`. Não use emoji como ícone.
-
-## Checklist de tela nova
-
-- [ ] Só um `.btn.primary`, e o lima aparece só em ação, dado importante ou gráfico.
-- [ ] Nenhum `box-shadow` e nenhuma cor literal: só tokens.
-- [ ] Texto com contraste de pelo menos 4,5:1 (`--subtle-foreground` é o mínimo para texto).
-- [ ] Estado vazio que orienta, nunca "0/0" ou "—" sozinho.
-- [ ] Em 390px, `document.documentElement.scrollWidth` ≤ 390. Tabelas dentro de `.table-wrap`.
-- [ ] Rodou `node tools/check.mjs`.
-
-## Camada Glow (nov/2026)
-- Fundo preto profundo (`#050607`) com halos radiais lima fixos; nada de cinza chapado.
-- Cartões: degradê de vidro + borda de 1px feita com luz (`box-shadow` inset), não com cor sólida.
-- Brilho (`--glow`) só na ação principal, item ativo e conquistas. Se tudo brilha, nada brilha.
-- Cartão de destaque em degradê lima (`--lime-card`), um por tela, para o dado que mais importa (patente no Painel).
-- Movimento: "+XP" sobe ao registrar; comemoração só ao subir de nível. Respeita `prefers-reduced-motion`.
+## 8. Checklist de tela nova
+- [ ] Só tokens da paleta; nada azul/ciano; lima só em ação/dado/olho.
+- [ ] Um `.btn.primary`; informação secundária recolhida.
+- [ ] Contraste AA (axe-core sem violações), ARIA correto (tabs, grid, progressbar com nome).
+- [ ] 1440 e 390px sem rolagem lateral; `prefers-reduced-motion` testado.
+- [ ] Dados com `esc()` (XSS testado); números reais, nunca inventados.
+- [ ] `npm run check` + Playwright.
