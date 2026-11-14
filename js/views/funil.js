@@ -58,16 +58,19 @@ export function render(ctx) {
     </div>
   </form>
 
-  <section class="kpis compact" aria-label="Funil no período">
+  <section class="kpis compact limit" id="fn-kpis" aria-label="Funil no período">
     ${[['Entraram no período', num(s.leads)], ['Em aberto', num(s.abertos.length)], ['Ganhos', num(s.matriculas)], ['Conversão', pct(s.convLead)], ['Em aberto (R$)', brl(sum(s.abertos, (l) => l.valor))], ['Ganho (R$)', brl(s.receita)], ['Retornos atrasados', num(s.followVencidos.length)], ['Sem 1º contato', num(s.semContato.length)]].map(([l, v]) => `<article class="kpi"><h3>${l}</h3><p class="kpi-v">${v}</p></article>`).join('')}
   </section>
+
+  <button type="button" class="link fn-kmais" data-act="kpis-todos">Ver todos os números do funil</button>
 
   <div class="toolbar">
     <div class="tabs" role="tablist">${tabs.map(([id, l]) => `<button type="button" role="tab" class="tab" data-tab="${id}" aria-selected="${tab === id}">${l}</button>`).join('')}</div>
     <span class="grow"></span>
-    <button class="btn sm" data-act="import">${ICON.upload} Importar lista</button>
-    <button class="btn sm" data-act="export">${ICON.download} CSV</button>
-    <button class="btn sm danger" data-act="zerar">Zerar</button>
+    <details class="tb-mais"><summary class="btn sm">Mais ações</summary><div class="tb-pop">
+      <button class="btn sm" data-act="import">${ICON.upload} Importar lista</button>
+      <button class="btn sm" data-act="export">${ICON.download} Exportar CSV</button>
+      <button class="btn sm danger" data-act="zerar">Zerar funil</button></div></details>
   </div>
   <div id="tab-body">${body(ctx, s, p)}</div>`;
 }
@@ -475,11 +478,12 @@ function resultadoDialog(id, ctx) {
 export function mount(root, ctx) {
   // No celular o formulário de nova conversa começa recolhido: o Kanban aparece primeiro.
   const qf = root.querySelector('#quick');
-  if (qf && window.innerWidth < 760) {
+  if (qf) { // recolhido em todas as telas: o Kanban vem primeiro, o formulário abre num toque
     qf.classList.toggle('fechado', !quickAberto);
     qf.querySelector('h2')?.addEventListener('click', () => { quickAberto = qf.classList.toggle('fechado') === false; if (quickAberto) qf.querySelector('input')?.focus(); });
   }
   root.addEventListener('click', (e) => {
+    const km = e.target.closest('[data-act="kpis-todos"]'); if (km) { const k = root.querySelector('#fn-kpis'); const todos = k.classList.toggle('limit') === false; km.textContent = todos ? 'Mostrar só o essencial' : 'Ver todos os números do funil'; return; }
     const wa = e.target.closest('[data-wa]'); if (wa) { if (waApi()) { e.preventDefault(); conversaDialog(wa.dataset.wa); } else registrar(wa.dataset.wa, 'wa'); return; }
     const tel = e.target.closest('[data-tel]'); if (tel) { if (!tel.dataset.nopop) setTimeout(() => resultadoDialog(tel.dataset.tel, ctx), 400); return; }
     const res = e.target.closest('[data-res][data-lead]'); if (res) { registrar(res.dataset.lead, 'tel', res.dataset.res); toast('Registrado. Próximo da fila.'); ctx.refresh(); return; }

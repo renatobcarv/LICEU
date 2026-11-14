@@ -179,7 +179,7 @@ function foco(ctx) {
 }
 
 // Jogo: patente e XP no cartão de destaque, missões do dia e sequência ao lado.
-function jogo() {
+export function jogo() {
   const g = estado(); const ms = missoes(); const fh = feitasHoje();
   const n = ms.filter((m) => fh.includes(m.id)).length; const full = n === ms.length;
   return `<div class="game-grid">

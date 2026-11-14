@@ -1863,3 +1863,51 @@ body { background: radial-gradient(900px 500px at 100% -10%, rgb(139 0 255 / .14
 
 .ap-calmo .app-bg i { animation: none; } .ap-calmo .ap-in { opacity: 1; transform: none; filter: none; }
 @media (max-width: 760px) { .app-bg i { filter: blur(60px); } .ap .card, .ap .kpi { backdrop-filter: none; -webkit-backdrop-filter: none; background-color: rgb(12 12 16 / .92); } }
+/* Águia da patente inteira e na proporção (sem cortar) */
+.ap .game-hero::before { right: 0; bottom: 0; top: 0; width: 58%; height: 100%; aspect-ratio: auto; background-size: contain; background-position: right center; opacity: .55; }
+
+/* ===== Hoje: a fila do dia ===== */
+.hj-ola { margin: 0 0 4px; font-size: 18px; color: var(--muted-foreground-strong); }
+.hj-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.hj-head h2 { margin: 4px 0 0; font-size: 24px; letter-spacing: -.02em; }
+.hj-k { margin: 0; font: 600 12px/1 var(--font-mono, monospace); text-transform: uppercase; letter-spacing: .14em; color: var(--primary); }
+.hj-grupo { display: grid; gap: 8px; }
+.hj-gh { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.hj-gh b { color: #fff; } .hj-gh small { color: var(--muted-foreground); flex-basis: 100%; }
+.hj-n { min-width: 22px; padding: 2px 8px; border-radius: 99px; background: rgb(139 0 255 / .25); color: #d6b0ff; font-size: 12px; font-weight: 700; text-align: center; }
+.hj-grupo ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.hj-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; text-decoration: none; color: inherit; border: 1px solid rgb(255 255 255 / .06); background: rgb(255 255 255 / .02); transition: border-color .2s, background .2s, transform .2s; }
+.hj-item:hover { border-color: rgb(139 0 255 / .5); background: rgb(139 0 255 / .08); transform: translateX(3px); }
+.hj-av { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: linear-gradient(135deg, #8b00ff, #4a0094); color: #fff; font-weight: 700; }
+.hj-av svg { width: 18px; height: 18px; }
+.hj-txt { flex: 1; min-width: 0; display: grid; } .hj-txt b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .hj-txt small { color: var(--muted-foreground); }
+.hj-go { color: var(--primary); } .hj-go svg { width: 18px; height: 18px; }
+.hj-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.hj-kpis a { display: grid; gap: 4px; padding: 16px; border-radius: 16px; text-decoration: none; color: inherit; border: 1px solid rgb(255 255 255 / .07); background: rgb(255 255 255 / .02); }
+.hj-kpis small { color: var(--muted-foreground); } .hj-kpis b { font-size: 30px; letter-spacing: -.02em; color: #fff; }
+.hj-kpis a:first-child b { color: var(--primary); }
+.hj-vazio { text-align: center; align-items: center; }
+@media (max-width: 700px) { .hj-kpis { grid-template-columns: 1fr; } .hj-head .btn { width: 100%; justify-content: center; } }
+
+/* Menu: "Mais áreas" recolhido */
+.nav-mais { margin-top: 10px; }
+.nav-mais > summary { cursor: pointer; list-style: none; padding: 10px 12px; border-radius: 10px; color: #9a96aa; font-size: 13px; font-weight: 600; }
+.nav-mais > summary::-webkit-details-marker { display: none; }
+.nav-mais > summary::after { content: "+"; float: right; color: var(--primary); }
+.nav-mais[open] > summary::after { content: "–"; }
+.nav-mais > summary:hover { color: #fff; background: rgb(139 0 255 / .1); }
+
+/* Funil enxuto: formulário recolhido, 4 números, ações secundárias no "Mais ações" */
+.quick.fechado > *:not(h2) { display: none !important; }
+.quick.fechado { padding: 14px 18px; }
+.quick h2 { cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0; }
+.quick h2::after { content: "+ Novo lead"; font: 600 14px/1 var(--font-sans); color: var(--primary-foreground); background: var(--primary); padding: 10px 16px; border-radius: 99px; }
+.quick:not(.fechado) h2::after { content: "Fechar"; background: rgb(255 255 255 / .08); color: #fff; }
+.kpis.limit > :nth-child(n+5) { display: none; }
+.fn-kmais { justify-self: start; margin: -6px 0 6px; background: none; border: 0; color: var(--primary); cursor: pointer; font: 600 13px/1 var(--font-sans); padding: 0; }
+.tb-mais { position: relative; } .tb-mais > summary { list-style: none; cursor: pointer; } .tb-mais > summary::-webkit-details-marker { display: none; }
+.tb-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; display: grid; gap: 6px; padding: 8px; min-width: 200px; border-radius: 14px; background: #0f0f14; border: 1px solid rgb(255 255 255 / .1); box-shadow: 0 20px 40px -10px rgb(0 0 0 / .8); }
+.tb-pop .btn { justify-content: flex-start; }
+.quick h2 { justify-content: flex-start; flex-wrap: wrap; }
+.quick h2 em { margin-left: .3em; }
+.quick h2::after { margin-left: auto; }
