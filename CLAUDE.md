@@ -74,3 +74,4 @@ Metas, Relatórios, Time (quadro gamificado + insígnias), Chat, Configurações
 
 - Painel usa a mesma linguagem visual das vendas (`js/app-motion.js`: fundo líquido, cards de vidro, entrada ao rolar).
 - **Pendente:** rodar `supabase/migrations/006_plano_start.sql` em produção (sem ela, quem escolhe Start cai no Essencial).
+- **Automações** (`js/views/automacoes.js`, motor `supabase/functions/_shared/motor.js`, doc `docs/AUTOMACOES.md`): construtor tipo n8n. Pendente: migrações 007 e 008 + deploy das funções.

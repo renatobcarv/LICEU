@@ -24,12 +24,14 @@ import * as chat from './views/chat.js';
 import * as relatorios from './views/relatorios.js';
 import * as config from './views/config.js';
 import * as arsenal from './views/arsenal.js';
+import * as automacoes from './views/automacoes.js';
 
 const ALL_VIEWS = [
   // Menu organizado pelo trabalho (Vender, Divulgar, Gerir), não pelo módulo. "Hoje" é a tela inicial.
   { id: 'hoje', label: 'Hoje', title: ['O que importa', '*hoje'], kicker: 'Sua fila do dia', mod: hoje, group: '', noPeriod: true },
   { id: 'funil', label: 'Funil', title: ['Funil', '*comercial'], kicker: 'Do WhatsApp à matrícula', mod: funil, group: 'Vender' },
   { id: 'matriculas', label: 'Matrículas', title: ['*Matrículas'], kicker: 'Quem comprou', mod: matriculas, group: 'Vender' },
+  { id: 'automacoes', label: 'Automações', title: ['*Automações'], kicker: 'Robô, fluxos e integrações', mod: automacoes, group: 'Vender', noPeriod: true },
   { id: 'pauta', label: 'Pauta Viral', title: ['Pauta', '*Viral'], kicker: 'Criação de conteúdo', mod: pauta, group: 'Divulgar', noPeriod: true },
   { id: 'calendario', label: 'Calendário', title: ['*Calendário', 'editorial'], kicker: 'Planejamento', mod: calendario, group: 'Divulgar', noPeriod: true },
   { id: 'campanhas', label: 'Campanhas', title: ['Planejar', 'campanha'], kicker: 'Do quiz à matrícula', mod: campanhas, group: 'Divulgar', noPeriod: true },
