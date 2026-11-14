@@ -5,6 +5,7 @@
 // Segredos: WA_ENC_KEY. Modo número único (escola local, sem Embedded Signup): WA_TOKEN, WA_PHONE_ID, ORG_ID.
 
 import { GRAPH, cors, json, adminClient, userClient, credenciaisDaEmpresa, evo } from '../_shared/wa.ts';
+import { pausarRobo } from '../_shared/enviar.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -56,5 +57,6 @@ Deno.serve(async (req) => {
   const data = { id, leadId, dir: 'out', texto: template ? `[modelo] ${template}` : texto, em: now, por: mem?.nome || u.user?.email, status: 'sent', waId, createdAt: now, updatedAt: now };
   await admin.from('records').upsert({ org_id: orgId, collection: 'wamsg', id, data, updated_at: now });
   await admin.rpc('add_usage', { o: orgId, m: 'wa_enviadas', n: 1 });
+  await pausarRobo(admin, orgId, leadId); // uma pessoa assumiu: o robô se cala neste contato
   return json({ ok: true, id });
 });

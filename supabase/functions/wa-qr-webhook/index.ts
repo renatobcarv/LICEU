@@ -7,8 +7,12 @@
 // Limite honesto: aqui não chega o ctwa_clid do anúncio; leads entram com origem "WhatsApp".
 
 import { adminClient, ingerirEvo, recuperarEvo } from '../_shared/wa.ts';
+import { aoReceber, emSegundoPlano } from '../_shared/automacao.ts';
 
 function igual(a: string, b: string) { if (!a || a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; }
+// Na recuperação, o robô responde só a última mensagem de cada contato (não metralha quem escreveu várias vezes).
+const ultimaPorLead = (ev: { leadId: string; texto: string; novo: boolean }[]) => [...new Map(ev.map((e) => [e.leadId, e])).values()];
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('ok');
   const tok = Deno.env.get('EVO_WEBHOOK_TOKEN') || '';
@@ -25,12 +29,12 @@ Deno.serve(async (req) => {
     const status = st === 'open' ? 'conectado' : st === 'close' ? 'desconectado' : null;
     if (status && status !== cx.status) await admin.from('wa_connections').update({ status, ...(status === 'conectado' ? { erro: null, ...(cx.conectado_em ? {} : { conectado_em: now }) } : { erro: 'Sessão encerrada no celular. Gere um novo QR Code.' }) }).eq('id', cx.id);
     // Voltou: recupera o que chegou enquanto estava fora (sem segurar a resposta)
-    if (status === 'conectado') { const t = recuperarEvo(admin, cx as any).catch((e) => console.warn('recuperação', e.message)); (globalThis as any).EdgeRuntime?.waitUntil?.(t); }
+    if (status === 'conectado') emSegundoPlano(recuperarEvo(admin, cx as any).then((r) => aoReceber(admin, orgId, ultimaPorLead(r.eventos))));
     return new Response('ok');
   }
   if (ev !== 'messages.upsert') return new Response('ok');
 
   const lista = Array.isArray(b.data) ? b.data : [b.data];
-  try { await ingerirEvo(admin, orgId, lista, cx.id); } catch (e) { return new Response((e as Error).message, { status: 500 }); }
+  try { const r = await ingerirEvo(admin, orgId, lista, cx.id); emSegundoPlano(aoReceber(admin, orgId, r.eventos)); } catch (e) { return new Response((e as Error).message, { status: 500 }); }
   return new Response('ok');
 });

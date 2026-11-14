@@ -11,6 +11,7 @@
 // A assinatura X-Hub-Signature-256 é conferida: sem ela, nada é gravado.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { aoReceber, emSegundoPlano } from '../_shared/automacao.ts';
 
 const enc = new TextEncoder();
 async function assinaturaOk(raw: string, sig: string | null, secret: string) {
@@ -43,6 +44,7 @@ Deno.serve(async (req) => {
   const body = JSON.parse(raw || '{}');
   const now = new Date().toISOString(); const hoje = now.slice(0, 10);
   const out: any[] = [];
+  const eventos = new Map<string, { leadId: string; texto: string; novo: boolean }[]>();
   const cacheOrg = new Map<string, string | null>();
   const cacheLeads = new Map<string, Map<string, any>>();
   const orgDoNumero = async (pid: string) => {
@@ -70,7 +72,7 @@ Deno.serve(async (req) => {
       // Já processada? (reenvio da Meta)
       const { error: dup } = await admin.from('wa_events').insert({ id: String(m.id), org_id: orgId });
       if (dup) continue;
-      const k = chave(m.from); let lead = porTel.get(k);
+      const k = chave(m.from); let lead = porTel.get(k); const eraNovo = !lead;
       if (!lead) {
         const ref = m.referral || {};
         const id = 'wa_' + k;
@@ -81,6 +83,8 @@ Deno.serve(async (req) => {
         out.push({ org_id: orgId, collection: 'leads', id, data, updated_at: now });
       }
       const mid = 'wm_' + String(m.id).replace(/[^a-zA-Z0-9]/g, '').slice(-40);
+      if (!eventos.has(orgId)) eventos.set(orgId, []);
+      eventos.get(orgId)!.push({ leadId: lead.id, texto: texto(m), novo: eraNovo });
       out.push({ org_id: orgId, collection: 'wamsg', id: mid, data: { id: mid, leadId: lead.id, dir: 'in', texto: texto(m), em: new Date(Number(m.timestamp) * 1000).toISOString(), waId: m.id, createdAt: now, updatedAt: now }, updated_at: now });
     }
     for (const s of v.statuses || []) {
@@ -90,5 +94,7 @@ Deno.serve(async (req) => {
     }
   }
   if (out.length) { const { error } = await admin.from('records').upsert(out); if (error) return new Response(error.message, { status: 500 }); }
+  // Automações (robô, menus, IA) rodam depois de gravar, sem segurar a resposta para a Meta.
+  for (const [o, ev] of eventos) emSegundoPlano(aoReceber(admin, o, ev));
   return new Response('ok'); // a Meta só precisa do 200
 });

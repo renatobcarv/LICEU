@@ -57,6 +57,7 @@ const textoEvo = (m: any = {}) => m.conversation || m.extendedTextMessage?.text 
   || (m.imageMessage ? '📷 Imagem' : m.audioMessage ? '🎤 Áudio' : m.documentMessage ? '📄 Documento' : m.videoMessage ? '🎬 Vídeo' : m.locationMessage ? '📍 Localização' : m.stickerMessage ? 'Figurinha' : '[mensagem]');
 export async function ingerirEvo(admin: SupabaseClient, orgId: string, lista: any[], connId?: string) {
   const now = new Date().toISOString(); const out: any[] = []; let ls: any[] | null = null; let novos = 0, msgs = 0;
+  const eventos: { leadId: string; texto: string; novo: boolean }[] = [];
   const ord = [...lista].sort((a, b) => Number(a?.messageTimestamp || 0) - Number(b?.messageTimestamp || 0));
   for (const d of ord) {
     const jid = String(d?.key?.remoteJid || '');
@@ -65,7 +66,7 @@ export async function ingerirEvo(admin: SupabaseClient, orgId: string, lista: an
     if (dup) continue;
     const num = jid.split('@')[0]; const k = chaveTel(num); const fromMe = !!d.key.fromMe;
     if (!ls) ls = (await admin.from('records').select('id,data').match({ org_id: orgId, collection: 'leads' })).data || [];
-    let lead = ls.find((r: any) => chaveTel(r.data?.telefone) === k);
+    let lead = ls.find((r: any) => chaveTel(r.data?.telefone) === k); const eraNovo = !lead;
     const em = d.messageTimestamp ? new Date(Number(d.messageTimestamp) * 1000).toISOString() : now;
     if (!lead) {
       if (fromMe) continue; // mensagem que a escola mandou para quem não é lead: não cria lead
@@ -77,10 +78,15 @@ export async function ingerirEvo(admin: SupabaseClient, orgId: string, lista: an
     const mid = 'wm_' + String(d.key.id).replace(/[^a-zA-Z0-9]/g, '').slice(-40);
     out.push({ org_id: orgId, collection: 'wamsg', id: mid, data: { id: mid, leadId: lead.id, dir: fromMe ? 'out' : 'in', texto: textoEvo(d.message), em, waId: d.key.id, ...(fromMe ? { por: 'Celular', status: 'sent' } : {}), createdAt: now, updatedAt: now }, updated_at: now });
     msgs++;
+    if (!fromMe) eventos.push({ leadId: lead.id, texto: textoEvo(d.message), novo: eraNovo });
+    else { // alguém do time respondeu pelo celular: o robô se cala neste contato por 24h
+      lead.data = { ...lead.data, roboPausadoAte: new Date(Date.now() + 24 * 3600e3).toISOString(), updatedAt: now };
+      out.push({ org_id: orgId, collection: 'leads', id: lead.id, data: lead.data, updated_at: now });
+    }
   }
   if (out.length) { const { error } = await admin.from('records').upsert(out); if (error) throw new Error(error.message); }
   if (connId) await admin.from('wa_connections').update({ ultima_sync: now }).eq('id', connId);
-  return { novos, msgs };
+  return { novos, msgs, eventos };
 }
 
 /** Recuperação: busca no servidor do QR as mensagens desde a última sincronização (com folga de 10 min) e grava o que faltou.
