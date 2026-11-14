@@ -30,7 +30,14 @@ export function historicoCriacao() {
 export async function pedirIA(modo, dados) {
   if (!iaOnline()) return { demo: true, resultado: demo(modo, dados) };
   const { data, error } = await auth.client.functions.invoke('ia-criar', { body: { orgId: auth.org?.id, modo, escola: contextoEscola(), historico: historicoCriacao(), ...dados } });
-  if (error || data?.error) throw new Error(data?.error || 'A IA não respondeu. Tente de novo.');
+  if (data?.error) throw new Error(data.error);
+  if (error) {
+    // Erro HTTP da função: a mensagem certa (limite, permissão, IA ocupada) vem no corpo da resposta.
+    let msg = '';
+    try { msg = (await error.context?.json?.())?.error || ''; } catch (e) { /* corpo vazio */ }
+    if (!msg && /Failed to send|fetch/i.test(error.message || '')) msg = 'Sem conexão com o servidor. Confira a internet e tente de novo.';
+    throw new Error(msg || 'A IA não respondeu. Tente de novo.');
+  }
   return { demo: false, resultado: data.resultado };
 }
 

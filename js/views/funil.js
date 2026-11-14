@@ -40,7 +40,7 @@ export function render(ctx) {
   return `
   <section class="pipe-bar" aria-label="Funis">
     <div class="pipe-tabs scroll-x" role="tablist">${pipes.map((x) => `<button type="button" class="pipe-tab" role="tab" data-pipe="${esc(x.id)}" aria-selected="${x.id === p.id}"><span>${esc(x.nome)}</span><small>${abertosPorFunil(x.id)}</small></button>`).join('')}
-      <button type="button" class="pipe-tab add" data-act="new-pipe">${ICON.plus} Novo funil</button></div>
+      <button type="button" class="pipe-tab add" role="tab" aria-selected="false" data-act="new-pipe">${ICON.plus} Novo funil</button></div>
     <button type="button" class="btn sm ghost" data-act="edit-pipe">Editar funil</button>
   </section>
   ${p.descricao ? `<p class="pipe-desc">${esc(p.descricao)}</p>` : ''}

@@ -310,3 +310,4 @@ h1, h2, h3 { margin: 0; color: var(--text); }
 .gallery { display: flex; gap: 6px; flex-wrap: wrap; }
 .gallery button { border: 1px solid var(--line-2); background: none; color: var(--muted); cursor: pointer; padding: 9px 16px; border-radius: 999px; font: 600 14px/1 var(--font); }
 .gallery button[aria-selected="true"] { background: var(--accent-hex); color: var(--lime-ink); border-color: transparent; }
+.case-copy small, .s-foot, .s-foot nav a, .s-foot span { color: #a8a8b4 !important; }

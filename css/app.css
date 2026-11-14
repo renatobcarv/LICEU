@@ -1800,3 +1800,8 @@ body { background: radial-gradient(900px 500px at 100% -10%, rgb(139 0 255 / .14
 .game-hero .gh-chip.dark { background: var(--primary) !important; color: #050506 !important; }
 .game-hero .gh-bar { background: rgb(0 0 0 / .35) !important; }
 .game-hero .gh-bar i { background: var(--primary) !important; box-shadow: 0 0 14px rgb(198 255 0 / .7); }
+/* Acessibilidade: linhas do calendário não mudam o grid; texto secundário com contraste AA */
+.cal-row { display: contents; }
+:root:not([data-theme="light"]) { --subtle-foreground: #9a9aa6; }
+.cal-day.out .cal-num { color: #8e8e9a; }
+#f-range, footer, .app-foot, #foot-brand, .auth-foot, .auth-sep > span, .col-empty { color: #a4a4b0 !important; }
