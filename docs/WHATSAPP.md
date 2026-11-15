@@ -76,7 +76,7 @@ então o custo por matrícula fica menos preciso; não há modelos aprovados (s�
 ```yaml
 services:
   evolution:
-    image: atendai/evolution-api:v2.2.3
+    image: evoapicloud/evolution-api:v2.3.7
     restart: always
     ports: ["8080:8080"]
     environment:
