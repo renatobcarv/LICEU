@@ -28,7 +28,8 @@ export async function decifrar(s: string) {
 
 /** Número e token da empresa. Sem conexão própria, usa o número único das variáveis (modo escola local). */
 export async function credenciaisDaEmpresa(admin: SupabaseClient, orgId: string) {
-  const { data: c } = await admin.from('wa_connections').select('id, phone_number_id').match({ org_id: orgId, status: 'conectado' }).order('created_at').limit(1).maybeSingle();
+  const { data: c } = await admin.from('wa_connections').select('id, phone_number_id, tipo, instancia').match({ org_id: orgId, status: 'conectado' }).order('created_at').limit(1).maybeSingle();
+  if (c?.tipo === 'qr') return { tipo: 'qr' as const, instancia: c.instancia as string, connectionId: c.id as string, phoneId: '', token: '' };
   if (c) {
     const { data: cr } = await admin.from('wa_credentials').select('token_cifrado').eq('connection_id', c.id).maybeSingle();
     if (cr) return { phoneId: c.phone_number_id as string, token: await decifrar(cr.token_cifrado), connectionId: c.id as string };
@@ -36,4 +37,68 @@ export async function credenciaisDaEmpresa(admin: SupabaseClient, orgId: string)
   const token = Deno.env.get('WA_TOKEN'), phoneId = Deno.env.get('WA_PHONE_ID');
   if (token && phoneId && orgId === Deno.env.get('ORG_ID')) return { phoneId, token, connectionId: null };
   return null;
+}
+
+// ---------- Evolution API (conexão por QR Code, não oficial) ----------
+// Servidor próprio (Docker numa VPS). Segredos: EVO_URL (https://...), EVO_KEY (apikey global), EVO_WEBHOOK_TOKEN.
+export const instanciaDa = (orgId: string) => 'klasso_' + orgId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 40);
+export async function evo(path: string, method = 'GET', body?: unknown) {
+  const base = (Deno.env.get('EVO_URL') || '').replace(/\/$/, ''), key = Deno.env.get('EVO_KEY');
+  if (!base || !key) throw new Error('Servidor do QR Code não configurado (EVO_URL/EVO_KEY).');
+  const r = await fetch(base + path, { method, headers: { apikey: key, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j?.response?.message?.toString?.() || j?.message || `Evolution ${r.status}`);
+  return j;
+}
+
+// Grava mensagens da Evolution (webhook ou recuperação): cria lead novo e a conversa. Idempotente por wa_events.
+const chaveTel = (t: string) => String(t || '').replace(/\D/g, '').replace(/^55/, '').slice(-11);
+const textoEvo = (m: any = {}) => m.conversation || m.extendedTextMessage?.text || m.imageMessage?.caption || m.buttonsResponseMessage?.selectedDisplayText
+  || (m.imageMessage ? '📷 Imagem' : m.audioMessage ? '🎤 Áudio' : m.documentMessage ? '📄 Documento' : m.videoMessage ? '🎬 Vídeo' : m.locationMessage ? '📍 Localização' : m.stickerMessage ? 'Figurinha' : '[mensagem]');
+export async function ingerirEvo(admin: SupabaseClient, orgId: string, lista: any[], connId?: string) {
+  const now = new Date().toISOString(); const out: any[] = []; let ls: any[] | null = null; let novos = 0, msgs = 0;
+  const eventos: { leadId: string; texto: string; novo: boolean }[] = [];
+  const ord = [...lista].sort((a, b) => Number(a?.messageTimestamp || 0) - Number(b?.messageTimestamp || 0));
+  for (const d of ord) {
+    const jid = String(d?.key?.remoteJid || '');
+    if (!jid.endsWith('@s.whatsapp.net') || !d?.key?.id) continue; // ignora grupos, status e listas
+    const { error: dup } = await admin.from('wa_events').insert({ id: 'evo_' + d.key.id, org_id: orgId });
+    if (dup) continue;
+    const num = jid.split('@')[0]; const k = chaveTel(num); const fromMe = !!d.key.fromMe;
+    if (!ls) ls = (await admin.from('records').select('id,data').match({ org_id: orgId, collection: 'leads' })).data || [];
+    let lead = ls.find((r: any) => chaveTel(r.data?.telefone) === k); const eraNovo = !lead;
+    const em = d.messageTimestamp ? new Date(Number(d.messageTimestamp) * 1000).toISOString() : now;
+    if (!lead) {
+      if (fromMe) continue; // mensagem que a escola mandou para quem não é lead: não cria lead
+      const dia = em.slice(0, 10), id = 'wa_' + k;
+      const data = { id, nome: d.pushName || num, telefone: num, entrada: dia, etapa: 'novo', etapaFunil: 'novo', funilId: 'principal', etapaMax: 0,
+        origem: 'WhatsApp', historico: [{ data: dia, etapa: 'novo', col: 'novo' }], viaApi: true, viaQr: true, createdAt: now, updatedAt: now };
+      lead = { id, data }; ls.push(lead); novos++; out.push({ org_id: orgId, collection: 'leads', id, data, updated_at: now });
+    }
+    const mid = 'wm_' + String(d.key.id).replace(/[^a-zA-Z0-9]/g, '').slice(-40);
+    out.push({ org_id: orgId, collection: 'wamsg', id: mid, data: { id: mid, leadId: lead.id, dir: fromMe ? 'out' : 'in', texto: textoEvo(d.message), em, waId: d.key.id, ...(fromMe ? { por: 'Celular', status: 'sent' } : {}), createdAt: now, updatedAt: now }, updated_at: now });
+    msgs++;
+    if (!fromMe) eventos.push({ leadId: lead.id, texto: textoEvo(d.message), novo: eraNovo });
+    else { // alguém do time respondeu pelo celular: o robô se cala neste contato por 24h
+      lead.data = { ...lead.data, roboPausadoAte: new Date(Date.now() + 24 * 3600e3).toISOString(), updatedAt: now };
+      out.push({ org_id: orgId, collection: 'leads', id: lead.id, data: lead.data, updated_at: now });
+    }
+  }
+  if (out.length) { const { error } = await admin.from('records').upsert(out); if (error) throw new Error(error.message); }
+  if (connId) await admin.from('wa_connections').update({ ultima_sync: now }).eq('id', connId);
+  return { novos, msgs, eventos };
+}
+
+/** Recuperação: busca no servidor do QR as mensagens desde a última sincronização (com folga de 10 min) e grava o que faltou.
+ *  Cobre o tempo em que o servidor ou o webhook ficou fora do ar. Exige a Evolution com banco (DATABASE_ENABLED=true). */
+export async function recuperarEvo(admin: SupabaseClient, cx: { id: string; org_id: string; instancia: string; ultima_sync?: string | null; conectado_em?: string | null }) {
+  const desde = Math.floor(new Date(cx.ultima_sync || cx.conectado_em || Date.now() - 7 * 864e5).getTime() / 1000) - 600;
+  const achadas: any[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const j = await evo(`/chat/findMessages/${cx.instancia}`, 'POST', { where: { messageTimestamp: { gte: desde } }, page, offset: 100 });
+    const recs = j?.messages?.records || (Array.isArray(j) ? j : []);
+    achadas.push(...recs.filter((m: any) => Number(m?.messageTimestamp || 0) >= desde));
+    if (!recs.length || page >= Number(j?.messages?.pages || 1)) break;
+  }
+  return ingerirEvo(admin, cx.org_id, achadas, cx.id);
 }

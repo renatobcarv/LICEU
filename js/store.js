@@ -32,6 +32,8 @@ export const COLLECTIONS = [
   'imports',   // histórico de importações
   'team',      // pessoas do time (função, insígnia, reconhecimentos)
   'chat',      // mensagens do chat do time (canal, autor, texto, reações)
+  'automacoes', // fluxos de automação (gatilho → passos) e '_regras' do robô
+  'autoexec',  // estado de cada lead dentro de um fluxo (só o servidor grava)
   'wamsg',     // mensagens do WhatsApp oficial por lead (entrada pelo webhook, saída pela função whatsapp-send)
 ];
 
