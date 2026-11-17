@@ -12,6 +12,8 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { aoReceber, emSegundoPlano } from '../_shared/automacao.ts';
+import { GRAPH, credenciaisDaEmpresa } from '../_shared/wa.ts';
+import { guardarMidia } from '../_shared/midia.ts';
 
 const enc = new TextEncoder();
 async function assinaturaOk(raw: string, sig: string | null, secret: string) {
@@ -26,6 +28,19 @@ async function assinaturaOk(raw: string, sig: string | null, secret: string) {
 const chave = (t: string) => String(t || '').replace(/\D/g, '').replace(/^55/, '').slice(-11);
 const texto = (m: any) => m.text?.body || m.button?.text || m.interactive?.button_reply?.title || m.interactive?.list_reply?.title
   || (m.type === 'image' ? '📷 Imagem' : m.type === 'audio' ? '🎤 Áudio' : m.type === 'document' ? '📄 Documento' : m.type === 'video' ? '🎬 Vídeo' : m.type === 'location' ? '📍 Localização' : `[${m.type}]`);
+
+// Anexo da API oficial: pega a URL do arquivo na Meta (com o token da empresa), baixa e guarda no Storage.
+async function midiaOficial(admin: any, orgId: string, m: any) {
+  const o = m[m.type]; if (!o?.id || !['image', 'video', 'audio', 'document', 'sticker'].includes(m.type)) return undefined;
+  try {
+    const cred = await credenciaisDaEmpresa(admin, orgId); if (!cred?.token) return undefined;
+    const h = { Authorization: 'Bearer ' + cred.token };
+    const info = await (await fetch(`${GRAPH}/${o.id}`, { headers: h })).json();
+    if (!info?.url) return undefined;
+    const bin = new Uint8Array(await (await fetch(info.url, { headers: h })).arrayBuffer());
+    return await guardarMidia(admin, orgId, bin, info.mime_type || o.mime_type || 'application/octet-stream', o.filename || '');
+  } catch (e) { console.warn('mídia', (e as Error).message); return undefined; }
+}
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
@@ -85,7 +100,9 @@ Deno.serve(async (req) => {
       const mid = 'wm_' + String(m.id).replace(/[^a-zA-Z0-9]/g, '').slice(-40);
       if (!eventos.has(orgId)) eventos.set(orgId, []);
       eventos.get(orgId)!.push({ leadId: lead.id, texto: texto(m), novo: eraNovo });
-      out.push({ org_id: orgId, collection: 'wamsg', id: mid, data: { id: mid, leadId: lead.id, dir: 'in', texto: texto(m), em: new Date(Number(m.timestamp) * 1000).toISOString(), waId: m.id, createdAt: now, updatedAt: now }, updated_at: now });
+      const midia = await midiaOficial(admin, orgId, m);
+      const legenda = m[m.type]?.caption || '';
+      out.push({ org_id: orgId, collection: 'wamsg', id: mid, data: { id: mid, leadId: lead.id, dir: 'in', texto: midia ? legenda : texto(m), ...(midia ? { midia } : {}), em: new Date(Number(m.timestamp) * 1000).toISOString(), waId: m.id, createdAt: now, updatedAt: now }, updated_at: now });
     }
     for (const s of v.statuses || []) {
       const mid = 'wm_' + String(s.id).replace(/[^a-zA-Z0-9]/g, '').slice(-40);

@@ -30,8 +30,8 @@ const ESCREVE = {
 export const podeEscrever = (role, coll) => !role || !ESCREVE[role] || ESCREVE[role].includes(coll);
 export const AREA = {
   social: { nome: 'Conteúdo', telas: ['hoje', 'pauta', 'calendario', 'chat', 'arsenal', 'config'] },
-  sales: { nome: 'Vendas', telas: ['hoje', 'funil', 'matriculas', 'time', 'chat', 'arsenal', 'config'] },
-  support: { nome: 'Atendimento', telas: ['hoje', 'funil', 'matriculas', 'chat', 'arsenal', 'config'] },
+  sales: { nome: 'Vendas', telas: ['hoje', 'conversas', 'funil', 'matriculas', 'time', 'chat', 'arsenal', 'config'] },
+  support: { nome: 'Atendimento', telas: ['hoje', 'conversas', 'funil', 'matriculas', 'chat', 'arsenal', 'config'] },
   analyst: { nome: 'Análise', telas: ['hoje', 'relatorios', 'chat', 'arsenal', 'config'] },
   leitura: { nome: 'Leitura', telas: ['hoje', 'arsenal', 'config'] },
 };

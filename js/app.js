@@ -25,10 +25,12 @@ import * as relatorios from './views/relatorios.js';
 import * as config from './views/config.js';
 import * as arsenal from './views/arsenal.js';
 import * as automacoes from './views/automacoes.js';
+import * as conversas from './views/conversas.js';
 
 const ALL_VIEWS = [
   // Menu organizado pelo trabalho (Vender, Divulgar, Gerir), não pelo módulo. "Hoje" é a tela inicial.
   { id: 'hoje', label: 'Hoje', title: ['O que importa', '*hoje'], kicker: 'Sua fila do dia', mod: hoje, group: '', noPeriod: true },
+  { id: 'conversas', label: 'Conversas', title: ['*Conversas'], kicker: 'WhatsApp da escola', mod: conversas, group: 'Vender', noPeriod: true },
   { id: 'funil', label: 'Funil', title: ['Funil', '*comercial'], kicker: 'Do WhatsApp à matrícula', mod: funil, group: 'Vender' },
   { id: 'matriculas', label: 'Matrículas', title: ['*Matrículas'], kicker: 'Quem comprou', mod: matriculas, group: 'Vender' },
   { id: 'automacoes', label: 'Automações', title: ['*Automações'], kicker: 'Robô, fluxos e integrações', mod: automacoes, group: 'Vender', noPeriod: true },
@@ -196,9 +198,9 @@ function navHTML() {
   $('#nav').innerHTML = abertos.filter((g) => g !== 'Sistema').map(grupo).join('')
     + (mais.length ? `<details class="nav-mais"><summary>Mais áreas</summary>${mais.map(grupo).join('')}</details>` : '')
     + (abertos.includes('Sistema') ? grupo('Sistema') : '');
-  const porPapel = { social: ['hoje', 'pauta', 'calendario', 'chat'], sales: ['hoje', 'funil', 'matriculas', 'chat'], support: ['hoje', 'funil', 'matriculas', 'chat'] };
-  const atalhos = (porPapel[auth.member?.role] || ['hoje', 'funil', 'painel', 'pauta']).filter((id) => VIEWS.some((v) => v.id === id)).slice(0, 4);
-  const nomeCurto = (id) => ({ hoje: 'Hoje', funil: 'Funil', matriculas: 'Matrículas', painel: 'Números', pauta: 'Pauta', calendario: 'Agenda', chat: 'Chat' }[id] || id);
+  const porPapel = { social: ['hoje', 'pauta', 'calendario', 'chat'], sales: ['hoje', 'conversas', 'funil', 'matriculas'], support: ['hoje', 'conversas', 'funil', 'matriculas'] };
+  const atalhos = (porPapel[auth.member?.role] || ['hoje', 'conversas', 'funil', 'painel']).filter((id) => VIEWS.some((v) => v.id === id)).slice(0, 4);
+  const nomeCurto = (id) => ({ hoje: 'Hoje', conversas: 'Conversas', funil: 'Funil', matriculas: 'Matrículas', painel: 'Números', pauta: 'Pauta', calendario: 'Agenda', chat: 'Chat' }[id] || id);
   $('#bottom-nav').innerHTML = atalhos.map((id) => `<a href="#${id}" data-view="${id}">${ICON[id] || ICON.painel}<span>${nomeCurto(id)}</span></a>`).join('') + `<button type="button" id="bn-menu">${ICON.menu}<span>Menu</span></button>`;
   $('#bn-menu').addEventListener('click', () => $('#app').classList.toggle('nav-open'));
 }
