@@ -150,7 +150,7 @@ async function mostrarQr(root, acao) {
   let vivo = true, timer;
   const fim = () => { vivo = false; clearTimeout(timer); dlg.close(); dlg.remove(); whatsapp(root); };
   const pinta = (qr) => { box.innerHTML = qr ? `<img alt="QR Code para conectar o WhatsApp" src="${esc(qr.startsWith('data:') ? qr : 'data:image/png;base64,' + qr)}">` : '<p class="empty-sm">QR indisponível. Clique em "Gerar outro".</p>'; };
-  const gerar = async (a) => { try { pinta((await qrCall(a, a === 'conectar' ? { aceiteRisco: true } : {})).qr); } catch (e) { box.innerHTML = `<p class="hint">${esc(e.message)}</p>`; } };
+  const gerar = async (a) => { try { pinta((await qrCall(a, a === 'conectar' ? { aceiteRisco: true } : {})).qr); } catch (e) { box.innerHTML = `<p class="hint">${esc(/dns|lookup|connect|EVO_URL|Evolution/i.test(e.message) ? 'Não foi possível falar com o servidor do QR Code. Confira se o servidor e o túnel estão ligados e se o endereço (EVO_URL) está atualizado.' : e.message)}</p>`; } };
   const checa = async () => {
     if (!vivo) return;
     try { const r = await qrCall('status'); if (r.conectado) { st.textContent = 'Conectado! Buscando conversas recentes…'; toast('WhatsApp conectado por QR Code.'); whatsapp.sincronizado = true; sincronizarQr(root, true); return setTimeout(fim, 900); } } catch { /* tenta de novo */ }

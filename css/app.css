@@ -2084,3 +2084,4 @@ dialog.wa-qr-dlg { width: min(400px, calc(100vw - 32px)); padding: var(--space-6
   .cv-b { max-width: 88%; }
   .cv-head .badge { display: none; }
 }
+.wa-qr-box .hint { overflow-wrap: anywhere; word-break: break-word; max-width: 100%; font-size: 13px; text-align: left; }
